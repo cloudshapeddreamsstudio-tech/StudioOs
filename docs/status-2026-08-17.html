@@ -1,0 +1,1090 @@
+<title>StudioOS Status Brief</title>
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+
+  :root {
+    --ground: #F1F4F6;
+    --surface: #FFFFFF;
+    --sunk: #E6EBEF;
+    --ink: #14202A;
+    --ink-soft: #4B5A66;
+    --ink-faint: #798894;
+    --rule: #D2DAE1;
+    --accent: #14566B;
+    --accent-tint: #DCEBF1;
+    --on-accent: #FFFFFF;
+    --ok: #2C6E49;
+    --ok-tint: #DFEDE4;
+    --warn: #8A6100;
+    --warn-tint: #F5EBD6;
+    --risk: #9C3535;
+    --risk-tint: #F3E0E0;
+
+    --font-display: Charter, "Bitstream Charter", "Iowan Old Style", Georgia, serif;
+    --font-body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font-mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+
+    --measure: 68ch;
+    --wide: 1040px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0E1519;
+      --surface: #162026;
+      --sunk: #1D282F;
+      --ink: #E4EDF2;
+      --ink-soft: #9DAEB9;
+      --ink-faint: #71838F;
+      --rule: #2A3841;
+      --accent: #5FB6D4;
+      --accent-tint: #16323D;
+      --on-accent: #0B1216;
+      --ok: #6FC08F;
+      --ok-tint: #16301F;
+      --warn: #D9AE5A;
+      --warn-tint: #33280F;
+      --risk: #D98080;
+      --risk-tint: #331A1A;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0E1519;
+    --surface: #162026;
+    --sunk: #1D282F;
+    --ink: #E4EDF2;
+    --ink-soft: #9DAEB9;
+    --ink-faint: #71838F;
+    --rule: #2A3841;
+    --accent: #5FB6D4;
+    --accent-tint: #16323D;
+    --on-accent: #0B1216;
+    --ok: #6FC08F;
+    --ok-tint: #16301F;
+    --warn: #D9AE5A;
+    --warn-tint: #33280F;
+    --risk: #D98080;
+    --risk-tint: #331A1A;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16.5px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 1fr min(var(--measure), calc(100% - 3rem)) 1fr;
+    row-gap: 1.15rem;
+    padding: clamp(2rem, 6vw, 5rem) 0 6rem;
+  }
+  .page > * { grid-column: 2; }
+  .page > .wide {
+    grid-column: 1 / -1;
+    width: min(var(--wide), calc(100% - 3rem));
+    margin-inline: auto;
+  }
+
+  /* ---------- masthead ---------- */
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.1rem, 5.5vw, 3.1rem);
+    line-height: 1.08;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin-bottom: 0.6rem;
+  }
+
+  .standfirst {
+    font-size: 1.12rem;
+    color: var(--ink-soft);
+    text-wrap: pretty;
+    max-width: 58ch;
+  }
+
+  .meta {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.4rem;
+    padding-top: 1.4rem;
+    margin-top: 1.4rem;
+    border-top: 1px solid var(--rule);
+  }
+
+  /* ---------- sections ---------- */
+
+  h2 {
+    font-family: var(--font-display);
+    font-size: 1.6rem;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+    margin-top: 2.6rem;
+  }
+
+  h3 {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    font-weight: 650;
+    letter-spacing: -0.005em;
+    margin-top: 1.5rem;
+  }
+
+  p { text-wrap: pretty; }
+
+  strong { font-weight: 650; }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--sunk);
+    padding: 0.1em 0.35em;
+    border-radius: 3px;
+  }
+
+  ul { padding-left: 1.15rem; display: grid; gap: 0.4rem; }
+  li::marker { color: var(--ink-faint); }
+
+  .lede { font-size: 1.05rem; }
+
+  /* ---------- status board ---------- */
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 0.7rem;
+  }
+
+  .cell {
+    background: var(--surface);
+    padding: 1.1rem 1.15rem 1.2rem;
+    display: grid;
+    gap: 0.45rem;
+    align-content: start;
+  }
+
+  .cell-label {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  .cell-body { font-size: 0.92rem; color: var(--ink-soft); line-height: 1.5; }
+
+  .chip {
+    justify-self: start;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.22em 0.6em;
+    border-radius: 3px;
+    font-weight: 600;
+  }
+  .chip-ok { background: var(--ok-tint); color: var(--ok); }
+  .chip-warn { background: var(--warn-tint); color: var(--warn); }
+  .chip-open { background: var(--risk-tint); color: var(--risk); }
+  .chip-info { background: var(--accent-tint); color: var(--accent); }
+
+  /* ---------- figures ---------- */
+
+  figure {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1.5rem 1.25rem 1.1rem;
+    margin-top: 1.4rem;
+    overflow-x: auto;
+  }
+
+  figure svg {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    /* Below this the 900-unit viewBox downscales label text past legibility,
+       so the figure scrolls horizontally instead of shrinking. */
+    min-width: 780px;
+    color: var(--ink-soft);
+  }
+
+  figcaption {
+    font-size: 0.86rem;
+    color: var(--ink-faint);
+    line-height: 1.5;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--rule);
+    text-wrap: pretty;
+  }
+
+  .svg-box { fill: var(--surface); stroke: var(--rule); }
+  .svg-box-sunk { fill: var(--sunk); stroke: var(--rule); }
+  .svg-lane { stroke: var(--rule); }
+  .svg-title { fill: var(--ink); font-family: var(--font-body); font-size: 13px; font-weight: 650; }
+  .svg-sub { fill: var(--ink-faint); font-family: var(--font-mono); font-size: 11px; }
+  .svg-label { fill: var(--ink-soft); font-family: var(--font-body); font-size: 12.5px; }
+  .svg-num { fill: var(--ink-faint); font-family: var(--font-mono); font-size: 11px; }
+  .svg-flow { stroke: var(--ink-soft); fill: none; stroke-width: 1.4; }
+  .svg-key { stroke: var(--accent); fill: none; stroke-width: 2; }
+  .svg-key-text { fill: var(--accent); font-family: var(--font-body); font-size: 12px; font-weight: 600; }
+  .svg-risk { stroke: var(--risk); fill: none; stroke-width: 1.8; }
+  .svg-risk-text { fill: var(--risk); font-family: var(--font-body); font-size: 12px; font-weight: 600; }
+  .svg-ok-text { fill: var(--ok); font-family: var(--font-body); font-size: 12px; font-weight: 600; }
+  .svg-boundary { fill: none; stroke: var(--ink-faint); stroke-width: 1.2; stroke-dasharray: 5 4; }
+
+  /* ---------- screen mockups ---------- */
+
+  .mock-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(330px, 1fr));
+    gap: 1.4rem;
+    align-items: start;
+    margin-top: 1.4rem;
+  }
+  .mock-grid figure { margin-top: 0; padding: 0; overflow: hidden; }
+  .mock-grid figcaption { padding: 0.9rem 1.1rem 1rem; margin-top: 0; }
+
+  .mock-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--sunk);
+    border-bottom: 1px solid var(--rule);
+  }
+  .mock-dots { display: flex; gap: 0.28rem; }
+  .mock-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rule); }
+  .mock-url {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--ink-faint);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mock-view {
+    background: var(--sunk);
+    padding: 1.6rem 1.1rem 1.9rem;
+    display: grid;
+    justify-items: center;
+  }
+
+  .mock-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 1.4rem 1.35rem 1.5rem;
+    width: 100%;
+    max-width: 320px;
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .mock-wordmark {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+
+  .mock-h {
+    font-family: var(--font-display);
+    font-size: 1.32rem;
+    line-height: 1.15;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+
+  .mock-sub { font-size: 0.82rem; color: var(--ink-soft); line-height: 1.45; }
+
+  .mock-label {
+    font-size: 0.7rem;
+    font-weight: 650;
+    color: var(--ink-soft);
+    margin-top: 0.55rem;
+  }
+
+  .mock-input {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--ink);
+    background: var(--ground);
+    border: 1px solid var(--rule);
+    border-radius: 5px;
+    padding: 0.5rem 0.65rem;
+  }
+  .mock-input.is-focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+  .mock-input .ph { color: var(--ink-faint); }
+
+  .mock-btn {
+    margin-top: 0.5rem;
+    background: var(--accent);
+    color: var(--on-accent);
+    font-size: 0.85rem;
+    font-weight: 650;
+    text-align: center;
+    padding: 0.62rem 0.8rem;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+  }
+  /* min-width here would otherwise be inherited from the diagram `figure svg` rule */
+  .mock-btn svg { width: 14px; height: 14px; min-width: 0; flex: none; }
+  .mock-btn.is-quiet {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1px solid var(--rule);
+  }
+
+  .mock-rule {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0.5rem 0 0.1rem;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .mock-rule::before, .mock-rule::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  .mock-note {
+    font-size: 0.7rem;
+    line-height: 1.45;
+    color: var(--ink-faint);
+    border-top: 1px solid var(--rule);
+    padding-top: 0.7rem;
+    margin-top: 0.35rem;
+  }
+  .mock-note b { color: var(--ok); font-weight: 650; }
+
+  .mock-link { font-size: 0.74rem; color: var(--accent); font-weight: 600; }
+
+  /* onboarding steps inside a mockup */
+  .mock-steps { display: grid; gap: 0.55rem; margin-top: 0.3rem; }
+  .mock-stepr {
+    display: grid;
+    grid-template-columns: 1.15rem 1fr;
+    gap: 0.6rem;
+    align-items: start;
+    font-size: 0.79rem;
+    line-height: 1.4;
+    color: var(--ink-faint);
+  }
+  .mock-stepr b { display: block; color: var(--ink-faint); font-weight: 650; }
+  .mock-stepr.is-done b { color: var(--ink-soft); }
+  .mock-stepr.is-now b { color: var(--ink); }
+  .mock-tick {
+    width: 1.15rem; height: 1.15rem; border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: var(--font-mono); font-size: 0.62rem; font-weight: 700;
+    background: var(--sunk); color: var(--ink-faint);
+    border: 1px solid var(--rule);
+  }
+  .mock-stepr.is-done .mock-tick { background: var(--ok-tint); color: var(--ok); border-color: var(--ok-tint); }
+  .mock-stepr.is-now .mock-tick { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+  .mock-sm { font-size: 0.72rem; color: var(--ink-faint); line-height: 1.45; }
+
+  /* ---------- tables ---------- */
+
+  .table-wrap { overflow-x: auto; margin-top: 1.2rem; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+  }
+
+  th, td {
+    text-align: left;
+    vertical-align: top;
+    padding: 0.7rem 0.85rem;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  thead th {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    background: var(--sunk);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--ink); font-weight: 600; }
+  td { color: var(--ink-soft); }
+
+  .col-evidence { font-family: var(--font-mono); font-size: 0.78rem; }
+
+  /* stack comparison */
+  .stack-table td:first-child { font-weight: 400; }
+  .stack-table .plus { color: var(--ok); font-family: var(--font-mono); font-weight: 700; }
+  .stack-table .minus { color: var(--risk); font-family: var(--font-mono); font-weight: 700; }
+  .stack-table th.opt-a { color: var(--ink-soft); }
+  .stack-table th.opt-b { color: var(--accent); }
+
+  /* ---------- log block ---------- */
+
+  .log {
+    font-family: var(--font-mono);
+    font-size: 0.79rem;
+    line-height: 1.75;
+    background: var(--sunk);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    margin-top: 1.1rem;
+    white-space: pre;
+    color: var(--ink-soft);
+  }
+  .log b { color: var(--ok); font-weight: 700; }
+
+  /* ---------- callout ---------- */
+
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-tint);
+    padding: 0.95rem 1.1rem;
+    border-radius: 0 5px 5px 0;
+    margin-top: 1.3rem;
+    font-size: 0.97rem;
+    color: var(--ink);
+  }
+  .callout.risk { border-left-color: var(--risk); background: var(--risk-tint); }
+
+  .callout p + p { margin-top: 0.6rem; }
+
+  /* ---------- next steps ---------- */
+
+  .steps { display: grid; gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; margin-top: 1.2rem; }
+  .step { background: var(--surface); padding: 0.95rem 1.1rem; display: grid; grid-template-columns: 2.1rem 1fr auto; gap: 0.9rem; align-items: baseline; }
+  .step-n { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-faint); font-weight: 600; }
+  .step-text { font-size: 0.95rem; color: var(--ink-soft); }
+  .step-text b { color: var(--ink); font-weight: 650; }
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--ink-faint);
+    line-height: 1.7;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+</style>
+
+<div class="page">
+
+  <div>
+    <div class="eyebrow">Status brief · Engineering</div>
+    <h1>StudioOS: sign-in solved, stack confirmed</h1>
+    <p class="standfirst">We can let every studio log in with their own ERPNext account. It is verified against a live production site, and it does not change the stack we picked.</p>
+    <div class="meta">
+      <span>17 August 2026</span>
+      <span>Prepared by Sandesh</span>
+      <span>Phase 1 complete · Phase 2 re-scoping</span>
+    </div>
+  </div>
+
+  <h2>Where the project stands</h2>
+
+  <p class="lede">StudioOS is a purpose-built interface for film production studios that run their business on ERPNext. ERPNext holds the data; StudioOS makes it usable. Phase 1 is complete and running against real data. The project has since changed shape — from an internal tool for one studio into a product sold to many — and this brief covers what that change forced us to verify.</p>
+
+  <div class="wide">
+    <div class="board">
+      <div class="cell">
+        <span class="cell-label">Phase 1 — Core</span>
+        <span class="chip chip-ok">Complete</span>
+        <span class="cell-body">Projects API live against the production ERPNext site, returning all 32 real projects. Database round-trips confirmed, UI rendering, business logic covered by tests that were proven by watching them fail.</span>
+      </div>
+      <div class="cell">
+        <span class="cell-label">Scope</span>
+        <span class="chip chip-info">Changed</span>
+        <span class="cell-body">Now a multi-tenant product for many studio owners, not a single-user tool. This is what invalidated the original sign-in design.</span>
+      </div>
+      <div class="cell">
+        <span class="cell-label">Sign-in design</span>
+        <span class="chip chip-ok">Verified</span>
+        <span class="cell-body">"Sign in with ERPNext" tested against the live production site. Every endpoint it depends on is present and working.</span>
+      </div>
+      <div class="cell">
+        <span class="cell-label">Connector app</span>
+        <span class="chip chip-ok">Built &amp; tested</span>
+        <span class="cell-body">Small companion app that registers StudioOS on a customer's site automatically. Install, update and uninstall all tested end to end.</span>
+      </div>
+      <div class="cell">
+        <span class="cell-label">Distribution</span>
+        <span class="chip chip-open">Open</span>
+        <span class="cell-body">How customers on managed hosting install our connector is unresolved, and it is a commercial decision rather than a technical one.</span>
+      </div>
+      <div class="cell">
+        <span class="cell-label">Data shape</span>
+        <span class="chip chip-warn">Open</span>
+        <span class="cell-body">Our business logic currently assumes one studio's ERPNext conventions. It needs generalising before a second customer.</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>What the scope change forced</h2>
+
+  <p>The original plan authenticated one person at the network edge, and reached ERPNext with a single administrator key. That is sound for one user and unusable for a product: one shared key means every employee at every studio would see everything, including payroll, and one leaked secret would expose every customer at once.</p>
+
+  <p>So the question became: <strong>can a studio owner sign in to StudioOS using the ERPNext account they already have?</strong> If yes, we never handle a password, and ERPNext enforces its own permissions on our behalf.</p>
+
+  <h2>The finding</h2>
+
+  <p>Yes — and it is tested, not assumed. Each studio's ERPNext can register StudioOS as a known application and then act as the identity provider for that studio's staff.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>What we needed to know</th><th>What we found</th><th class="col-evidence">Evidence</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Does managed ERPNext hosting allow outside apps to register?</td>
+          <td>Yes. Another vendor's application is already registered on our own production site.</td>
+          <td class="col-evidence">Live site inspection</td>
+        </tr>
+        <tr>
+          <td>Does ERPNext expose the sign-in machinery we need?</td>
+          <td>Yes, and it publishes a directory of its own endpoints, so we hardcode nothing per customer.</td>
+          <td class="col-evidence">HTTP 200, all endpoints present</td>
+        </tr>
+        <tr>
+          <td>Do the endpoints actually work?</td>
+          <td>Yes. The login endpoint redirects correctly and the token endpoint returns valid, standards-compliant responses.</td>
+          <td class="col-evidence">Live request/response</td>
+        </tr>
+        <tr>
+          <td>Can registration be automated, so customers do not do it by hand?</td>
+          <td>Yes. Our connector app creates it on install, updates it safely, and removes it on uninstall.</td>
+          <td class="col-evidence">Full cycle tested on dev bench</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p><strong>Why this matters commercially.</strong> Because the studio's own ERPNext decides who may see what, we do not build, test, or take responsibility for a permissions system. A studio's editor sees schedules; only the owner sees the money. That behaviour is inherited, not written.</p>
+  </div>
+
+  <h2>How signing in works</h2>
+
+  <p>The one thing to understand: the person's password goes to <em>their own</em> ERPNext, never to us. We receive only a temporary token that says who they are and what they may see.</p>
+
+  <div class="wide">
+    <figure>
+      <svg viewBox="0 0 900 470" role="img" aria-label="Sequence diagram: the producer types their studio's ERPNext domain into StudioOS, StudioOS reads that site's endpoint directory and redirects the browser to the studio's own ERPNext, where the person logs in with their own password and approves access, then returns to StudioOS with a one-time code that StudioOS exchanges for an access token and identity.">
+        <defs>
+          <marker id="f1arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+          <marker id="f1arrowkey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+
+        <!-- lifelines -->
+        <line class="svg-lane" x1="130" y1="72" x2="130" y2="440" stroke-width="1"/>
+        <line class="svg-lane" x1="450" y1="72" x2="450" y2="440" stroke-width="1"/>
+        <line class="svg-lane" x1="775" y1="72" x2="775" y2="440" stroke-width="1"/>
+
+        <!-- headers -->
+        <rect class="svg-box" x="35" y="20" width="190" height="44" rx="4" stroke-width="1"/>
+        <text class="svg-title" x="130" y="40" text-anchor="middle">Producer's browser</text>
+        <text class="svg-sub" x="130" y="55" text-anchor="middle">Moonlight Films</text>
+
+        <rect class="svg-box" x="355" y="20" width="190" height="44" rx="4" stroke-width="1"/>
+        <text class="svg-title" x="450" y="40" text-anchor="middle">StudioOS</text>
+        <text class="svg-sub" x="450" y="55" text-anchor="middle">React + Hono</text>
+
+        <rect class="svg-box" x="680" y="20" width="190" height="44" rx="4" stroke-width="1"/>
+        <text class="svg-title" x="775" y="40" text-anchor="middle">Their ERPNext</text>
+        <text class="svg-sub" x="775" y="55" text-anchor="middle">moonlightfilms.erpnext.com</text>
+
+        <!-- 1 -->
+        <text class="svg-num" x="35" y="103">1</text>
+        <line class="svg-flow" x1="130" y1="110" x2="443" y2="110" marker-end="url(#f1arrow)"/>
+        <text class="svg-label" x="287" y="103" text-anchor="middle">types their studio's address</text>
+
+        <!-- 2 -->
+        <text class="svg-num" x="35" y="155">2</text>
+        <line class="svg-flow" x1="450" y1="162" x2="768" y2="162" marker-end="url(#f1arrow)"/>
+        <text class="svg-label" x="610" y="155" text-anchor="middle">asks the site where its login lives</text>
+
+        <!-- 3 -->
+        <text class="svg-num" x="35" y="207">3</text>
+        <line class="svg-flow" x1="443" y1="214" x2="137" y2="214" marker-end="url(#f1arrow)"/>
+        <text class="svg-label" x="287" y="207" text-anchor="middle">sends them to their own site</text>
+
+        <!-- 4 KEY -->
+        <text class="svg-num" x="35" y="259">4</text>
+        <line class="svg-key" x1="130" y1="266" x2="768" y2="266" marker-end="url(#f1arrowkey)"/>
+        <text class="svg-key-text" x="449" y="259" text-anchor="middle">signs in with their own password &#8212; StudioOS never sees it</text>
+
+        <!-- 5 -->
+        <text class="svg-num" x="35" y="311">5</text>
+        <line class="svg-flow" x1="768" y1="318" x2="137" y2="318" marker-end="url(#f1arrow)"/>
+        <text class="svg-label" x="449" y="311" text-anchor="middle">&#8220;Allow StudioOS to access your account?&#8221; &#8594; approved</text>
+
+        <!-- 6 -->
+        <text class="svg-num" x="35" y="363">6</text>
+        <line class="svg-flow" x1="130" y1="370" x2="443" y2="370" marker-end="url(#f1arrow)"/>
+        <text class="svg-label" x="287" y="363" text-anchor="middle">returns with a one-time code</text>
+
+        <!-- 7 -->
+        <text class="svg-num" x="35" y="415">7</text>
+        <line class="svg-flow" x1="450" y1="422" x2="768" y2="422" marker-end="url(#f1arrow)"/>
+        <text class="svg-label" x="610" y="415" text-anchor="middle">trades it for a token &#43; who they are</text>
+      </svg>
+      <figcaption><strong>Signing in.</strong> Step 4 is the whole point: the password travels from the producer to their own ERPNext and nowhere else. StudioOS ends up holding a scoped token, not a credential.</figcaption>
+    </figure>
+  </div>
+
+  <h3>What the studio owner actually sees</h3>
+
+  <p>Two screens carry the whole thing. Note that signing in is a <strong>field and a button</strong>, not a button alone — with every studio on its own ERPNext, StudioOS has to be told which one before it can send anyone anywhere.</p>
+
+  <div class="wide mock-grid">
+
+    <figure>
+      <div class="mock-bar">
+        <div class="mock-dots"><span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span></div>
+        <div class="mock-url">app.studioos.com/sign-in</div>
+      </div>
+      <div class="mock-view">
+        <div class="mock-card">
+          <div class="mock-wordmark">STUDIOOS</div>
+          <div class="mock-h">Sign in</div>
+          <div class="mock-sub">Use the ERPNext account you already have. No new password to remember.</div>
+
+          <div class="mock-label">Your studio's ERPNext address</div>
+          <div class="mock-input is-focus">moonlightfilms.erpnext.com</div>
+
+          <div class="mock-btn">
+            <svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6.5 2.5H3.2A1.2 1.2 0 0 0 2 3.7v8.6a1.2 1.2 0 0 0 1.2 1.2h3.3"/>
+              <path d="M10.5 11 14 8l-3.5-3"/>
+              <path d="M14 8H6"/>
+            </svg>
+            Sign in with ERPNext
+          </div>
+
+          <div class="mock-rule">or</div>
+          <div class="mock-link">First time here? Connect your studio &#8594;</div>
+
+          <div class="mock-note">You'll sign in on your own ERPNext. <b>Your password is never sent to StudioOS.</b></div>
+        </div>
+      </div>
+      <figcaption><strong>Sign in.</strong> The address field is what tells StudioOS which studio's ERPNext to hand the person over to. Everything after the button press happens on their own site.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="mock-bar">
+        <div class="mock-dots"><span class="mock-dot"></span><span class="mock-dot"></span><span class="mock-dot"></span></div>
+        <div class="mock-url">app.studioos.com/connect</div>
+      </div>
+      <div class="mock-view">
+        <div class="mock-card">
+          <div class="mock-wordmark">STUDIOOS</div>
+          <div class="mock-h">Connect your studio</div>
+          <div class="mock-sub">Three steps, about a minute. Your books never leave your own ERPNext.</div>
+
+          <div class="mock-steps">
+            <div class="mock-stepr is-done">
+              <span class="mock-tick">&#10003;</span>
+              <span><b>Install the StudioOS connector</b>Added to your ERPNext</span>
+            </div>
+            <div class="mock-stepr is-now">
+              <span class="mock-tick">2</span>
+              <span><b>Confirm your site address</b></span>
+            </div>
+          </div>
+
+          <div class="mock-input is-focus">moonlightfilms.erpnext.com</div>
+
+          <div class="mock-steps">
+            <div class="mock-stepr">
+              <span class="mock-tick">3</span>
+              <span><b>Approve access on your ERPNext</b>You'll be asked to allow StudioOS</span>
+            </div>
+          </div>
+
+          <div class="mock-btn">Continue</div>
+          <div class="mock-btn is-quiet">I don't have ERPNext yet</div>
+
+          <div class="mock-note">StudioOS reads your projects, invoices and suppliers. <b>It never stores your books.</b></div>
+        </div>
+      </div>
+      <figcaption><strong>First-time setup.</strong> The connector app is what makes step 1 a single install rather than a page of manual configuration in ERPNext's own admin screens.</figcaption>
+    </figure>
+
+  </div>
+
+  <p class="mock-sm">Both screens are proposed designs, not photographs of shipped software. The behaviour they describe is verified; the visual treatment is not final.</p>
+
+  <h2>What this changes about security</h2>
+
+  <p>This is the single largest improvement in the release. It replaces one all-powerful key with a token per person.</p>
+
+  <div class="wide">
+    <figure>
+      <svg viewBox="0 0 900 330" role="img" aria-label="Comparison: previously StudioOS reached ERPNext with one administrator key giving every user full access to everything; now each person carries their own token and ERPNext filters what each one may see.">
+        <defs>
+          <marker id="f2arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+          <marker id="f2arrowrisk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--risk)"/>
+          </marker>
+          <marker id="f2arrowok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ok)"/>
+          </marker>
+        </defs>
+
+        <text class="svg-sub" x="30" y="24">BEFORE &#8212; SINGLE TENANT</text>
+        <line class="svg-lane" x1="30" y1="34" x2="415" y2="34" stroke-width="1"/>
+
+        <rect class="svg-box-sunk" x="30" y="52" width="120" height="34" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="90" y="74" text-anchor="middle">Owner</text>
+        <rect class="svg-box-sunk" x="30" y="94" width="120" height="34" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="90" y="116" text-anchor="middle">Editor</text>
+        <rect class="svg-box-sunk" x="30" y="136" width="120" height="34" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="90" y="158" text-anchor="middle">Accountant</text>
+
+        <line class="svg-flow" x1="150" y1="69" x2="196" y2="105" marker-end="url(#f2arrow)"/>
+        <line class="svg-flow" x1="150" y1="111" x2="196" y2="111" marker-end="url(#f2arrow)"/>
+        <line class="svg-flow" x1="150" y1="153" x2="196" y2="117" marker-end="url(#f2arrow)"/>
+
+        <rect class="svg-box" x="200" y="94" width="76" height="34" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="238" y="116" text-anchor="middle">StudioOS</text>
+
+        <line class="svg-risk" x1="276" y1="111" x2="322" y2="111" marker-end="url(#f2arrowrisk)"/>
+        <text class="svg-risk-text" x="299" y="100" text-anchor="middle">one admin key</text>
+
+        <rect class="svg-box" x="326" y="80" width="90" height="62" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="371" y="105" text-anchor="middle">ERPNext</text>
+        <text class="svg-sub" x="371" y="122" text-anchor="middle">all data</text>
+
+        <text class="svg-risk-text" x="30" y="200">Everyone sees everything.</text>
+        <text class="svg-label" x="30" y="220">One leaked key exposes the whole site.</text>
+
+        <!-- divider -->
+        <line class="svg-boundary" x1="450" y1="10" x2="450" y2="300"/>
+
+        <text class="svg-sub" x="485" y="24">AFTER &#8212; PER PERSON</text>
+        <line class="svg-lane" x1="485" y1="34" x2="870" y2="34" stroke-width="1"/>
+
+        <rect class="svg-box-sunk" x="485" y="52" width="120" height="34" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="545" y="74" text-anchor="middle">Owner</text>
+        <rect class="svg-box-sunk" x="485" y="94" width="120" height="34" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="545" y="116" text-anchor="middle">Editor</text>
+        <rect class="svg-box-sunk" x="485" y="136" width="120" height="34" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="545" y="158" text-anchor="middle">Accountant</text>
+
+        <line class="svg-flow" x1="605" y1="69" x2="651" y2="105" marker-end="url(#f2arrow)"/>
+        <line class="svg-flow" x1="605" y1="111" x2="651" y2="111" marker-end="url(#f2arrow)"/>
+        <line class="svg-flow" x1="605" y1="153" x2="651" y2="117" marker-end="url(#f2arrow)"/>
+
+        <rect class="svg-box" x="655" y="94" width="76" height="34" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="693" y="116" text-anchor="middle">StudioOS</text>
+
+        <line class="svg-key" x1="731" y1="99" x2="777" y2="99" marker-end="url(#f1arrowkey)"/>
+        <line class="svg-key" x1="731" y1="111" x2="777" y2="111" marker-end="url(#f1arrowkey)"/>
+        <line class="svg-key" x1="731" y1="123" x2="777" y2="123" marker-end="url(#f1arrowkey)"/>
+        <text class="svg-key-text" x="754" y="88" text-anchor="middle">their own token</text>
+
+        <rect class="svg-box" x="781" y="80" width="90" height="62" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="826" y="105" text-anchor="middle">ERPNext</text>
+        <text class="svg-sub" x="826" y="122" text-anchor="middle">filters per user</text>
+
+        <text class="svg-ok-text" x="485" y="200">Each person sees only their own permitted data.</text>
+        <text class="svg-label" x="485" y="220">Payroll is simply absent from the editor's response.</text>
+      </svg>
+      <figcaption><strong>The security change.</strong> The difference is the arrow into ERPNext: one shared administrator key becomes one scoped token per signed-in person. Filtering happens inside ERPNext, so StudioOS cannot leak what it never received.</figcaption>
+    </figure>
+  </div>
+
+  <h2>The stack decision</h2>
+
+  <p>Because ERPNext is built on the Frappe framework, the fair question is whether StudioOS should be built on Frappe too. We evaluated it seriously — Frappe's own products are built exactly that way. The diagram below is the difference the choice actually turns on.</p>
+
+  <div class="wide">
+    <figure>
+      <svg viewBox="0 0 900 340" role="img" aria-label="Two architectures compared. Built on Frappe, the StudioOS interface lives inside each customer's own ERPNext server, so it must be installed on every customer site. Built on React and Hono, StudioOS is hosted once by us and reaches each customer's ERPNext over the internet, with our own database alongside.">
+        <defs>
+          <marker id="f3arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+          <marker id="f3arrowkey" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+
+        <!-- OPTION A -->
+        <text class="svg-sub" x="30" y="24">OPTION A &#8212; BUILT ON FRAPPE</text>
+        <line class="svg-lane" x1="30" y1="34" x2="410" y2="34" stroke-width="1"/>
+
+        <rect class="svg-box-sunk" x="30" y="60" width="96" height="36" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="78" y="83" text-anchor="middle">Browser</text>
+
+        <line class="svg-flow" x1="126" y1="78" x2="172" y2="78" marker-end="url(#f3arrow)"/>
+
+        <rect class="svg-boundary" x="176" y="44" width="234" height="150" rx="6"/>
+        <text class="svg-sub" x="293" y="62" text-anchor="middle">CUSTOMER'S OWN SERVER</text>
+
+        <rect class="svg-box" x="196" y="72" width="194" height="34" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="293" y="94" text-anchor="middle">StudioOS interface (Vue)</text>
+
+        <line class="svg-flow" x1="293" y1="106" x2="293" y2="128" marker-end="url(#f3arrow)"/>
+
+        <rect class="svg-box" x="196" y="132" width="194" height="46" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="293" y="152" text-anchor="middle">ERPNext + database</text>
+        <text class="svg-sub" x="293" y="168" text-anchor="middle">no network hop</text>
+
+        <text class="svg-risk-text" x="30" y="232">Must be installed on every customer's server.</text>
+        <text class="svg-label" x="30" y="252">We cannot ship a fix without each customer</text>
+        <text class="svg-label" x="30" y="270">updating. Existing work is discarded.</text>
+
+        <!-- divider -->
+        <line class="svg-boundary" x1="448" y1="10" x2="448" y2="310"/>
+
+        <!-- OPTION B -->
+        <text class="svg-sub" x="482" y="24">OPTION B &#8212; REACT &#43; HONO &#8212; CHOSEN</text>
+        <line class="svg-lane" x1="482" y1="34" x2="870" y2="34" stroke-width="1"/>
+
+        <rect class="svg-box-sunk" x="482" y="60" width="86" height="36" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="525" y="83" text-anchor="middle">Browser</text>
+
+        <line class="svg-flow" x1="568" y1="78" x2="604" y2="78" marker-end="url(#f3arrow)"/>
+
+        <rect class="svg-boundary" x="608" y="44" width="150" height="112" rx="6"/>
+        <text class="svg-sub" x="683" y="62" text-anchor="middle">HOSTED BY US</text>
+
+        <rect class="svg-box" x="620" y="72" width="126" height="30" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="683" y="92" text-anchor="middle">React</text>
+
+        <rect class="svg-box" x="620" y="110" width="126" height="34" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="683" y="131" text-anchor="middle">Hono API</text>
+
+        <line class="svg-flow" x1="683" y1="102" x2="683" y2="106" marker-end="url(#f3arrow)"/>
+
+        <!-- to ERPNext -->
+        <line class="svg-key" x1="758" y1="127" x2="800" y2="127" marker-end="url(#f3arrowkey)"/>
+        <text class="svg-key-text" x="779" y="117" text-anchor="middle">internet</text>
+
+        <rect class="svg-box" x="804" y="108" width="66" height="42" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="837" y="127" text-anchor="middle">Their</text>
+        <text class="svg-label" x="837" y="142" text-anchor="middle">ERPNext</text>
+
+        <!-- D1 -->
+        <line class="svg-flow" x1="683" y1="144" x2="683" y2="178" marker-end="url(#f3arrow)"/>
+        <rect class="svg-box" x="620" y="182" width="126" height="34" rx="4" stroke-width="1"/>
+        <text class="svg-label" x="683" y="203" text-anchor="middle">Our database</text>
+
+        <text class="svg-ok-text" x="482" y="252">Hosted once, serves every studio.</text>
+        <text class="svg-label" x="482" y="272">We ship improvements the same day, to everyone,</text>
+        <text class="svg-label" x="482" y="290">without touching a customer's server.</text>
+      </svg>
+      <figcaption><strong>The difference that decides it.</strong> On Frappe, the interface lives <em>inside</em> each customer's server — every fix requires every customer to update. On React and Hono, we host it once and reach each customer's ERPNext over the internet, which is what makes shipping to all studios at once possible. Both options still need the small connector app on the customer's site.</figcaption>
+    </figure>
+  </div>
+
+  <h3>Weighing the two honestly</h3>
+
+  <div class="table-wrap">
+    <table class="stack-table">
+      <thead>
+        <tr>
+          <th>&nbsp;</th>
+          <th class="opt-a">Built on Frappe</th>
+          <th class="opt-b">React + Hono (chosen)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Shipping updates</td>
+          <td><span class="minus">&minus;</span> Each customer must update their own server</td>
+          <td><span class="plus">+</span> We deploy once; every studio gets it immediately</td>
+        </tr>
+        <tr>
+          <td>Interface quality</td>
+          <td><span class="minus">&minus;</span> Bounded by Frappe's own UI conventions</td>
+          <td><span class="plus">+</span> Complete control &mdash; which is the entire reason StudioOS exists</td>
+        </tr>
+        <tr>
+          <td>Work already done</td>
+          <td><span class="minus">&minus;</span> Phase 1 discarded and rewritten in a different language</td>
+          <td><span class="plus">+</span> Phase 1 kept, already verified against live data</td>
+        </tr>
+        <tr>
+          <td>Permissions</td>
+          <td><span class="plus">+</span> Inherited automatically from ERPNext</td>
+          <td><span class="plus">+</span> Also inherited, once sign-in ships &mdash; this was the open risk, now closed</td>
+        </tr>
+        <tr>
+          <td>Speed of data access</td>
+          <td><span class="plus">+</span> Reads the database directly, no network hop</td>
+          <td><span class="minus">&minus;</span> Every read crosses the internet; needs caching</td>
+        </tr>
+        <tr>
+          <td>Hosting &amp; running cost</td>
+          <td><span class="plus">+</span> Runs on the customer's existing server; nothing for us to run</td>
+          <td><span class="minus">&minus;</span> We run and pay for the platform (small, but ours)</td>
+        </tr>
+        <tr>
+          <td>Credential handling</td>
+          <td><span class="plus">+</span> Nothing to store; it never leaves the customer's site</td>
+          <td><span class="minus">&minus;</span> We hold each studio's tokens &mdash; needs encryption and a breach plan</td>
+        </tr>
+        <tr>
+          <td>ERPNext version changes</td>
+          <td><span class="plus">+</span> Breakage surfaces at install time</td>
+          <td><span class="minus">&minus;</span> Can break silently at runtime; needs monitoring</td>
+        </tr>
+        <tr>
+          <td>Team fit</td>
+          <td><span class="minus">&minus;</span> Python and Vue; two toolchains to maintain</td>
+          <td><span class="plus">+</span> One language across front and back end</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>The decision.</strong> Frappe wins on data access speed and on having nothing to host. React and Hono win on the two things that decide whether this is a product: we can ship to every customer at once, and we control the interface completely. The permissions advantage that once favoured Frappe is now matched, because sign-in with ERPNext gives us the same inheritance. <strong>We are staying on React + Hono, and StudioOS is not being rebuilt on Frappe.</strong></p>
+
+  <h2>The connector app</h2>
+
+  <p>One small companion app does still get installed on each customer's ERPNext. It ships no interface. Its job is to register StudioOS on their site automatically, so the studio owner never has to configure anything by hand — and, critically, to remove that registration cleanly if they ever uninstall us.</p>
+
+  <div class="callout risk">
+    <p><strong>A real defect this caught.</strong> Removing the app did <em>not</em> remove its access credential — it stayed live on the site. A studio that dropped StudioOS would have kept a working key to its own books indefinitely. The connector now deletes the credential and every issued token on uninstall.</p>
+  </div>
+
+  <p>Built and tested end to end on the development server. Every path was exercised, including deliberately creating an access token first so the cleanup had something real to remove:</p>
+
+  <div class="log">install       <b>&#10003;</b> registered automatically, no manual steps
+config change <b>&#10003;</b> updated in place &#8212; no duplicate registration created
+active token  <b>&#10003;</b> seeded deliberately, so cleanup is genuinely tested
+uninstall     <b>&#10003;</b> registration and all tokens removed
+final state   <b>&#10003;</b> credentials: 0   tokens: 0   codes: 0</div>
+
+  <h2>Open risks</h2>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Risk</th><th>Why it matters</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Distribution</td>
+          <td>Getting our connector onto a customer's managed ERPNext requires either a marketplace listing (review and revenue share) or the customer on a costlier hosting plan. This decides who can be a customer.</td>
+          <td><span class="chip chip-open">Decision needed</span></td>
+        </tr>
+        <tr>
+          <td>Data shape differs per studio</td>
+          <td>Our progress and status logic reads one studio's naming conventions. Against a studio that works differently, it would show confident but wrong information.</td>
+          <td><span class="chip chip-warn">Scoped, not built</span></td>
+        </tr>
+        <tr>
+          <td>Credential custody</td>
+          <td>We will hold many studios' access tokens. Needs encryption at rest and a stated breach response before the first external customer.</td>
+          <td><span class="chip chip-warn">Not started</span></td>
+        </tr>
+        <tr>
+          <td>Tenant separation</td>
+          <td>Our database has no per-studio partition yet. Cheap to add now, expensive once real customer data exists.</td>
+          <td><span class="chip chip-warn">Cheap now</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2>Next steps</h2>
+
+  <div class="steps">
+    <div class="step">
+      <span class="step-n">01</span>
+      <span class="step-text"><b>Sign-in against our own site, end to end.</b> Prove the full journey with a real person before any customer sees it.</span>
+      <span class="chip chip-info">Next</span>
+    </div>
+    <div class="step">
+      <span class="step-n">02</span>
+      <span class="step-text"><b>Settle distribution.</b> Marketplace listing or private hosting — needed before we can quote an onboarding process to a customer.</span>
+      <span class="chip chip-open">Your call</span>
+    </div>
+    <div class="step">
+      <span class="step-n">03</span>
+      <span class="step-text"><b>Add per-studio separation to the database</b> while it costs almost nothing.</span>
+      <span class="chip chip-warn">Do early</span>
+    </div>
+    <div class="step">
+      <span class="step-n">04</span>
+      <span class="step-text"><b>Audit what our logic assumes</b> about one studio's data conventions, then generalise it into the connector.</span>
+      <span class="chip chip-warn">Before customer 2</span>
+    </div>
+  </div>
+
+  <footer>
+    Verified 17 August 2026 against the live production ERPNext site and the local development server.<br>
+    Sign-in and connector testing complete. Distribution unresolved. Figures describe verified behaviour, not planned behaviour.
+  </footer>
+
+</div>

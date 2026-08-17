@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StudioOS — Architecture &amp; Current Status</title>
+<style>
+  :root{
+    --green:#2f8d46; --green-dark:#1f6b32; --green-soft:#eaf5ec;
+    --ink:#1c1e21; --muted:#5c6670; --line:#e3e7ea; --bg:#ffffff;
+    --code-bg:#f6f8fa; --amber:#b7791f; --amber-soft:#fdf6e7;
+    --red:#c53030; --red-soft:#fdecec; --blue:#2b6cb0; --blue-soft:#ebf3fb;
+    --purple:#6b46c1;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    color:var(--ink);background:var(--bg);line-height:1.65;font-size:16px;
+  }
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px}
+  header.hero{background:linear-gradient(135deg,var(--green) 0%,var(--green-dark) 100%);color:#fff;padding:44px 0 38px}
+  header.hero h1{font-size:32px;font-weight:700;letter-spacing:-.4px;margin-bottom:8px}
+  header.hero p{font-size:16px;opacity:.94;max-width:760px}
+  .pill{display:inline-block;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+    padding:4px 12px;border-radius:999px;font-size:12.5px;margin-top:14px}
+
+  nav.toc{background:var(--green-soft);border:1px solid #cfe6d5;border-radius:8px;padding:16px 20px;margin:28px 0}
+  nav.toc strong{display:block;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--green-dark);margin-bottom:8px}
+  nav.toc ol{margin-left:18px;columns:2;column-gap:28px}
+  nav.toc li{margin:3px 0;font-size:14.5px}
+  nav.toc a{color:var(--green-dark);text-decoration:none}
+  nav.toc a:hover{text-decoration:underline}
+
+  h2{font-size:23px;font-weight:700;margin:42px 0 6px;padding-bottom:8px;border-bottom:2px solid var(--green);letter-spacing:-.2px}
+  h3{font-size:18px;font-weight:600;margin:26px 0 8px;color:var(--green-dark)}
+  h4{font-size:15.5px;font-weight:600;margin:18px 0 6px}
+  p{margin:10px 0}
+  ul,ol{margin:10px 0 10px 24px}
+  li{margin:5px 0}
+  code{background:var(--code-bg);border:1px solid var(--line);border-radius:4px;padding:1px 5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px}
+  pre{background:var(--code-bg);border:1px solid var(--line);border-left:4px solid var(--green);
+    border-radius:6px;padding:14px 16px;overflow-x:auto;margin:14px 0}
+  pre code{background:none;border:none;padding:0;font-size:13px;line-height:1.6}
+
+  table{width:100%;border-collapse:collapse;margin:16px 0;font-size:14.5px;display:block;overflow-x:auto}
+  th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+  th{background:var(--green-soft);font-weight:600;color:var(--green-dark);white-space:nowrap}
+  tbody tr:nth-child(even){background:#fafbfc}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  .note,.warn,.danger{border-radius:6px;padding:13px 16px;margin:16px 0;font-size:14.5px}
+  .note{background:var(--blue-soft);border-left:4px solid var(--blue)}
+  .warn{background:var(--amber-soft);border-left:4px solid var(--amber)}
+  .danger{background:var(--red-soft);border-left:4px solid var(--red)}
+  .note strong,.warn strong,.danger strong{display:block;margin-bottom:3px}
+
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+  .b-done{background:#e6f4ea;color:#1e7e34;border:1px solid #b7e0c2}
+  .b-part{background:var(--amber-soft);color:var(--amber);border:1px solid #f0d9a8}
+  .b-todo{background:#eef0f2;color:#5c6670;border:1px solid #d8dde1}
+
+  figure{margin:22px 0}
+  figure svg{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:8px;background:#fff}
+  figcaption{font-size:13px;color:var(--muted);margin-top:8px;text-align:center}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+  .card{border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+  .card h4{margin-top:0}
+  .card.owned{border-top:3px solid var(--blue)}
+  .card.local{border-top:3px solid var(--purple)}
+  @media(max-width:720px){.grid2{grid-template-columns:1fr}nav.toc ol{columns:1}}
+
+  footer{margin:56px 0 40px;padding-top:18px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>StudioOS — Architecture &amp; Current Status</h1>
+    <p>How the rebuilt operations app for Cloud Shaped Dreams Studio is put together: the stack,
+       the request path, who owns which data, and exactly how far the migration has got.</p>
+    <div class="pill">Status as of 10 August 2026 · migration in progress, not yet deployed</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<nav class="toc">
+  <strong>Table of contents</strong>
+  <ol>
+    <li><a href="#what">What StudioOS is</a></li>
+    <li><a href="#why">Why it was rebuilt</a></li>
+    <li><a href="#arch">Architecture diagram</a></li>
+    <li><a href="#stack">The tech stack</a></li>
+    <li><a href="#data">Who owns which data</a></li>
+    <li><a href="#life">Life of a request</a></li>
+    <li><a href="#layout">Code layout</a></li>
+    <li><a href="#routes">API surface</a></li>
+    <li><a href="#pages">Pages</a></li>
+    <li><a href="#testing">How correctness is proven</a></li>
+    <li><a href="#status">Current status</a></li>
+    <li><a href="#next">What happens next</a></li>
+  </ol>
+</nav>
+
+<h2 id="what">1. What StudioOS is</h2>
+
+<p><strong>StudioOS is a custom front-end for an ERPNext installation.</strong> The studio runs its
+real accounting in ERPNext (hosted on Frappe Cloud) — customers, projects, invoices, suppliers,
+payments. ERPNext's own UI is generic and built for every kind of business; StudioOS is a
+purpose-built layer on top of it that speaks the language of a film production studio: projects,
+shoots, crew, rental gear, invoices.</p>
+
+<p>Crucially, StudioOS <em>does not replace</em> ERPNext and does not own its data. It reads and
+writes through ERPNext's REST API. If StudioOS disappeared tomorrow, every invoice and payment
+would still be in ERPNext, intact.</p>
+
+<div class="note">
+  <strong>The one exception</strong>
+  Some things the studio tracks have no home in ERPNext — studio rental sessions, ad-hoc
+  transactions, per-project crew rosters, out-of-pocket expenses, subscriptions, invoice branding.
+  StudioOS owns those in its own small database. That distinction runs through this whole document.
+</div>
+
+<h2 id="why">2. Why it was rebuilt</h2>
+
+<p>StudioOS replaces an earlier working app (the "CSDSxERPnext App"). That app was ~90 standalone
+HTML files with an Express server. It worked, but it had four structural problems:</p>
+
+<table>
+  <thead><tr><th>Problem in the old app</th><th>Consequence</th><th>How StudioOS fixes it</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Data stored in flat JSON files, written with <code>fs.writeFileSync</code></td>
+      <td>A crash mid-write truncates the file — losing the <em>whole</em> ledger, not one row</td>
+      <td>A real database (D1). One row changes, one row is written.</td>
+    </tr>
+    <tr>
+      <td>Those JSON files were committed to git</td>
+      <td>Any deploy that checks out the repo overwrites live data with stale copies</td>
+      <td>Data lives in D1, outside the repo entirely</td>
+    </tr>
+    <tr>
+      <td>No authentication of any kind</td>
+      <td>Anyone reaching the server had full read/write on the live accounting system</td>
+      <td>Cloudflare Access authenticates at the edge, before any code runs</td>
+    </tr>
+    <tr>
+      <td>The sidebar was copy-pasted into all ~90 pages</td>
+      <td>A nav change meant editing 90 files; pages silently drifted apart</td>
+      <td>One <code>&lt;Sidebar&gt;</code> component, used everywhere</td>
+    </tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <strong>The old app is still running</strong>
+  It remains the system the studio actually uses. StudioOS does not switch it off until
+  feature parity is confirmed and verified side by side (Phase 6). Both apps must never
+  write to the same ledgers at the same time — nothing reconciles them.
+</div>
+
+<h2 id="arch">3. Architecture diagram</h2>
+
+<figure>
+<svg viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="StudioOS architecture: browser through Cloudflare Access to a React SPA on Pages, which calls a Hono Worker, which reads and writes ERPNext over REST and D1 for local ledgers, with a nightly backup to R2.">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 1 L9 5 L1 9" fill="none" stroke="#5c6670" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <marker id="arg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M1 1 L9 5 L1 9" fill="none" stroke="#2f8d46" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <style>
+    .bx{stroke-width:1.5;rx:8}
+    .t{font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:13px;fill:#1c1e21}
+    .tb{font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;font-weight:600;fill:#1c1e21}
+    .ts{font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:11.5px;fill:#5c6670}
+    .lbl{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;fill:#5c6670}
+    .zone{fill:none;stroke-dasharray:5 4;stroke-width:1.3;rx:12}
+  </style>
+
+  <!-- Cloudflare zone -->
+  <rect class="zone" x="24" y="96" width="520" height="330" stroke="#f6821f"/>
+  <text class="ts" x="36" y="114" fill="#f6821f" font-weight="600">Cloudflare</text>
+
+  <!-- Browser -->
+  <rect class="bx" x="60" y="24" width="200" height="50" fill="#eef0f2" stroke="#c9d0d6"/>
+  <text class="tb" x="160" y="45" text-anchor="middle">Browser</text>
+  <text class="ts" x="160" y="62" text-anchor="middle">the studio owner</text>
+
+  <!-- Access -->
+  <rect class="bx" x="60" y="130" width="200" height="52" fill="#fdf0e2" stroke="#f6821f"/>
+  <text class="tb" x="160" y="151" text-anchor="middle">Cloudflare Access</text>
+  <text class="ts" x="160" y="168" text-anchor="middle">email login · no code in app</text>
+
+  <!-- Pages -->
+  <rect class="bx" x="60" y="222" width="200" height="62" fill="#ebf3fb" stroke="#2b6cb0"/>
+  <text class="tb" x="160" y="243" text-anchor="middle">Pages — React SPA</text>
+  <text class="ts" x="160" y="260" text-anchor="middle">Vite · TypeScript · Tailwind</text>
+  <text class="ts" x="160" y="275" text-anchor="middle">8 pages, one sidebar</text>
+
+  <!-- Worker -->
+  <rect class="bx" x="60" y="324" width="200" height="72" fill="#f3ecfd" stroke="#6b46c1"/>
+  <text class="tb" x="160" y="345" text-anchor="middle">Worker — Hono API</text>
+  <text class="ts" x="160" y="362" text-anchor="middle">TypeScript · Zod validation</text>
+  <text class="ts" x="160" y="377" text-anchor="middle">19 route modules</text>
+
+  <!-- D1 -->
+  <rect class="bx" x="330" y="222" width="190" height="72" fill="#f3ecfd" stroke="#6b46c1"/>
+  <text class="tb" x="425" y="243" text-anchor="middle">D1 (SQLite)</text>
+  <text class="ts" x="425" y="260" text-anchor="middle">7 tables StudioOS owns</text>
+  <text class="ts" x="425" y="275" text-anchor="middle">rental · transactions · crew</text>
+
+  <!-- R2 -->
+  <rect class="bx" x="330" y="330" width="190" height="62" fill="#fdf0e2" stroke="#f6821f"/>
+  <text class="tb" x="425" y="351" text-anchor="middle">R2 — nightly backup</text>
+  <text class="ts" x="425" y="368" text-anchor="middle">cron 19:30 UTC · JSON dump</text>
+
+  <!-- ERPNext -->
+  <rect class="bx" x="620" y="300" width="240" height="96" fill="#e6f4ea" stroke="#2f8d46"/>
+  <text class="tb" x="740" y="325" text-anchor="middle">ERPNext (Frappe Cloud)</text>
+  <text class="ts" x="740" y="344" text-anchor="middle">THE SYSTEM OF RECORD</text>
+  <text class="ts" x="740" y="362" text-anchor="middle">projects · invoices · customers</text>
+  <text class="ts" x="740" y="378" text-anchor="middle">suppliers · tasks · payments</text>
+
+  <!-- arrows -->
+  <line x1="160" y1="74" x2="160" y2="128" stroke="#5c6670" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="160" y1="182" x2="160" y2="220" stroke="#5c6670" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="160" y1="284" x2="160" y2="322" stroke="#5c6670" stroke-width="1.6" marker-end="url(#ar)"/>
+  <text class="lbl" x="168" y="307">fetch /api/*</text>
+
+  <line x1="260" y1="350" x2="328" y2="286" stroke="#6b46c1" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="260" y1="368" x2="328" y2="358" stroke="#f6821f" stroke-width="1.6" marker-end="url(#ar)"/>
+  <line x1="260" y1="336" x2="618" y2="330" stroke="#2f8d46" stroke-width="2" marker-end="url(#arg)"/>
+  <text class="lbl" x="380" y="322" fill="#2f8d46">HTTPS · /api/resource/… · token auth</text>
+
+  <!-- callouts -->
+  <rect x="600" y="112" width="270" height="132" rx="8" fill="#fafbfc" stroke="#e3e7ea"/>
+  <text class="tb" x="616" y="134">Two data owners</text>
+  <text class="ts" x="616" y="156">ERPNext owns everything financial</text>
+  <text class="ts" x="616" y="174">that a real ERP should own.</text>
+  <text class="ts" x="616" y="196">D1 owns only what ERPNext has</text>
+  <text class="ts" x="616" y="214">no concept of. Nothing is stored</text>
+  <text class="ts" x="616" y="232">in both places.</text>
+
+  <rect x="24" y="452" width="836" height="140" rx="8" fill="#fafbfc" stroke="#e3e7ea"/>
+  <text class="tb" x="44" y="476">Why the credentials never reach the browser</text>
+  <text class="t" x="44" y="500">The ERPNext API key and secret live only as Worker secrets. The browser calls</text>
+  <text class="t" x="44" y="520"><tspan class="lbl">/api/projects</tspan> — a same-origin relative path — and the Worker makes the ERPNext call on its behalf.</text>
+  <text class="t" x="44" y="540">Even a fully compromised browser session cannot read the credentials, because they were</text>
+  <text class="t" x="44" y="560">never sent there. Private file downloads are proxied through the Worker for the same reason.</text>
+  <text class="ts" x="44" y="582">This is unchanged from the old app's design — it was one of the things it got right.</text>
+</svg>
+<figcaption>Request flow and data ownership. Green = the system of record; purple = data StudioOS owns; orange = Cloudflare platform services.</figcaption>
+</figure>
+
+<h2 id="stack">4. The tech stack</h2>
+
+<h3>4.1 Front end</h3>
+<table>
+  <thead><tr><th>Layer</th><th>Choice</th><th>Why this one</th></tr></thead>
+  <tbody>
+    <tr><td>UI framework</td><td>React 19</td><td>Replaces 90 duplicated HTML files with components</td></tr>
+    <tr><td>Build tool</td><td>Vite 6</td><td>Instant dev server; the old app had no JS build at all</td></tr>
+    <tr><td>Language</td><td>TypeScript</td><td>Money code with no tests needed the cheapest safety net available</td></tr>
+    <tr><td>Styling</td><td>Tailwind CSS v4</td><td>Carried over unchanged from the old app — same classes, same look</td></tr>
+    <tr><td>Routing</td><td>React Router 7</td><td>One route table instead of one file per page</td></tr>
+    <tr><td>Server state</td><td>TanStack Query</td><td>Caching, loading and error states in one place instead of per page</td></tr>
+    <tr><td>Charts</td><td>Chart.js via react-chartjs-2</td><td>Same library the old app used, so chart configs carried over</td></tr>
+    <tr><td>Dates</td><td>date-fns</td><td>Replaces Moment.js, which is deprecated</td></tr>
+  </tbody>
+</table>
+
+<h3>4.2 Back end</h3>
+<table>
+  <thead><tr><th>Layer</th><th>Choice</th><th>Why this one</th></tr></thead>
+  <tbody>
+    <tr><td>Framework</td><td>Hono</td><td>Express doesn't run on Workers — Hono is the Workers-native equivalent with near-identical routing</td></tr>
+    <tr><td>Runtime</td><td>Cloudflare Workers</td><td>No server to patch, restart or back up</td></tr>
+    <tr><td>Database</td><td>D1 (SQLite)</td><td>Replaces six flat JSON files</td></tr>
+    <tr><td>DB access</td><td>Drizzle ORM</td><td>Typed queries and migrations</td></tr>
+    <tr><td>Validation</td><td>Zod</td><td>Field-level 400s; the old app validated by hand in each handler</td></tr>
+    <tr><td>ERPNext client</td><td>native <code>fetch</code></td><td>Direct port of the old <code>frappeClient.js</code></td></tr>
+    <tr><td>Auth</td><td>Cloudflare Access</td><td>No login page, no session table, no password handling in the app</td></tr>
+  </tbody>
+</table>
+
+<h3>4.3 Tooling</h3>
+<table>
+  <thead><tr><th>Purpose</th><th>Tool</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td>Package manager</td><td>Bun</td><td>The default on this machine</td></tr>
+    <tr><td>Tests</td><td><code>bun test</code></td><td>Vitest crashes under Bun on Windows — see the gotcha below</td></tr>
+    <tr><td>Deploy / dev server</td><td>Wrangler (via <code>npx</code>)</td><td><strong>Must</strong> run under Node — Wrangler refuses Bun's runtime</td></tr>
+  </tbody>
+</table>
+
+<div class="warn">
+  <strong>Two toolchain traps, both found the hard way</strong>
+  <ol>
+    <li><code>bunx wrangler dev</code> starts, binds the port, then dies with
+        <em>"Wrangler does not support the Bun runtime."</em> Always <code>npx wrangler</code>.</li>
+    <li>Vitest dies under Bun on Windows before collecting a single test
+        (<code>File URL path must be an absolute path</code>). The backend suite uses
+        <code>bun:test</code> instead.</li>
+  </ol>
+</div>
+
+<h2 id="data">5. Who owns which data</h2>
+
+<p>This is the single most important thing to understand about StudioOS. Getting it wrong leads to
+data being stored twice and drifting apart.</p>
+
+<div class="grid2">
+  <div class="card owned">
+    <h4>ERPNext owns (read/write via REST)</h4>
+    <ul>
+      <li>Customers &amp; Suppliers</li>
+      <li>Projects and their Tasks</li>
+      <li>Sales Invoices &amp; Purchase Invoices</li>
+      <li>Payment Entries (the general ledger)</li>
+      <li>Items — the gear and service catalogue</li>
+      <li>Comments &amp; Communications (the timeline)</li>
+      <li>File attachments</li>
+    </ul>
+  </div>
+  <div class="card local">
+    <h4>D1 owns (things ERPNext has no concept of)</h4>
+    <ul>
+      <li><code>rental_bookings</code> + <code>rental_sessions</code> — studio hire</li>
+      <li><code>transactions</code> — ad-hoc income/expense ledger</li>
+      <li><code>crew_entries</code> — per-project crew &amp; vendor roster</li>
+      <li><code>expenses</code> — out-of-pocket spend</li>
+      <li><code>subscriptions</code> — recurring costs</li>
+      <li><code>brand</code> — invoice branding &amp; bank details</li>
+    </ul>
+  </div>
+</div>
+
+<div class="danger">
+  <strong>Why the backup matters so much</strong>
+  Those D1 tables are the <em>only</em> copy of that data anywhere. ERPNext does not have it.
+  In the old app they were flat JSON files on one laptop, in a git repo with no remote. StudioOS
+  dumps all seven tables to R2 storage every night, as plain readable JSON rather than a SQL dump,
+  so it can be restored by hand with no tooling available.
+</div>
+
+<h3>5.1 A rule worth knowing: plan vs actual</h3>
+<p>The crew roster and expense estimates are a <em>planning</em> layer. Real spend comes from
+ERPNext purchase invoices. The two are deliberately never reconciled automatically — someone can
+be on the roster with no bill raised, or billed without ever being on the roster.</p>
+<p><strong>Neither figure is ever back-filled from the other.</strong> If an expense was logged with
+no estimate, its "planned" column shows ₹0, not a copy of the actual. The studio's standing rule is
+that money is never guessed.</p>
+
+<h2 id="life">6. Life of a request</h2>
+
+<p>Following one page load end to end, using the projects list:</p>
+
+<pre><code>1.  Browser requests  https://studioos.example.com/projects
+2.  Cloudflare Access checks the session cookie
+      └─ not signed in?  email one-time-code challenge, request never reaches the app
+3.  Pages serves the React SPA (one JS bundle, one CSS file)
+4.  React Router renders &lt;ProjectsListPage&gt;
+5.  TanStack Query calls  fetch('/api/projects')
+6.  The Worker route /api/projects runs:
+      ├─ createFrappeClient(env)          — reads the secrets, never exposed to the browser
+      ├─ getList('Project', …)            — 1 ERPNext call
+      └─ Promise.all([ tasks, invoices ]) — 2 more calls, batched not per-project
+7.  Enrichment in the Worker:
+      ├─ checklist progress %             — completed ÷ actionable tasks
+      ├─ current phase                    — first incomplete task's phase header
+      └─ smartAction                      — the "what's next" button, rule-based
+8.  JSON returns; React renders the table
+</code></pre>
+
+<div class="note">
+  <strong>Three calls, not sixty</strong>
+  Step 6 fetches all tasks and all invoices for all 32 projects in two batched queries, rather than
+  two queries per project. That mattered on the old Node server; it matters more on Workers, where
+  each outbound call counts against a per-request limit.
+</div>
+
+<h3>6.1 One endpoint that also writes</h3>
+<p><code>GET /api/project/:name</code> is not a pure read. On every load it:</p>
+<ul>
+  <li>auto-ticks milestone tasks whose condition is now met (shoot date passed, invoice cleared, crew paid);</li>
+  <li>creates the "Vendor Payment Made" task the first time vendor involvement appears;</li>
+  <li>recalculates whether the project is complete and writes that status back to ERPNext.</li>
+</ul>
+<p>This is inherited deliberately from the old app — it is what keeps a project's status honest
+without anyone remembering to click anything. Because of it, the page is configured <em>not</em> to
+refetch on window focus, so idly leaving a tab open does not re-run those writes.</p>
+
+<h2 id="layout">7. Code layout</h2>
+
+<pre><code>StudioOs/
+├── docs/          SPEC.md · PLAN.md · DEPLOY.md · architecture.html (this file)
+├── backend/
+│   ├── src/
+│   │   ├── index.ts          Hono app, route mounting, nightly backup handler
+│   │   ├── routes/           17 modules, one per feature
+│   │   ├── lib/              the logic worth testing, extracted from routes
+│   │   │   ├── frappe.ts             the one place that talks to ERPNext
+│   │   │   ├── smartAction.ts        "what's the next step for this project?"
+│   │   │   ├── invoiceNumber.ts      CSDS_SINV_NN_YYMMNN
+│   │   │   ├── invoiceHtml.ts        branded print layout
+│   │   │   ├── projectFinance.ts     completion rules + margin model
+│   │   │   ├── payablesAggregate.ts  who we owe, grouped
+│   │   │   ├── paymentRules.ts       guards before any ledger posting
+│   │   │   └── backup.ts             nightly D1 → R2 dump
+│   │   ├── schemas/          Zod request shapes
+│   │   └── db/               Drizzle schema + client
+│   ├── tests/                92 tests
+│   ├── scripts/              ledger import + verification
+│   └── migrations/
+└── frontend/
+    └── src/
+        ├── components/       layout (sidebar, header) + shared UI
+        ├── features/         one folder per feature: api.ts + page component
+        └── lib/              api client + ₹ / date formatting
+</code></pre>
+
+<div class="note">
+  <strong>Why <code>lib/</code> exists</strong>
+  In the old app all of this logic lived inline inside route handlers, where it could not be tested
+  without a network and a live ERPNext. Pulling the pure decision-making into <code>lib/</code> is
+  what makes the test suite below possible. The routes fetch and write; <code>lib/</code> decides.
+</div>
+
+<h2 id="routes">8. API surface</h2>
+
+<table>
+  <thead><tr><th>Endpoint</th><th>Backed by</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>/api/projects</code></td><td>ERPNext</td><td>List + create + update; enriched with progress, phase, next action</td></tr>
+    <tr><td><code>/api/project/:name</code></td><td>ERPNext + D1</td><td>The whole detail page in one call. <strong>Writes on GET.</strong></td></tr>
+    <tr><td><code>/api/invoices</code></td><td>ERPNext</td><td>Draft-first; submit and amend are separate, deliberate calls</td></tr>
+    <tr><td><code>/api/invoices/:name/print</code></td><td>ERPNext + D1</td><td>Server-rendered branded HTML with a UPI Scan-to-Pay QR</td></tr>
+    <tr><td><code>/api/payments</code></td><td>ERPNext</td><td>The only path that posts to the general ledger</td></tr>
+    <tr><td><code>/api/payables</code></td><td>ERPNext</td><td>Who we owe, grouped by supplier, plus commission</td></tr>
+    <tr><td><code>/api/dashboard</code></td><td>ERPNext</td><td>Every KPI and chart series in one call</td></tr>
+    <tr><td><code>/api/insights</code></td><td>ERPNext</td><td>Rule-based "what needs attention" — no AI involved</td></tr>
+    <tr><td><code>/api/tasks</code></td><td>ERPNext</td><td>Kanban board; status changes log a timeline entry</td></tr>
+    <tr><td><code>/api/clients</code>, <code>/api/vendors</code>, <code>/api/inventory</code></td><td>ERPNext</td><td>Directories</td></tr>
+    <tr><td><code>/api/project-expenses</code>, <code>/api/project-crew</code>, <code>/api/brand</code></td><td>D1</td><td>The locally-owned data</td></tr>
+    <tr><td><code>/api/admin/backup</code></td><td>D1 → R2</td><td>Forces a backup without waiting for the nightly cron</td></tr>
+  </tbody>
+</table>
+
+<h3>8.1 Money rules enforced server-side</h3>
+<p>Every one of these is enforced in the Worker regardless of what the browser already checked —
+a client-side check is a convenience, not a control:</p>
+<ul>
+  <li>Invoices are always created as <strong>drafts</strong>. Nothing reaches the ledger until an explicit, confirmed submit.</li>
+  <li>A submitted invoice is never edited — it is cancelled and re-issued, and <strong>a written reason is required</strong>, logged on both documents.</li>
+  <li>A payment can never exceed the invoice's <em>outstanding</em> balance.</li>
+  <li>A second draft payment against the same invoice returns <code>409</code> rather than silently duplicating.</li>
+  <li>Draft invoices are excluded from "money owed" — a draft was never sent.</li>
+  <li>Cancelled invoices are excluded from every money total — they were reversed in the ledger.</li>
+</ul>
+
+<h2 id="pages">9. Pages</h2>
+
+<table>
+  <thead><tr><th>Page</th><th>What it shows</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Dashboard</td><td>KPIs, billed-vs-collected chart, attention cards, top customers</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>Projects</td><td>All projects with progress, phase and next action</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>Project detail</td><td>Six tabs: checklist, money, expenses, crew, docs, activity</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>Tasks</td><td>Kanban board across all projects</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>Invoices</td><td>All invoices, filters, branded print view</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>Payables</td><td>Who we owe, grouped, with conflict flags</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>Clients / Vendors / Inventory</td><td>Directories</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>Studio rental</td><td>Bookings, session log, roll-up to a draft invoice</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>Transactions</td><td>Ad-hoc income/expense ledger</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>Subscriptions</td><td>Recurring costs, per-currency totals</td><td><span class="badge b-done">done</span></td></tr>
+  </tbody>
+</table>
+
+<h2 id="testing">10. How correctness is proven</h2>
+
+<p><strong>92 tests, and every one of them has been watched to fail.</strong> A test that has never
+failed proves nothing — it might be asserting something that is true no matter what the code does.
+So for each area, the logic was deliberately broken, the tests were confirmed red, and the break
+was reverted.</p>
+
+<table>
+  <thead><tr><th>What was broken on purpose</th><th>What the tests caught</th></tr></thead>
+  <tbody>
+    <tr><td>Swapped the <code>pre</code>/<code>production</code> regex order</td><td>"Pre-Production" classified as production — wrong next-step button on every project still in prep</td></tr>
+    <tr><td>Dropped <code>+ 1</code> from the invoice sequence</td><td>First invoice of the year numbered <code>_00_</code>; the second would collide — <strong>two clients holding the same invoice number</strong></td></tr>
+    <tr><td>Removed the cancelled-invoice filter</td><td>Outstanding shown as ₹1,09,999 instead of ₹10,000</td></tr>
+    <tr><td>Removed the "has activity" guard</td><td>Every untouched project marked Complete — and that status is <em>written back to ERPNext</em></td></tr>
+    <tr><td>Changed the payment ceiling to the invoice total</td><td>₹1,10,000 accepted against a ₹55,000 remaining balance — a double charge</td></tr>
+    <tr><td>Matched the owner by <code>supplier_name</code> not <code>supplier</code></td><td>"Owed to others" jumped ₹3,000 → ₹25,000 — the owner appearing to owe outsiders money owed to himself</td></tr>
+  </tbody>
+</table>
+
+<h3>10.1 Cross-checking against reality</h3>
+<p>Unit tests prove the logic is self-consistent. They cannot prove it matches the real business.
+For that, figures were compared against the live ERPNext site through completely separate paths:</p>
+
+<table>
+  <thead><tr><th>Figure</th><th>StudioOS</th><th>Independent source</th></tr></thead>
+  <tbody>
+    <tr><td>Outstanding receivables</td><td class="num">₹5,62,450</td><td>Agrees across <strong>four</strong> different code paths: dashboard, invoices page, clients directory, insights card</td></tr>
+    <tr><td>Owed to suppliers / to owner</td><td class="num">₹90,929 / ₹58,600</td><td>Matches the old app's own T-014 record, written in July by a separate implementation</td></tr>
+    <tr><td>Purchase invoices flagged for review</td><td class="num">PINV-26-00017</td><td>The same invoice the old app flagged</td></tr>
+    <tr><td>PROJ-0003 outstanding</td><td class="num">₹55,000</td><td>Matches the original analysis of that project</td></tr>
+    <tr><td>Ledger import</td><td class="num">10/10 checks</td><td>Row counts <em>and</em> money totals verified against the source JSON</td></tr>
+  </tbody>
+</table>
+
+<div class="note">
+  <strong>Why totals are checked, not just row counts</strong>
+  A row count would not catch a value that imported as zero. The verification script compares
+  ₹1,51,741 of transactions, ₹13,550 of rental sessions and ₹14,400 of crew roster totals as well
+  as counting the rows, and exits non-zero on any mismatch so it can gate a deploy.
+</div>
+
+<h2 id="status">11. Current status</h2>
+
+<table>
+  <thead><tr><th>Phase</th><th>What it covers</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>Stabilise the <em>old</em> app: git remote, atomic writes, untrack the ledgers</td><td><span class="badge b-todo">not started</span></td></tr>
+    <tr><td>1</td><td>Foundation + first vertical slice</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>2</td><td>Invoices — the money surface</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>3</td><td>All remaining ERPNext routes + their pages</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>4</td><td>Studio rental, transactions, subscriptions</td><td><span class="badge b-done">done</span></td></tr>
+    <tr><td>5</td><td>Deploy</td><td><span class="badge b-part">prepared, not executed</span></td></tr>
+    <tr><td>6</td><td>Cutover — run both, compare, retire the old app</td><td><span class="badge b-todo">not started</span></td></tr>
+  </tbody>
+</table>
+
+<h3>11.1 By the numbers</h3>
+<table>
+  <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+  <tbody>
+    <tr><td>Backend routes ported</td><td class="num">22 of 22 — complete</td></tr>
+    <tr><td>Pages built</td><td class="num">12 of 12 (equipment catalogue deferred as a product question)</td></tr>
+    <tr><td>Tests</td><td class="num">114, all proven by deliberate failure</td></tr>
+    <tr><td>Live records read correctly</td><td class="num">32 projects · 47 invoices · 19 clients · 15 vendors · 209 gear items · 183 tasks</td></tr>
+    <tr><td>Production bundle</td><td class="num">567 KB (180 KB gzipped)</td></tr>
+    <tr><td>Deployed</td><td class="num">not yet</td></tr>
+  </tbody>
+</table>
+
+<div class="danger">
+  <strong>The highest-risk item is not in StudioOS at all</strong>
+  The old app — the one the studio is actually using right now — still has no off-device backup.
+  Its ledgers hold ₹1,51,741 of transactions and ₹13,550 of rental sessions that exist nowhere in
+  ERPNext, on one laptop, in a git repo with no remote. StudioOS does not solve this until
+  Phase 6. Phase 0 solves it this week.
+</div>
+
+<h2 id="next">12. What happens next</h2>
+
+<ol>
+  <li><strong>Phase 0 — old app safety.</strong> A private git remote, atomic ledger writes,
+      and untracking the JSON data files. Small, and it removes the one risk that cannot be undone.</li>
+  <li><strong>Phase 4 — the last three routes and their pages.</strong> The D1 tables already exist,
+      are seeded, and are covered by the backup and verification scripts. Only the routes and
+      pages are missing.</li>
+  <li><strong>Phase 5 — deploy.</strong> Everything is prepared and locally verified;
+      <code>docs/DEPLOY.md</code> has every command in order. One decision is still open: whether
+      to use a custom domain, which determines how the SPA reaches the API.</li>
+  <li><strong>Phase 6 — cutover.</strong> Run both apps side by side, compare page by page, freeze
+      the old app, archive it. Never delete it.</li>
+</ol>
+
+<h3>12.1 Known gaps, stated plainly</h3>
+<ul>
+  <li><strong>Creating and submitting invoices and payments is unverified end to end.</strong>
+      The guard rails are tested and confirmed to reject bad input, but the happy path has not been
+      exercised against the live site, because doing so writes real documents into the studio's
+      accounting. It needs a throwaway customer, set up deliberately.</li>
+  <li><strong>The equipment catalogue page has not been rebuilt.</strong> It reads the same ERPNext
+      data as Inventory with a narrower filter, so it may no longer need to exist separately —
+      a product decision, not a technical one.</li>
+</ul>
+
+<footer>
+  StudioOS · Cloud Shaped Dreams Studio · generated 10 August 2026.<br>
+  Companion documents: <code>docs/SPEC.md</code> (what is being built and why),
+  <code>docs/PLAN.md</code> (phase-by-phase detail and verification records),
+  <code>docs/DEPLOY.md</code> (the deployment runbook).
+</footer>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,10 @@
+# Copy to `.dev.vars` for local development. Never commit `.dev.vars`.
+# In production these are Wrangler secrets, not file-based:
+#   wrangler secret put FRAPPE_API_KEY
+#   wrangler secret put FRAPPE_API_SECRET
+#
+# Generate the pair in ERPNext: avatar > My Settings > API Access > Generate Keys.
+# The secret is shown exactly once.
+
+FRAPPE_API_KEY = "your_api_key_here"
+FRAPPE_API_SECRET = "your_api_secret_here"

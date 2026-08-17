@@ -1,0 +1,43 @@
+name = "studioos-api"
+main = "src/index.ts"
+compatibility_date = "2025-01-15"
+# The `qrcode` package (Scan-to-Pay on invoices) reaches for Node built-ins.
+# Only its SVG renderer is used -- see src/lib/payQr.ts for why not PNG.
+# Invoices are not in the shipped surface yet; the flag stays so re-mounting
+# them in Phase 10 does not need a compatibility change.
+compatibility_flags = ["nodejs_compat"]
+
+# There is no database binding, deliberately. ERPNext is the only store.
+#
+# Removed in Phase 6a (docs/PLAN-v2.md):
+#   [[d1_databases]]  the seven ledger tables
+#   [[r2_buckets]]    the off-box backup destination
+#   [triggers]        the nightly backup cron
+#
+# The data those held -- studio rental, transactions, subscriptions, brand,
+# crew, expenses -- is deferred to Phase 10, which first has to answer whether
+# it maps onto existing ERPNext documents. It is NOT lost: it still lives in
+# the old app's JSON ledgers.
+
+[vars]
+# Non-secret config only. FRAPPE_API_KEY / FRAPPE_API_SECRET are secrets --
+# set them with `wrangler secret put FRAPPE_API_KEY`, never here.
+FRAPPE_URL = "https://cloudshapeddreamsstudio.m.erpnext.com"
+COMPANY = "Cloud Shaped Dreams Studio"
+
+[observability]
+enabled = true
+
+# The tenant registry: which studio's ERPNext, and the credentials StudioOS was
+# registered with there. The one piece of state kept outside ERPNext, because it
+# has to be readable *before* we can talk to that site at all.
+#
+# `wrangler dev` uses local storage and ignores the id, so development works
+# now. Phase 9c creates the real namespace with
+#   wrangler kv namespace create TENANTS
+#   wrangler kv namespace create TENANTS --preview
+# and pastes the ids below. A deploy with the placeholder still in place will
+# fail, which is the intended behaviour -- see docs/PLAN-v2.md 9c.
+[[kv_namespaces]]
+binding = "TENANTS"
+id = "REPLACE_WITH_ID_FROM_WRANGLER_KV_NAMESPACE_CREATE"

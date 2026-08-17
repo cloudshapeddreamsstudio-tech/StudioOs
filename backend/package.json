@@ -1,0 +1,36 @@
+{
+  "name": "studioos-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply studioos-db --local",
+    "db:migrate:remote": "wrangler d1 migrations apply studioos-db --remote",
+    "ledgers:seed": "bun run scripts/import-ledgers.ts",
+    "ledgers:verify": "bun run scripts/verify-ledgers.ts",
+    "ledgers:verify:remote": "bun run scripts/verify-ledgers.ts --remote"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.38.3",
+    "hono": "^4.6.14",
+    "oauth4webapi": "^3.8.7",
+    "qrcode": "^1.5.4",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "@types/qrcode": "^1.5.5",
+    "drizzle-kit": "^0.30.1",
+    "typescript": "^5.7.3",
+    "wrangler": "^3.101.0"
+  },
+  "allowScripts": {
+    "workerd@1.20250718.0": true
+  }
+}

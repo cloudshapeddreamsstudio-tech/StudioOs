@@ -1,0 +1,58 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "types": ["@cloudflare/workers-types"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "jsx": "react-jsx",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  /**
+   * `src` only. Tests import from `bun:test`, whose global types conflict with
+   * @cloudflare/workers-types (both declare fetch, Request, Response). Tests
+   * are type-checked by `bun test`, which runs them through the same compiler.
+   */
+  "include": ["src/**/*.ts"],
+  /**
+   * Phase 6a removed the D1 binding, so `Env` no longer has `DB`. These files
+   * are the ones that used it. They are finished, tested work being kept for
+   * Phase 10 -- excluded from type-checking rather than deleted, so the shipped
+   * surface can be genuinely database-free without throwing that work away.
+   *
+   * The list is the *transitive* set, which is bigger than it first looks:
+   *
+   *  - `projectDetail` reads the crew roster and expenses. Phase 7b brings it
+   *    back with an explicit "inputs unavailable" path instead.
+   *  - `invoices` reads brand settings through `readBrand`, so the print route
+   *    is D1-backed even though invoices themselves are pure ERPNext.
+   *
+   * Everything else that is unmounted -- payables, clients, tasks, dashboard,
+   * vendors, equipment, inventory, insights, lookups, customers -- is pure
+   * ERPNext and stays type-checked, so it cannot rot while it waits. So do the
+   * tested pure-logic libs, including `invoiceHtml`, `payQr` and
+   * `invoiceNumber`: only the routes that touch storage are dropped.
+   */
+  "exclude": [
+    "src/db/client.ts",
+    "src/db/schema.ts",
+    "src/lib/backup.ts",
+    "src/routes/brand.ts",
+    "src/routes/invoices.ts",
+    "src/routes/projectCrew.ts",
+    "src/routes/projectDetail.ts",
+    "src/routes/projectExpenses.ts",
+    "src/routes/studioRental.ts",
+    "src/routes/subscriptions.ts",
+    "src/routes/transactions.ts"
+  ]
+}
