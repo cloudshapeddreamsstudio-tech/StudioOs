@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { createFrappeClient, type FrappeClient } from '../lib/frappe';
+import type { FrappeClient } from '../lib/frappe';
 import { readExpensesForProject } from './projectExpenses';
 import { readCrewForProject } from './projectCrew';
 import {
@@ -45,7 +45,7 @@ const app = new Hono<AppEnv>();
  * Registered before /:name so "files" isn't read as a project name.
  */
 app.get('/files/:file_id/download', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const fileDoc = await frappe.getDoc<{ file_url: string; file_name: string }>(
     'File',
     c.req.param('file_id'),
@@ -59,7 +59,7 @@ app.get('/files/:file_id/download', async (c) => {
 
 /** DELETE /api/project/files/:file_id — remove an attached document. */
 app.delete('/files/:file_id', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   await frappe.deleteDoc('File', c.req.param('file_id'));
   return c.json({ deleted: true });
 });
@@ -70,7 +70,7 @@ app.delete('/files/:file_id', async (c) => {
  * ERPNext's own upload_file endpoint.
  */
 app.post('/:name/files', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const body = z
     .object({
       file_name: z.string().min(1, 'file_name is required'),
@@ -133,7 +133,7 @@ async function setTaskStatus(
 
 /** GET /api/project/:name — the full aggregated view for one project. */
 app.get('/:name', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const projectName = c.req.param('name');
 
   const project = await frappe.getDoc<Record<string, unknown> & { status?: string }>(
@@ -445,7 +445,7 @@ app.get('/:name', async (c) => {
  * action, so it is a safe write.
  */
 app.post('/:name/note', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const { content } = z
     .object({ content: z.string().trim().min(1, 'content is required') })
     .parse(await c.req.json());
@@ -483,7 +483,7 @@ function escapeHtml(str: unknown): string {
  * discarded, so there is always a record of what a note used to say.
  */
 app.put('/:name/note/:commentId', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const { content } = z
     .object({ content: z.string().trim().min(1, 'content is required') })
     .parse(await c.req.json());

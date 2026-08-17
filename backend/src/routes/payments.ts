@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
-import { createFrappeClient, type FrappeClient } from '../lib/frappe';
+import type { FrappeClient } from '../lib/frappe';
 import { validatePayment, type PaymentInvoice } from '../lib/paymentRules';
 import { AppError, ValidationError } from '../lib/errors';
 import type { AppEnv } from '../types';
@@ -79,7 +79,7 @@ async function findExistingDraftFor(frappe: FrappeClient, invoice: PaymentInvoic
  * for. The submit route below lives under /api/payments since it isn't.
  */
 export async function createDraftPayment(c: Context<AppEnv>) {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
 
   /**
    * This handler is mounted from the invoices router rather than declared on
@@ -178,13 +178,13 @@ const app = new Hono<AppEnv>();
 
 /** GET /api/payments/deposit-accounts — Bank/Cash accounts for the dropdown. */
 app.get('/deposit-accounts', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   return c.json(await getDepositAccounts(frappe, c.env.COMPANY));
 });
 
 /** GET /api/payments/modes-of-payment — Mode of Payment dropdown options. */
 app.get('/modes-of-payment', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const modes = await frappe.getList('Mode of Payment', {
     fields: ['name', 'type'],
     filters: [['enabled', '=', 1]],
@@ -199,7 +199,7 @@ app.get('/modes-of-payment', async (c) => {
  * ledger; this is the only thing that does.
  */
 app.post('/:name/submit', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const name = c.req.param('name');
 
   const current = await frappe.getDoc<{

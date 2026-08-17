@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { createFrappeClient } from '../lib/frappe';
 import { cleanFrappeError } from '../lib/frappeError';
 import { AppError, ValidationError } from '../lib/errors';
 import type { AppEnv } from '../types';
@@ -42,7 +41,7 @@ function rethrowClean(err: unknown): never {
  * organisational, not something to drag across board columns.
  */
 app.get('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const data = await frappe.getList<{ is_group: number }>('Task', {
     fields: [
       'name',
@@ -68,7 +67,7 @@ app.get('/', async (c) => {
  * shows up grouped correctly on the Checklist tab.
  */
 app.post('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const body = createTaskSchema.parse(await c.req.json());
 
   try {
@@ -91,7 +90,7 @@ app.post('/', async (c) => {
  * checkbox) or a full edit of subject/date/milestone.
  */
 app.put('/:name', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const name = c.req.param('name');
   const body = updateTaskSchema.parse(await c.req.json());
 
@@ -150,7 +149,7 @@ app.put('/:name', async (c) => {
 
 /** DELETE /api/tasks/:name — remove a task from the checklist. */
 app.delete('/:name', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   await frappe.deleteDoc('Task', c.req.param('name'));
   return c.json({ deleted: true });
 });

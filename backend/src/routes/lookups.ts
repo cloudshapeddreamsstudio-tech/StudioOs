@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { createFrappeClient } from '../lib/frappe';
 import type { AppEnv } from '../types';
 
 /**
@@ -17,7 +16,7 @@ import type { AppEnv } from '../types';
  * `is_group = 0` excludes the tree's parent nodes, which aren't selectable.
  */
 export const salesPersons = new Hono<AppEnv>().get('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const data = await frappe.getList('Sales Person', {
     fields: ['name', 'sales_person_name', 'commission_rate'],
     filters: [['is_group', '=', 0]],
@@ -29,7 +28,7 @@ export const salesPersons = new Hono<AppEnv>().get('/', async (c) => {
 
 /** GET /api/project-types — populates the "Project Type" picker. */
 export const projectTypes = new Hono<AppEnv>().get('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const data = await frappe.getList('Project Type', {
     fields: ['name', 'project_type'],
     limit: 200,
@@ -52,7 +51,7 @@ export const projectTypes = new Hono<AppEnv>().get('/', async (c) => {
  * ever grows — Workers cap subrequests per invocation.
  */
 export const projectTemplates = new Hono<AppEnv>().get('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
 
   const templates = await frappe.getList<{ name: string }>('Project Template', {
     fields: ['name', 'project_type', 'disabled'],

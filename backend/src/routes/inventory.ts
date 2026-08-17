@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { createFrappeClient } from '../lib/frappe';
 import type { AppEnv } from '../types';
 
 /**
@@ -29,7 +28,7 @@ const app = new Hono<AppEnv>();
  * Declared before /:item_code so the parameter route doesn't swallow it.
  */
 app.get('/files/:file_id/download', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const fileDoc = await frappe.getDoc<{ file_url: string; file_name: string }>(
     'File',
     c.req.param('file_id'),
@@ -44,7 +43,7 @@ app.get('/files/:file_id/download', async (c) => {
 
 /** GET /api/inventory — gear, both in-house and rental-house catalogue. */
 app.get('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
 
   const items = await frappe.getList<{ item_code: string }>('Item', {
     fields: [
@@ -96,7 +95,7 @@ app.get('/', async (c) => {
 
 /** GET /api/inventory/:item_code — single item detail. */
 app.get('/:item_code', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   return c.json(await frappe.getDoc('Item', c.req.param('item_code')));
 });
 

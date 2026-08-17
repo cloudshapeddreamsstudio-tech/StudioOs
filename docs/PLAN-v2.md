@@ -236,7 +236,7 @@ served on `localhost:8000`.**
 Still to do in 6b: silent refresh when the access token expires mid-session.
 Then 6c, the god-key swap.
 
-### 6c — swap the god-key ⬜
+### 6c — swap the god-key ✅
 
 - ⬜ Every ERPNext call uses the signed-in user's token
 - ⬜ `FRAPPE_API_KEY` / `FRAPPE_API_SECRET` deleted, **not kept as a fallback**.
@@ -264,6 +264,62 @@ If either half fails, the premise of the whole design is wrong, and it is far
 better to learn that here than after a customer. The write half is the stricter
 test: a read leak is a bug, an unauthorised write is data corruption in the
 studio's real accounting system.
+
+#### Done and proven, 2026-08-17
+
+`middleware/requireSession.ts` gates every `/api/*` route: it opens the session,
+looks the studio up in the registry, refreshes the access token **before** the
+call if it is close to expiry, and hands the route a Frappe client bound to that
+user's bearer token. `createFrappeClient` now takes an origin and an auth header
+rather than `Env`; all 16 route files were converted.
+
+The admin key is **gone**, not disabled: no `FRAPPE_API_KEY` or
+`FRAPPE_API_SECRET` in `src/`, in `wrangler.toml`, or in `.dev.vars`.
+
+| Check | Result |
+|---|---|
+| `/api/health` | `{"ok":true,"registryBound":true,…}` — no credentials needed |
+| `/api/projects` with no session | **401** `signInRequired: true` |
+| Sign in, then `/api/projects` | **200** |
+| Same endpoint as a user without the Projects role | **403**, ERPNext's own message |
+
+Refresh happens *before* the call, never as a retry after a 401: replaying a
+POST that may already have been applied is how duplicate invoices get created.
+
+#### The acceptance test, in full
+
+On one build, one endpoint, two signed-in people:
+
+- **Projects Manager** → 200
+- **Editor with desk access but no Projects role** → 403, *"does not have
+  doctype access via role permission for document Project"*
+
+**StudioOS contains no permission code.** ERPNext made both decisions.
+
+#### Three findings that cost real time
+
+1. **`System Manager` does not grant Project access.** The first signed-in
+   request 403'd until the user was given `Projects Manager`. Correct behaviour,
+   and a good reminder that role names are not intuitions.
+2. **`OAuth Client.allowed_roles` defaults to `Desk User`, and an empty list
+   rejects everyone.** `validate_client_id` calls `user_has_allowed_role()`,
+   which intersects the client's allowed roles with the user's. A user with no
+   roles is refused with **"Invalid client_id"** — an error that blames the
+   client, not the user. This is a real onboarding trap: a studio's brand-new
+   employee cannot sign in, and the message sends you debugging the wrong thing.
+   **`oauth_connector` should make `allowed_roles` configurable**; today it
+   accepts Frappe's default, so only desk users can sign in.
+3. **The schema assumption bit immediately.** The very first cross-site request
+   failed with `Field not permitted in query: custom_sales_person`. Eight custom
+   fields on `Project` exist on the CSDS site and on no other. They had to be
+   created on `studio.os` by hand to get past it — which is precisely the
+   normalisation job Phase 8 defers, now with a concrete field list:
+   `custom_brand`, `custom_sales_person`, `custom_ad_agency`,
+   `custom_production_house`, `custom_poc`, `custom_shoot_date`,
+   `custom_commission_percent`, `custom_sanction_amount`.
+
+Still to do in 6b/6c: nothing blocking. The frontend does not yet handle the
+401 `signInRequired` response — that is 7a.
 
 ### 6d — what may this user do? ⬜
 

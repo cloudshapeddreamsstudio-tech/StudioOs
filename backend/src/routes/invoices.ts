@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { createFrappeClient } from '../lib/frappe';
 import { renderInvoiceHtml, type InvoiceDoc } from '../lib/invoiceHtml';
 import { computeInvoiceNumber } from '../lib/invoiceNumber';
 import { buildPayQr } from '../lib/payQr';
@@ -71,7 +70,7 @@ function requireItems(items: ReturnType<typeof buildInvoiceItems>) {
 
 /** GET /api/invoices -- list Sales Invoices with the fields the dashboard needs. */
 app.get('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const data = await frappe.getList('Sales Invoice', {
     fields: [
       'name',
@@ -99,7 +98,7 @@ app.get('/', async (c) => {
  * Declared before /:name so it isn't swallowed by the parameter route.
  */
 app.get('/service-items', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const data = await frappe.getList('Item', {
     fields: ['item_code', 'item_name', 'standard_rate', 'stock_uom'],
     filters: [
@@ -157,7 +156,7 @@ app.post('/brand-preview', async (c) => {
  * Sales Invoice (draft or submitted).
  */
 app.get('/:name/print', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const invoice = await frappe.getDoc<InvoiceDoc>('Sales Invoice', c.req.param('name'));
   const brand = await readBrand(c.env);
 
@@ -179,7 +178,7 @@ app.get('/:name/print', async (c) => {
 
 /** GET /api/invoices/:name -- single invoice detail. */
 app.get('/:name', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   return c.json(await frappe.getDoc('Sales Invoice', c.req.param('name')));
 });
 
@@ -191,7 +190,7 @@ app.get('/:name', async (c) => {
  * the app, eyeball it, and only then explicitly submit it.
  */
 app.post('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const body = createInvoiceSchema.parse(await c.req.json());
 
   const cleanItems = requireItems(buildInvoiceItems(body.items, body.project));
@@ -226,7 +225,7 @@ app.post('/', async (c) => {
  * puts it behind a confirmation so nobody books money by accident.
  */
 app.post('/:name/submit', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const name = c.req.param('name');
 
   const current = await frappe.getDoc<{ docstatus: number }>('Sales Invoice', name);
@@ -244,7 +243,7 @@ app.post('/:name/submit', async (c) => {
  * rejected here and must go through /amend instead.
  */
 app.put('/:name', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const name = c.req.param('name');
 
   const current = await frappe.getDoc<{ docstatus: number }>('Sales Invoice', name);
@@ -283,7 +282,7 @@ app.put('/:name', async (c) => {
  * being posted again.
  */
 app.post('/:name/amend', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const body = amendInvoiceSchema.parse(await c.req.json());
 
   const old = await frappe.getDoc<InvoiceDoc & { docstatus: number; name: string }>(

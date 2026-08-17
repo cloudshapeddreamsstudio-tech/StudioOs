@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { createFrappeClient, type FrappeClient } from '../lib/frappe';
+import type { FrappeClient } from '../lib/frappe';
 import { computeSmartAction } from '../lib/smartAction';
 import {
   PROJECT_LIST_FIELDS,
@@ -106,7 +106,7 @@ interface SalesRow {
  * where each subrequest counts against a per-request cap.
  */
 app.get('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
 
   const data = await frappe.getList<ProjectRow>('Project', {
     fields: [...PROJECT_LIST_FIELDS],
@@ -192,7 +192,7 @@ app.get('/', async (c) => {
 
 /** GET /api/projects/:name -- single project detail. */
 app.get('/:name', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const data = await frappe.getDoc('Project', c.req.param('name'));
   return c.json(data);
 });
@@ -205,7 +205,7 @@ app.get('/:name', async (c) => {
  * relative dates) onto the new project automatically on insert.
  */
 app.post('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const body = createProjectSchema.parse(await c.req.json());
 
   const customerName = await resolveCustomer(frappe, body.customer);
@@ -296,7 +296,7 @@ app.post('/', async (c) => {
  * quick status-only change both come through here.
  */
 app.put('/:name', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const body = updateProjectSchema.parse(await c.req.json());
   const patch: Record<string, unknown> = {};
 

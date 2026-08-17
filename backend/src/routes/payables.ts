@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { createFrappeClient } from '../lib/frappe';
 import {
   buildPayables,
   type PayablePurchaseRow,
@@ -19,7 +18,7 @@ import type { AppEnv } from '../types';
 const app = new Hono<AppEnv>();
 
 app.get('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
 
   const [purchaseInvoices, projects] = await Promise.all([
     /**

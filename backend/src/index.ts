@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { errorHandler } from './middleware/errorHandler';
+import { requireSession } from './middleware/requireSession';
 import projects from './routes/projects';
 import auth from './routes/auth';
 import type { AppEnv, Env } from './types';
@@ -32,10 +33,13 @@ import type { AppEnv, Env } from './types';
  *
  * ## Auth
  *
- * Still absent from the code at 6a. The original design put Cloudflare Access
- * in front of the Worker, which only ever worked for a single known user.
- * Phase 6b replaces it with per-user sign-in against each studio's own ERPNext,
- * after which no admin key exists anywhere.
+ * `/auth/*` signs a person in against their own studio's ERPNext. Everything
+ * under `/api/*` then runs **as that person**, on their token.
+ *
+ * There is no admin key and no fallback to one. That is the point: StudioOS
+ * cannot read a studio's books on its own authority, so a leak of anything
+ * StudioOS holds does not expose them. ERPNext decides what each request may
+ * see, which is also why StudioOS contains no permission logic.
  */
 
 const app = new Hono<AppEnv>();
@@ -60,14 +64,23 @@ app.onError(errorHandler);
 // registered on every customer's ERPNext, so this path is effectively frozen.
 app.route('/auth', auth);
 
-app.route('/api/projects', projects);
-
+// Health is deliberately outside the session gate: an uptime check must not
+// need credentials.
 app.get('/api/health', (c) =>
   c.json({
     ok: true,
-    frappeConfigured: Boolean(c.env.FRAPPE_URL && c.env.FRAPPE_API_KEY && c.env.FRAPPE_API_SECRET),
+    registryBound: Boolean(c.env.TENANTS),
+    appOrigin: c.env.APP_ORIGIN,
   }),
 );
+
+/**
+ * Everything else under /api requires a signed-in person, and runs as them.
+ * There is no admin key to fall back to -- see middleware/requireSession.ts.
+ */
+app.use('/api/*', requireSession);
+
+app.route('/api/projects', projects);
 
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
 

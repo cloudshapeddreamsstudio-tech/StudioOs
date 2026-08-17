@@ -3,7 +3,6 @@ import { eq, isNull, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/client';
 import { rentalBookings, rentalSessions } from '../db/schema';
-import { createFrappeClient } from '../lib/frappe';
 import { computeInvoiceNumber } from '../lib/invoiceNumber';
 import {
   computeDuration,
@@ -263,7 +262,7 @@ app.post('/bookings/:id/invoice', async (c) => {
   const id = c.req.param('id');
   const booking = await getBookingOr404(c.env, id);
   const conn = db(c.env);
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
 
   const unbilled = (await conn
     .select()

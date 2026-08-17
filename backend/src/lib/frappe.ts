@@ -39,18 +39,33 @@ export interface FrappeClient {
   downloadFile(fileUrl: string): Promise<{ buffer: ArrayBuffer; contentType: string | null }>;
 }
 
-export function createFrappeClient(env: Env): FrappeClient {
-  const baseUrl = (env.FRAPPE_URL || '').replace(/\/+$/, '');
+/**
+ * Which site, and whose authority.
+ *
+ * Both are per-request now. `origin` is the signed-in user's own studio, and
+ * `authHeader` is a bearer token belonging to that person -- so ERPNext applies
+ * their permissions to everything below, and StudioOS implements none.
+ *
+ * Before Phase 6c this was one admin key for one site, shared by every user.
+ */
+export interface FrappeConnection {
+  origin: string;
+  authHeader: string;
+}
 
-  if (!baseUrl || !env.FRAPPE_API_KEY || !env.FRAPPE_API_SECRET) {
-    throw new AppError(
-      'Worker is missing FRAPPE_URL / FRAPPE_API_KEY / FRAPPE_API_SECRET. ' +
-        'Set them in wrangler.toml (url) and via `wrangler secret put` (key, secret).',
-      500,
-    );
+/** A client acting as the signed-in user. */
+export function frappeForToken(origin: string, accessToken: string): FrappeClient {
+  return createFrappeClient({ origin, authHeader: `Bearer ${accessToken}` });
+}
+
+export function createFrappeClient(conn: FrappeConnection): FrappeClient {
+  const baseUrl = (conn.origin || '').replace(/\/+$/, '');
+
+  if (!baseUrl || !conn.authHeader) {
+    throw new AppError('No ERPNext connection for this request.', 500);
   }
 
-  const authHeader = `token ${env.FRAPPE_API_KEY}:${env.FRAPPE_API_SECRET}`;
+  const authHeader = conn.authHeader;
 
   async function request<T = unknown>(path: string, options: RequestInit = {}): Promise<T> {
     const res = await fetch(`${baseUrl}${path}`, {

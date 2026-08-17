@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { createFrappeClient } from '../lib/frappe';
 import type { AppEnv } from '../types';
 
 /**
@@ -14,7 +13,7 @@ import type { AppEnv } from '../types';
 const app = new Hono<AppEnv>();
 
 app.get('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const data = await frappe.getList('Item', {
     fields: [
       'item_code',
@@ -36,7 +35,7 @@ app.get('/', async (c) => {
 });
 
 app.get('/:item_code', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   return c.json(await frappe.getDoc('Item', c.req.param('item_code')));
 });
 

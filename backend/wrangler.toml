@@ -20,8 +20,11 @@ compatibility_flags = ["nodejs_compat"]
 # the old app's JSON ledgers.
 
 [vars]
-# Non-secret config only. FRAPPE_API_KEY / FRAPPE_API_SECRET are secrets --
-# set them with `wrangler secret put FRAPPE_API_KEY`, never here.
+# Non-secret config only. Secrets go in via `wrangler secret put`, never here.
+#
+# Note there is no ERPNext credential at all: since Phase 6c each request runs
+# on the signed-in user's own token, and the site it goes to comes from the
+# tenant registry, not from FRAPPE_URL.
 FRAPPE_URL = "https://cloudshapeddreamsstudio.m.erpnext.com"
 COMPANY = "Cloud Shaped Dreams Studio"
 # Where StudioOS itself answers. The OAuth redirect URI is built from this and

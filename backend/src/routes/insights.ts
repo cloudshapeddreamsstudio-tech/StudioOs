@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { createFrappeClient } from '../lib/frappe';
 import type { AppEnv } from '../types';
 
 /**
@@ -30,7 +29,7 @@ function plural(n: number, word: string): string {
 }
 
 app.get('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const insights: Insight[] = [];
 
   // The four queries are independent, so fetch them together rather than in

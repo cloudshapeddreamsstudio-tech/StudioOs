@@ -6,15 +6,17 @@
  * see docs/PLAN-v2.md, decision 2. The D1 and R2 bindings were removed in
  * Phase 6a along with the routes that used them.
  *
- * `FRAPPE_API_KEY` / `FRAPPE_API_SECRET` are a single admin key for the one
- * studio, and are on their way out: Phase 6c replaces them with the signed-in
- * user's own token, so ERPNext enforces that user's permissions rather than
- * granting everyone full access.
+ * There is also deliberately no ERPNext credential. Phase 6c removed the admin
+ * key: every request runs on the signed-in user's own token, so StudioOS holds
+ * nothing that can read a studio's books on its own authority.
  */
 export interface Env {
+  /**
+   * Kept only for the company name and as a default for tooling. It is NOT how
+   * requests reach ERPNext any more -- since Phase 6c each request goes to the
+   * signed-in user's own studio, whose origin comes from the tenant registry.
+   */
   FRAPPE_URL: string;
-  FRAPPE_API_KEY: string;
-  FRAPPE_API_SECRET: string;
   COMPANY: string;
 
   /** Tenant registry — see lib/tenants.ts. Added in Phase 6b. */
@@ -33,5 +35,18 @@ export interface Env {
   CONNECTOR_SHARED_SECRET: string;
 }
 
-/** Hono generic: `new Hono<AppEnv>()` gives typed `c.env`. */
-export type AppEnv = { Bindings: Env };
+/**
+ * Hono generic: `new Hono<AppEnv>()` gives typed `c.env` and `c.get`.
+ *
+ * `frappe` and `session` are set by the requireSession middleware, so any route
+ * mounted behind it can assume both. A route that reaches for `c.get('frappe')`
+ * without that middleware gets undefined at runtime -- which is the correct
+ * failure, because it means the route is unauthenticated.
+ */
+export type AppEnv = {
+  Bindings: Env;
+  Variables: {
+    frappe: import('./lib/frappe').FrappeClient;
+    session: import('./lib/session').Session;
+  };
+};

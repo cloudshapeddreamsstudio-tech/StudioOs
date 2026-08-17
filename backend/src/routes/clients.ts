@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { createFrappeClient } from '../lib/frappe';
 import type { AppEnv } from '../types';
 
 /**
@@ -41,7 +40,7 @@ function outstandingOf(invoices: InvoiceRow[]): number {
  * N+1 call per customer.
  */
 app.get('/', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
 
   const [customers, projects, invoices] = await Promise.all([
     frappe.getList<{ name: string }>('Customer', {
@@ -84,7 +83,7 @@ app.get('/', async (c) => {
  * computed outstanding total.
  */
 app.get('/:name', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const clientName = c.req.param('name');
 
   const customer = await frappe.getDoc<{
@@ -156,7 +155,7 @@ const updateClientSchema = z.object({
  *  - address is a separate linked Address doc (also created if none exists).
  */
 app.put('/:name', async (c) => {
-  const frappe = createFrappeClient(c.env);
+  const frappe = c.get('frappe');
   const clientName = c.req.param('name');
   const body = updateClientSchema.parse(await c.req.json());
 
