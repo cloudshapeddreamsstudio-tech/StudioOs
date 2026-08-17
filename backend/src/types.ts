@@ -31,6 +31,13 @@ export interface Env {
    * permanent, exact match, not something derived from a request header.
    */
   APP_ORIGIN: string;
+  /**
+   * Where the user interface lives. In production this is the same origin as
+   * the API, so it is just `APP_ORIGIN`. In development the SPA is on Vite's
+   * port while the Worker is on its own, and a sign-in that lands on the API
+   * origin shows a 404 instead of the app.
+   */
+  APP_UI_ORIGIN: string;
   /** Gates POST /auth/register so only the connector app can add a tenant. */
   CONNECTOR_SHARED_SECRET: string;
 }

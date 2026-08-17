@@ -31,6 +31,11 @@ COMPANY = "Cloud Shaped Dreams Studio"
 # is registered on every customer's ERPNext, so changing it later means every
 # customer reinstalling the connector. Phase 9b sets the real one.
 APP_ORIGIN = "http://localhost:8787"
+# Where the SPA lives. In production this is the same host as the API (9b takes
+# the custom domain precisely so it is), and this line becomes APP_ORIGIN. In
+# development Vite serves on its own port, so a sign-in that redirected to
+# APP_ORIGIN would land on a 404 instead of the app.
+APP_UI_ORIGIN = "http://localhost:5173"
 
 [observability]
 enabled = true
