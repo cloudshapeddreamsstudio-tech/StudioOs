@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProjectsListPage } from './features/projects/ProjectsListPage';
 import { ProjectDetailPage } from './features/projects/ProjectDetailPage';
+import { ProjectCreatePage, ProjectEditPage } from './features/projects/ProjectFormPages';
 import { SignInPage } from './features/auth/SignInPage';
 import { RequireSession } from './features/auth/RequireSession';
 
@@ -42,7 +43,10 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="/projects" replace /> },
           { path: 'projects', element: <ProjectsListPage /> },
+          // Before /projects/:name, or "new" would be read as a project id.
+          { path: 'projects/new', element: <ProjectCreatePage /> },
           { path: 'projects/:name', element: <ProjectDetailPage /> },
+          { path: 'projects/:name/edit', element: <ProjectEditPage /> },
           { path: '*', element: <NotFound /> },
         ],
       },

@@ -5,6 +5,8 @@ import { errorHandler } from './middleware/errorHandler';
 import { requireSession } from './middleware/requireSession';
 import projects from './routes/projects';
 import projectDetail from './routes/projectDetail';
+import customers from './routes/customers';
+import { salesPersons, projectTypes, projectTemplates } from './routes/lookups';
 import auth from './routes/auth';
 import type { AppEnv, Env } from './types';
 
@@ -85,6 +87,14 @@ app.route('/api/projects', projects);
 // Mirrors the old app's /api/project (singular, one aggregate) vs
 // /api/projects (plural, the list) split.
 app.route('/api/project', projectDetail);
+
+// Pickers for the project form (Phase 7c). Read-only lists; each runs on the
+// signed-in user's token like everything else, so a user who cannot read
+// Customers simply gets an empty picker rather than someone else's data.
+app.route('/api/customers', customers);
+app.route('/api/sales-persons', salesPersons);
+app.route('/api/project-types', projectTypes);
+app.route('/api/project-templates', projectTemplates);
 
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
 

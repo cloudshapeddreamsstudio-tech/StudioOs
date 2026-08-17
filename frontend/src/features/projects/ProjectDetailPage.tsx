@@ -66,6 +66,14 @@ export function ProjectDetailPage() {
 
       <PageHeader title={p.project_name || p.name}>
         <StatusBadge status={p.status} />
+        <Link
+          to={`/projects/${encodeURIComponent(p.name)}/edit`}
+          className="rounded-md border border-gray-300 dark:border-gray-600 px-3 py-1.5
+                     text-sm font-medium text-gray-700 dark:text-gray-200
+                     hover:bg-gray-50 dark:hover:bg-gray-700/50"
+        >
+          Edit
+        </Link>
       </PageHeader>
 
       <div className="text-sm text-gray-500 dark:text-gray-400 -mt-4 mb-6">

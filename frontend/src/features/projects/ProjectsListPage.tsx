@@ -36,13 +36,26 @@ export function ProjectsListPage() {
         <h1 className="text-2xl md:text-3xl text-gray-800 dark:text-gray-100 font-bold">
           Projects
         </h1>
-        <input
-          type="search"
-          className="form-input w-full sm:w-64 mt-4 sm:mt-0"
-          placeholder="Search projects…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <div className="flex gap-3 items-center mt-4 sm:mt-0">
+          <input
+            type="search"
+            className="form-input w-full sm:w-64"
+            placeholder="Search projects…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          {/* Always offered. Whether this person may actually create one is
+              ERPNext's decision, and it says so on submit rather than here —
+              hiding the button would only guess at an answer we have not asked
+              for. Reflecting real permissions is 7d. */}
+          <Link
+            to="/projects/new"
+            className="shrink-0 rounded-md bg-violet-500 hover:bg-violet-600 px-3 py-2
+                       text-sm font-semibold text-white"
+          >
+            New project
+          </Link>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 shadow-sm rounded-xl border border-gray-200 dark:border-gray-700/60">

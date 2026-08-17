@@ -53,12 +53,32 @@ export const projectTypes = new Hono<AppEnv>().get('/', async (c) => {
 export const projectTemplates = new Hono<AppEnv>().get('/', async (c) => {
   const frappe = c.get('frappe');
 
-  const templates = await frappe.getList<{ name: string }>('Project Template', {
-    fields: ['name', 'project_type', 'disabled'],
-    filters: [['disabled', '=', 0]],
-    limit: 100,
-    orderBy: 'name asc',
-  });
+  /**
+   * `disabled` is not a stock field on Project Template.
+   *
+   * It exists on the CSDS site and not on a plain ERPNext v15, so asking for it
+   * unconditionally fails there with "Field not permitted in query: disabled"
+   * and the template picker breaks entirely. Asking for it and falling back is
+   * what lets one build serve sites whose schemas differ — the general form of
+   * the problem Phase 8 has to solve properly.
+   *
+   * The order matters: try the richer query first, so a site that *does* track
+   * disabled templates keeps hiding them.
+   */
+  const templates = await frappe
+    .getList<{ name: string }>('Project Template', {
+      fields: ['name', 'project_type', 'disabled'],
+      filters: [['disabled', '=', 0]],
+      limit: 100,
+      orderBy: 'name asc',
+    })
+    .catch(() =>
+      frappe.getList<{ name: string }>('Project Template', {
+        fields: ['name', 'project_type'],
+        limit: 100,
+        orderBy: 'name asc',
+      }),
+    );
 
   const withTaskCounts = await Promise.all(
     templates.map(async (t) => {

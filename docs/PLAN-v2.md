@@ -488,7 +488,7 @@ clean, and the screen still told the owner something untrue.
    treated missing as zero — it found two immediately. Leaving the types
    claiming non-null let the code compile while silently lying.
 
-### 7c — writing back to ERPNext ⬜
+### 7c — writing back to ERPNext ✅
 
 **The release is not read-only.** A project manager, or anyone with full access
 to the studio's ERPNext, must be able to create a project and edit its details
@@ -514,6 +514,46 @@ What is missing is the interface. There are **no forms anywhere in the frontend*
 **Done when** a project is created from StudioOS by a signed-in project manager,
 appears on the live site, and the round trip is confirmed in ERPNext's own UI —
 using a project deliberately created for the purpose, not a real one.
+
+#### Done and verified, 2026-08-17
+
+`projectSchema.ts` (shared rules), `ProjectForm.tsx` (the first form in the
+codebase), `formApi.ts` (pickers, mutations, error interpretation), and routes
+at `/projects/new` and `/projects/:name/edit`. The customer, sales person,
+project type and template pickers were re-mounted for it.
+
+| Check | Result |
+|---|---|
+| Create via the form | **PROJ-0006**, landed on its detail page |
+| Written as whom | `owner` and `modified_by` = **the signed-in user**, no admin key |
+| Edit round trip | sanctioned ₹90,000 → ₹1,25,000 and brand changed, confirmed in ERPNext |
+| Empty submit | "Give the project a name" / "Choose a client", no request sent |
+| Commission 150 | "Commission is a percentage, so it cannot exceed 100" |
+| Server-side too | `POST` without a name → 400 with field errors, so the client schema is a convenience and not the gate |
+| Status choices | **Open / Cancelled only** — "Completed" is derived, and the server drops it anyway |
+| Write by a user without the role | **403**, ERPNext's own wording, and the value was unchanged afterwards |
+
+#### Two things found by mounting the pickers
+
+1. **`Project Template.disabled` does not exist on stock ERPNext v15.** It is on
+   the CSDS site and not on a plain one, so asking for it returned "Field not
+   permitted in query: disabled" and the template picker broke entirely. The
+   query now tries the richer form and falls back, so a site that *does* track
+   disabled templates keeps hiding them. Same class as `custom_sales_person`,
+   and more evidence for Phase 8.
+2. **`Projects Manager` does not grant Customer or Sales Person access.** Two
+   pickers 403'd until the test user was also given `Sales User`. Nothing was
+   wrong — a project manager who cannot read Customers genuinely cannot pick
+   one, which is the studio's own access model showing through. Worth knowing
+   before telling a customer which roles their staff need.
+
+#### A deliberate non-decision
+
+The "New project" and "Edit" buttons are always shown. Whether this person may
+write is ERPNext's answer, and it is given on submit rather than guessed at
+render time. Hiding a control because we assume a refusal is how a UI starts
+disagreeing with the system it fronts. **Reflecting real permissions is 7d**,
+and it will ask ERPNext rather than infer.
 
 ### 7d — the interface reflects the signed-in user's permissions ⬜
 
