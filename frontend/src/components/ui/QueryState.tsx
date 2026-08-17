@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { ApiError } from '@/lib/api';
 
 /**
  * Shared loading / error / empty rendering for a table body.
@@ -37,6 +38,30 @@ export function QueryState({
   }
 
   if (error) {
+    /**
+     * A refusal is not a fault. When ERPNext says this person's roles do not
+     * cover something, that is the permission model working exactly as
+     * intended -- StudioOS deliberately has none of its own. Showing it in red
+     * next to "is the server running?" would have every studio reporting it as
+     * a bug, and would push owners toward handing out broader roles to make the
+     * scary message go away.
+     */
+    if (error instanceof ApiError && error.isForbidden) {
+      return (
+        <tr>
+          <td colSpan={colSpan} className="px-2 first:pl-5 last:pr-5 py-8 text-center">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
+              You don&apos;t have access to this in ERPNext.
+            </p>
+            <p className="mt-1 text-xs text-gray-400">
+              Your ERPNext roles decide what StudioOS can show you. Ask whoever administers your
+              studio&apos;s ERPNext to grant access.
+            </p>
+          </td>
+        </tr>
+      );
+    }
+
     return (
       <tr>
         <td colSpan={colSpan} className="px-2 first:pl-5 last:pr-5 py-6 text-center text-red-500">

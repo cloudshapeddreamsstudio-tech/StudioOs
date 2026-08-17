@@ -17,6 +17,24 @@ export class ApiError extends Error {
     this.status = status;
     this.details = details;
   }
+
+  /**
+   * Nobody is signed in, or the session has lapsed. The answer is to sign in
+   * again -- never a retry, which is why TanStack Query is told not to.
+   */
+  get isUnauthenticated(): boolean {
+    return this.status === 401;
+  }
+
+  /**
+   * Signed in, but ERPNext refused. This is a *correct* outcome, not a fault:
+   * the studio's own role permissions decided this person may not see it. It
+   * must read differently from a broken request, or every studio will file it
+   * as a bug in StudioOS.
+   */
+  get isForbidden(): boolean {
+    return this.status === 403;
+  }
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

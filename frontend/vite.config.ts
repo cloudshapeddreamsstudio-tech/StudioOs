@@ -21,6 +21,15 @@ export default defineConfig({
         target: 'http://localhost:8787',
         changeOrigin: true,
       },
+      /**
+       * Sign-in lives outside /api because these are browser navigations, not
+       * XHR. It must be proxied too, or `/auth/start` would hit Vite's dev
+       * server and 404 instead of redirecting to the studio's ERPNext.
+       */
+      '/auth': {
+        target: 'http://localhost:8787',
+        changeOrigin: true,
+      },
     },
   },
 });

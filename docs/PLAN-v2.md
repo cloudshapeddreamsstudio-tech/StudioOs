@@ -366,14 +366,61 @@ already runs.
 The first release's actual surface, written on per-user tokens from the start.
 Nothing outside Projects ships.
 
-### 7a — projects list on per-user tokens ⬜
+### 7a — projects list on per-user tokens ✅
 
-- ⬜ Confirm the list renders for a signed-in user rather than for an admin key
-- ⬜ Empty and unauthorised states — a user with no project access must see a
-  clear message, not a blank table
+- ✅ The list renders for a signed-in user rather than for an admin key
+- ✅ A sign-in screen: the studio's address plus **Sign in with ERPNext**, with
+  no sidebar or header, because there is nothing to navigate to until we know
+  which studio this is
+- ✅ `RequireSession` checks once at the router, so a signed-out visitor is
+  redirected rather than every page discovering its own 401
+- ✅ The header names **both the person and the studio**, with sign out
+- ✅ A refusal reads as a refusal, not a fault
 
 **Done when** two users of different permission on the same studio both load the
 page and each sees their own correct result.
+
+#### Verified in a browser, 2026-08-17
+
+| | Result |
+|---|---|
+| Signed out, open `/projects` | redirected to `/sign-in` |
+| Sign-in screen | address field + "Sign in with ERPNext", matching the mockup |
+| Unknown studio | back to `/sign-in` with the reason, the hint, **and the address preserved** |
+| `ftp://` address | back to `/sign-in` with "must be http or https" |
+| Sign in from the form | consent → approve → `/projects`, 4 rows |
+| Header | `studioos-test@example.com · localhost:8000 · Sign out` |
+| Sign out | session cleared, back to `/sign-in` |
+| Signed in as a user without the Projects role | see below |
+
+The restricted user sees, in the table body rather than in red:
+
+> **You don't have access to this in ERPNext.**
+> Your ERPNext roles decide what StudioOS can show you. Ask whoever administers
+> your studio's ERPNext to grant access.
+
+**That distinction is the point of the phase.** A 403 here is the permission
+model working exactly as designed — StudioOS deliberately has none of its own.
+Rendering it beside "is the API Worker running?" would have every studio
+reporting it as a bug, and would push owners toward handing out broader ERPNext
+roles just to make an alarming red message disappear. The failure StudioOS must
+never cause is a studio widening its own permissions because our UI looked
+broken.
+
+#### Three things this needed that were not obvious
+
+1. **`/auth` has to be proxied in dev too.** Only `/api` was. Sign-in is a
+   browser *navigation*, not XHR, so `/auth/start` was hitting Vite and 404ing.
+2. **`/auth/start` must not answer a browser with JSON.** Its failures now
+   redirect back to `/sign-in` carrying the message — a raw `{"error":…}` is a
+   dead end with nothing to click.
+3. **Sign-in has to land on the UI origin.** The callback redirected to a
+   relative `/projects`, which resolves to the API origin; correct once 9b puts
+   both on one host, a 404 in development. `APP_UI_ORIGIN` makes it explicit.
+
+Signing out clears the whole query cache, not just the session: the cache holds
+one studio's projects, and the next person to sign in on that browser must not
+be shown them while their own request is still in flight.
 
 ### 7b — project detail, honest about what is missing ⬜
 

@@ -1,4 +1,35 @@
 import { useEffect, useState } from 'react';
+import { useSession, useSignOut } from '@/features/auth/api';
+
+/**
+ * Who is signed in, and which studio.
+ *
+ * The studio matters as much as the person: someone who works with two studios
+ * has two separate identities, and acting on the wrong one is the kind of
+ * mistake that only shows up after the damage. It is stated, not implied.
+ */
+function SignedInAs() {
+  const { data: session } = useSession();
+  const signOut = useSignOut();
+
+  if (!session) return null;
+
+  return (
+    <div className="flex items-center gap-3">
+      <div className="hidden sm:block text-right leading-tight">
+        <div className="text-sm font-medium text-gray-800 dark:text-gray-100">{session.user}</div>
+        <div className="text-xs font-mono text-gray-400">{session.host}</div>
+      </div>
+      <button
+        onClick={() => void signOut()}
+        className="text-xs font-medium text-gray-500 hover:text-gray-700
+                   dark:text-gray-400 dark:hover:text-gray-200 underline underline-offset-2"
+      >
+        Sign out
+      </button>
+    </div>
+  );
+}
 
 /**
  * Dark mode reads and writes the same `dark-mode` localStorage key the old
@@ -44,6 +75,8 @@ export function Header({ onOpenSidebar }: HeaderProps) {
           </button>
 
           <div className="flex items-center space-x-3 ml-auto">
+            <SignedInAs />
+            <div className="w-px h-5 bg-gray-200 dark:bg-gray-700/60" aria-hidden="true" />
             <button
               className="w-8 h-8 flex items-center justify-center rounded-full
                          bg-gray-100 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400

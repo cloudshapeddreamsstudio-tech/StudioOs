@@ -1,7 +1,9 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProjectsListPage } from './features/projects/ProjectsListPage';
- 
+import { SignInPage } from './features/auth/SignInPage';
+import { RequireSession } from './features/auth/RequireSession';
+
 /**
  * One route table for the whole app.
  *
@@ -21,15 +23,28 @@ import { ProjectsListPage } from './features/projects/ProjectsListPage';
  * exists. Phase 7b brings it back with those inputs explicitly declared
  * unavailable rather than silently treated as zero. Until then a project link
  * lands on NotFound, which says so.
+ *
+ * ## Sign-in sits outside the shell (Phase 7a)
+ *
+ * `/sign-in` renders with no sidebar and no header, because there is nothing to
+ * navigate to until we know which studio this is. Everything else lives behind
+ * RequireSession, which checks once rather than letting each page discover its
+ * own 401.
  */
-export const router = createBrowserRouter([ 
+export const router = createBrowserRouter([
+  { path: '/sign-in', element: <SignInPage /> },
   {
-    path: '/',
-    element: <AppLayout />,
+    element: <RequireSession />,
     children: [
-      { index: true, element: <Navigate to="/projects" replace /> },
-      { path: 'projects', element: <ProjectsListPage /> },
-      { path: '*', element: <NotFound /> },
+      {
+        path: '/',
+        element: <AppLayout />,
+        children: [
+          { index: true, element: <Navigate to="/projects" replace /> },
+          { path: 'projects', element: <ProjectsListPage /> },
+          { path: '*', element: <NotFound /> },
+        ],
+      },
     ],
   },
 ]);

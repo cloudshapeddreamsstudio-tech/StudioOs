@@ -118,25 +118,36 @@ app.post('/register', async (c) => {
  * same code path as Frappe Cloud.
  */
 app.get('/start', async (c) => {
+  /**
+   * Failures here go back to the sign-in screen, not out as JSON. This endpoint
+   * is only ever reached by a browser navigation, so a JSON body would be a
+   * dead end with no way back -- the person would be staring at
+   * `{"error":…}` with nothing to click.
+   */
+  const backToSignIn = (error: string, hint?: string, site?: string) => {
+    const q = new URLSearchParams({ error });
+    if (hint) q.set('hint', hint);
+    if (site) q.set('site', site);
+    return c.redirect(`${c.env.APP_UI_ORIGIN.replace(/\/$/, '')}/sign-in?${q}`, 302);
+  };
+
   const site = c.req.query('site');
-  if (!site) return c.json({ error: 'Enter your ERPNext site address.' }, 400);
+  if (!site) return backToSignIn('Enter your ERPNext site address.');
 
   let host: string;
   try {
     host = normaliseHost(site);
   } catch (err) {
-    if (err instanceof InvalidDomainError) return c.json({ error: err.message }, 400);
+    if (err instanceof InvalidDomainError) return backToSignIn(err.message, undefined, site);
     throw err;
   }
 
   const tenant = await getTenant(c.env, host);
   if (!tenant) {
-    return c.json(
-      {
-        error: `${host} is not connected to StudioOS yet.`,
-        hint: 'Install the StudioOS connector on that site first.',
-      },
-      404,
+    return backToSignIn(
+      `${host} is not connected to StudioOS yet.`,
+      'Install the StudioOS connector on that site, then try again.',
+      site,
     );
   }
 
