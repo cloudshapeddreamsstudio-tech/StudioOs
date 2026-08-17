@@ -127,7 +127,7 @@ Everything else unmounted — payables, clients, tasks, dashboard, vendors,
 equipment, inventory, insights, lookups, customers — plus every tested pure
 lib stays type-checked, so it cannot rot while it waits.
 
-### 6b — the sign-in flow ⬜
+### 6b — the sign-in flow 🔨
 
 - ⬜ **Tenant registry on Cloudflare KV.** Binding `TENANTS`; key is the
   normalised site domain; value is JSON carrying the issuer, `client_id`, the
@@ -143,6 +143,50 @@ lib stays type-checked, so it cannot rot while it waits.
 - ⬜ Silent refresh when the access token expires mid-session
 
 Use `oauth4webapi` — standard OIDC, runs on Workers. Do not hand-roll it.
+
+#### Done so far, verified 2026-08-17
+
+`lib/tenants.ts` (registry on KV, secrets encrypted), `lib/crypto.ts` (shared
+AES-GCM), `lib/session.ts` (the sealed round-trip cookie) and `routes/auth.ts`
+with `POST /auth/register` and `GET /auth/start`. **139 tests pass.**
+
+Proven against the bench, with `oauth_connector` installed from GitHub:
+
+| Check | Result |
+|---|---|
+| `POST /auth/register` | 200, tenant stored; **401 on a wrong shared secret** |
+| `GET /auth/start?site=localhost:8000` | **302** to the site's own authorize endpoint |
+| Redirect params | `client_id`, `redirect_uri`, `response_type=code`, `scope=openid all`, `code_challenge` + `S256`, `state` |
+| Cookie | `HttpOnly; SameSite=Lax; Max-Age=600`, contents sealed |
+| No site / empty / unregistered / `ftp://` | 400 / 400 / **404 with a fix hint** / 400 |
+
+The `originForHost` rule was proven by breaking it: swapping the fixed host list
+for "http if it has a port" turned a test red showing
+`http://erp.example.com:8443` — a self-hosted studio's client secret and
+authorization code on the wire in clear text.
+
+#### Two Frappe-specific traps, both found by running it
+
+1. **`oauth4webapi` refuses plain HTTP outright.** Correct, and it blocks the
+   dev bench. Waived through `allowsInsecureTransport()`, a **fixed host list**
+   — never inferred from the URL, so a customer site can never reach that path.
+   Tested that `localhost.evil.com` does not qualify.
+2. **Discovery must follow redirects; the token exchange must not.** Behind
+   Frappe Cloud's nginx `/.well-known/openid-configuration` returns 200
+   directly, but a bench's own dev server **301s** it to
+   `/api/method/frappe.integrations.oauth2.openid_configuration`, and
+   `oauth4webapi` fetches with `redirect: 'manual'`. A custom fetch follows
+   redirects for discovery only — it is an unauthenticated GET of a public
+   document. Following one on the token exchange could leak the code or client
+   secret to whatever host the redirect names.
+
+Local dev needs `host_name` set on the bench site (`ezsandesh.dev` now has
+`http://localhost:8000`), because the discovery document's `issuer` must match
+the origin it was fetched from, and `ezsandesh.dev` does not resolve from
+Windows.
+
+Still to do in 6b: `/auth/callback`, `/auth/logout`, the signed-in session
+cookie, and silent refresh.
 
 ### 6c — swap the god-key ⬜
 

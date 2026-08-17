@@ -1,0 +1,14 @@
+# Secrets. `backend/.gitignore` covers this too -- deliberately repeated here,
+# because .dev.vars holds live ERPNext credentials for the studio's production
+# site and a single missed ignore rule puts them in history permanently.
+.dev.vars
+*.dev.vars
+.env
+.env.*
+
+node_modules/
+dist/
+.wrangler/
+*.log
+.DS_Store
+Thumbs.db

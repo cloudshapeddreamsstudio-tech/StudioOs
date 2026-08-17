@@ -24,6 +24,10 @@ compatibility_flags = ["nodejs_compat"]
 # set them with `wrangler secret put FRAPPE_API_KEY`, never here.
 FRAPPE_URL = "https://cloudshapeddreamsstudio.m.erpnext.com"
 COMPANY = "Cloud Shaped Dreams Studio"
+# Where StudioOS itself answers. The OAuth redirect URI is built from this and
+# is registered on every customer's ERPNext, so changing it later means every
+# customer reinstalling the connector. Phase 9b sets the real one.
+APP_ORIGIN = "http://localhost:8787"
 
 [observability]
 enabled = true

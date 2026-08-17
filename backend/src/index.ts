@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { errorHandler } from './middleware/errorHandler';
 import projects from './routes/projects';
+import auth from './routes/auth';
 import type { AppEnv, Env } from './types';
 
 /**
@@ -54,6 +55,10 @@ app.use(
 );
 
 app.onError(errorHandler);
+
+// Not under /api: these are browser navigations, not XHR. The redirect URI is
+// registered on every customer's ERPNext, so this path is effectively frozen.
+app.route('/auth', auth);
 
 app.route('/api/projects', projects);
 

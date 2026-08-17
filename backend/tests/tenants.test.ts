@@ -4,6 +4,7 @@ import {
   originForHost,
   encryptSecret,
   decryptSecret,
+  allowsInsecureTransport,
   InvalidDomainError,
 } from '../src/lib/tenants';
 
@@ -76,6 +77,27 @@ describe('originForHost', () => {
    */
   it('does not downgrade a real site that uses a non-standard port', () => {
     expect(originForHost('erp.example.com:8443')).toBe('https://erp.example.com:8443');
+  });
+});
+
+describe('allowsInsecureTransport', () => {
+  /**
+   * This predicate decides whether the OAuth library's refusal to speak plain
+   * HTTP is waived. Getting it wrong on a customer host would put the
+   * authorization code exchange in clear text, so the negative cases matter
+   * far more than the positive one.
+   */
+  it('waives HTTPS only for the local dev bench', () => {
+    expect(allowsInsecureTransport('localhost:8000')).toBe(true);
+    expect(allowsInsecureTransport('127.0.0.1:8000')).toBe(true);
+  });
+
+  it('never waives it for a real site, however it is spelled', () => {
+    expect(allowsInsecureTransport('moonlightfilms.erpnext.com')).toBe(false);
+    expect(allowsInsecureTransport('erp.example.com:8443')).toBe(false);
+    // A host that merely *contains* "localhost" is not localhost.
+    expect(allowsInsecureTransport('localhost.evil.com')).toBe(false);
+    expect(allowsInsecureTransport('notlocalhost')).toBe(false);
   });
 });
 

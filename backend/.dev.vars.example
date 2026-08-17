@@ -1,10 +1,30 @@
 # Copy to `.dev.vars` for local development. Never commit `.dev.vars`.
 # In production these are Wrangler secrets, not file-based:
 #   wrangler secret put FRAPPE_API_KEY
-#   wrangler secret put FRAPPE_API_SECRET
 #
-# Generate the pair in ERPNext: avatar > My Settings > API Access > Generate Keys.
-# The secret is shown exactly once.
+# Generate the ERPNext pair in ERPNext: avatar > My Settings > API Access >
+# Generate Keys. The secret is shown exactly once.
+#
+# FRAPPE_API_KEY / FRAPPE_API_SECRET are a single admin key with full access to
+# the site, and they are on their way out: Phase 6c replaces them with the
+# signed-in user's own token so ERPNext enforces that user's permissions. If
+# they are still set after Phase 6c, Phase 6c is not finished.
 
 FRAPPE_API_KEY = "your_api_key_here"
 FRAPPE_API_SECRET = "your_api_secret_here"
+
+# Sign-in (Phase 6b). Generate each of the three with:
+#   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+#
+# REGISTRY_KEY  encrypts tenant client secrets before they are written to KV.
+#               Losing it means every studio must reconnect; leaking it exposes
+#               every studio's client secret.
+# SESSION_KEY   seals the sign-in round-trip cookie, which carries the PKCE
+#               verifier. Rotating it logs everyone out; nothing worse.
+# CONNECTOR_SHARED_SECRET  gates POST /auth/register so only the connector app
+#               can add a tenant. Without it anyone could point StudioOS at a
+#               site of their choosing.
+
+REGISTRY_KEY = "32_random_bytes_base64"
+SESSION_KEY = "32_random_bytes_base64"
+CONNECTOR_SHARED_SECRET = "a_long_random_string"

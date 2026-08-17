@@ -1,0 +1,161 @@
+import { Hono } from 'hono';
+import * as oauth from 'oauth4webapi';
+import {
+  getTenant,
+  putTenant,
+  normaliseHost,
+  allowsInsecureTransport,
+  InvalidDomainError,
+} from '../lib/tenants';
+import { sealAuthState, authStateCookie } from '../lib/session';
+import type { AppEnv } from '../types';
+
+/**
+ * Sign in with ERPNext.
+ *
+ * Every studio runs its own ERPNext, so there is no single place to send an
+ * anonymous visitor. The flow therefore starts by being told which studio, and
+ * StudioOS looks that site up in the registry before it can redirect anywhere.
+ *
+ * Nothing here ever sees a password. The person authenticates on their own
+ * site and comes back with a one-time code; StudioOS exchanges that for a
+ * token that carries *their* permissions, which is what lets ERPNext do the
+ * authorising instead of us.
+ */
+const app = new Hono<AppEnv>();
+
+/** Scopes must be a subset of what the OAuth Client was registered with. */
+const SCOPE = 'openid all';
+
+function redirectUri(env: { APP_ORIGIN: string }): string {
+  return `${env.APP_ORIGIN.replace(/\/$/, '')}/auth/callback`;
+}
+
+/**
+ * oauth4webapi fetches with `redirect: 'manual'`, so a 3xx surfaces as a
+ * non-conforming response rather than being followed.
+ *
+ * Frappe needs it followed. Behind Frappe Cloud's nginx,
+ * `/.well-known/openid-configuration` returns 200 directly; on a bench's own
+ * dev server the same path 301s to
+ * `/api/method/frappe.integrations.oauth2.openid_configuration`. Both are
+ * legitimate, so discovery has to cope with either.
+ *
+ * This only ever applies to discovery, which is an unauthenticated GET of a
+ * public document. The token exchange keeps the library's default handling,
+ * where following a redirect could leak the code or client secret to whatever
+ * host the redirect names.
+ */
+const followRedirects: typeof fetch = (input, init) =>
+  fetch(input, { ...init, redirect: 'follow' });
+
+/**
+ * Register a studio.
+ *
+ * Called by the connector app on install so the owner never copies credentials
+ * by hand — the zero-paste onboarding in Phase 8. Guarded by a shared secret,
+ * because without one anybody could register a tenant and point StudioOS at a
+ * site of their choosing.
+ *
+ * Compared with `timingSafeEqual`-style care elsewhere: this is a fixed-length
+ * constant compared once per install, not per request, so a plain comparison
+ * is not the weak link. It is still compared in full rather than by prefix.
+ */
+app.post('/register', async (c) => {
+  const provided = c.req.header('x-connector-secret');
+  if (!provided || provided !== c.env.CONNECTOR_SHARED_SECRET) {
+    return c.json({ error: 'Not authorised to register a site.' }, 401);
+  }
+
+  const body = await c.req.json<{ host?: string; clientId?: string; clientSecret?: string }>();
+  if (!body.host || !body.clientId || !body.clientSecret) {
+    return c.json({ error: 'host, clientId and clientSecret are all required.' }, 400);
+  }
+
+  try {
+    const tenant = await putTenant(c.env, {
+      host: body.host,
+      clientId: body.clientId,
+      clientSecret: body.clientSecret,
+    });
+    // Deliberately does not echo the secret back.
+    return c.json({ host: tenant.host, origin: tenant.origin, registered: true });
+  } catch (err) {
+    if (err instanceof InvalidDomainError) return c.json({ error: err.message }, 400);
+    throw err;
+  }
+});
+
+/**
+ * Begin sign-in: `GET /auth/start?site=moonlightfilms.erpnext.com`
+ *
+ * Reads the site's own OIDC discovery document rather than assuming endpoint
+ * paths, so a self-hosted ERPNext on a different version works through the
+ * same code path as Frappe Cloud.
+ */
+app.get('/start', async (c) => {
+  const site = c.req.query('site');
+  if (!site) return c.json({ error: 'Enter your ERPNext site address.' }, 400);
+
+  let host: string;
+  try {
+    host = normaliseHost(site);
+  } catch (err) {
+    if (err instanceof InvalidDomainError) return c.json({ error: err.message }, 400);
+    throw err;
+  }
+
+  const tenant = await getTenant(c.env, host);
+  if (!tenant) {
+    return c.json(
+      {
+        error: `${host} is not connected to StudioOS yet.`,
+        hint: 'Install the StudioOS connector on that site first.',
+      },
+      404,
+    );
+  }
+
+  const issuer = new URL(tenant.origin);
+
+  /**
+   * oauth4webapi refuses plain HTTP, which is correct: an authorization code
+   * exchange in clear text hands the session to anyone on the path. The local
+   * dev bench genuinely is HTTP, so the refusal is waived for it alone --
+   * decided by the fixed host list in lib/tenants.ts, never inferred from the
+   * URL, so a real customer site can never end up here.
+   */
+  const insecureOk = allowsInsecureTransport(host);
+  const discovered = await oauth.discoveryRequest(issuer, {
+    algorithm: 'oidc',
+    [oauth.allowInsecureRequests]: insecureOk,
+    [oauth.customFetch]: followRedirects,
+  });
+  const as = await oauth.processDiscoveryResponse(issuer, discovered);
+
+  if (!as.authorization_endpoint) {
+    return c.json({ error: `${host} does not advertise an authorization endpoint.` }, 502);
+  }
+
+  // PKCE: the code alone is useless without the verifier, so an intercepted
+  // code cannot be redeemed by whoever intercepted it.
+  const verifier = oauth.generateRandomCodeVerifier();
+  const challenge = await oauth.calculatePKCECodeChallenge(verifier);
+  const state = oauth.generateRandomState();
+
+  const authUrl = new URL(as.authorization_endpoint);
+  authUrl.searchParams.set('client_id', tenant.clientId);
+  authUrl.searchParams.set('redirect_uri', redirectUri(c.env));
+  authUrl.searchParams.set('response_type', 'code');
+  authUrl.searchParams.set('scope', SCOPE);
+  authUrl.searchParams.set('code_challenge', challenge);
+  authUrl.searchParams.set('code_challenge_method', 'S256');
+  authUrl.searchParams.set('state', state);
+
+  const sealed = await sealAuthState({ host, state, verifier }, c.env.SESSION_KEY);
+  c.header('Set-Cookie', authStateCookie(sealed, c.env.APP_ORIGIN.startsWith('https://')));
+
+  return c.redirect(authUrl.toString(), 302);
+});
+
+export default app;

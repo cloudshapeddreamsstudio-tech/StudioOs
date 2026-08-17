@@ -23,6 +23,14 @@ export interface Env {
   REGISTRY_KEY: string;
   /** 32 bytes, base64. Signs and encrypts the session cookie. */
   SESSION_KEY: string;
+  /**
+   * Where StudioOS itself is reachable. The OAuth redirect URI is built from
+   * this, and it is registered on every customer's site — so it has to be a
+   * permanent, exact match, not something derived from a request header.
+   */
+  APP_ORIGIN: string;
+  /** Gates POST /auth/register so only the connector app can add a tenant. */
+  CONNECTOR_SHARED_SECRET: string;
 }
 
 /** Hono generic: `new Hono<AppEnv>()` gives typed `c.env`. */

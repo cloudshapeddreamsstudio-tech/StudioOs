@@ -16,6 +16,8 @@
  * readable that way.
  */
 
+import { decryptString, encryptString } from './crypto';
+
 export interface Tenant {
   /** Normalised host, with port if there is one. Also the KV key. */
   host: string;
@@ -81,70 +83,33 @@ export function normaliseHost(input: string): string {
   return url.port ? `${url.hostname}:${url.port}` : url.hostname;
 }
 
+/**
+ * Whether this host may be talked to over plain HTTP.
+ *
+ * OAuth libraries refuse insecure transport by default, and rightly so -- an
+ * authorization code exchange in clear text hands the session to anyone on the
+ * path. The local dev bench genuinely is plain HTTP, so the exception exists,
+ * but it is granted per host from a fixed list and never inferred.
+ */
+export function allowsInsecureTransport(host: string): boolean {
+  const bare = host.split(':')[0] ?? host;
+  return PLAINTEXT_HOSTS.has(bare);
+}
+
 /** The origin every request to that site is built from. */
 export function originForHost(host: string): string {
-  const bare = host.split(':')[0] ?? host;
-  const scheme = PLAINTEXT_HOSTS.has(bare) ? 'http' : 'https';
+  const scheme = allowsInsecureTransport(host) ? 'http' : 'https';
   return `${scheme}://${host}`;
 }
 
 /* ---------------------------------------------------------------- crypto */
 
-const IV_BYTES = 12; // AES-GCM standard nonce length.
-
-async function importKey(rawBase64: string): Promise<CryptoKey> {
-  const raw = base64ToBytes(rawBase64);
-  if (raw.byteLength !== 32) {
-    throw new Error('REGISTRY_KEY must be 32 bytes, base64-encoded.');
-  }
-  return crypto.subtle.importKey('raw', raw, { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
-}
-
 /**
- * Encrypt with a fresh random IV each time, and store the IV alongside the
- * ciphertext. Reusing an IV with AES-GCM is a well-known way to lose the
- * secrecy the encryption was there to provide.
+ * Thin aliases over lib/crypto.ts. The registry and the session cookie protect
+ * different things but need the same primitive, so it lives in one place.
  */
-export async function encryptSecret(plaintext: string, keyBase64: string): Promise<string> {
-  const key = await importKey(keyBase64);
-  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv },
-    key,
-    new TextEncoder().encode(plaintext),
-  );
-
-  const joined = new Uint8Array(iv.byteLength + ciphertext.byteLength);
-  joined.set(iv, 0);
-  joined.set(new Uint8Array(ciphertext), iv.byteLength);
-  return bytesToBase64(joined);
-}
-
-export async function decryptSecret(payload: string, keyBase64: string): Promise<string> {
-  const key = await importKey(keyBase64);
-  const joined = base64ToBytes(payload);
-  if (joined.byteLength <= IV_BYTES) throw new Error('Encrypted value is truncated.');
-
-  const plaintext = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv: joined.subarray(0, IV_BYTES) },
-    key,
-    joined.subarray(IV_BYTES),
-  );
-  return new TextDecoder().decode(plaintext);
-}
-
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (const b of bytes) binary += String.fromCharCode(b);
-  return btoa(binary);
-}
-
-function base64ToBytes(value: string): Uint8Array {
-  const binary = atob(value);
-  const out = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) out[i] = binary.charCodeAt(i);
-  return out;
-}
+export const encryptSecret = encryptString;
+export const decryptSecret = decryptString;
 
 /* ------------------------------------------------------------- registry */
 
