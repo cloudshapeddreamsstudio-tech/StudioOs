@@ -185,8 +185,56 @@ Local dev needs `host_name` set on the bench site (`ezsandesh.dev` now has
 the origin it was fetched from, and `ezsandesh.dev` does not resolve from
 Windows.
 
-Still to do in 6b: `/auth/callback`, `/auth/logout`, the signed-in session
-cookie, and silent refresh.
+#### Sign-in proven end to end, 2026-08-17
+
+Against `studio.os` (ERPNext installed), with `oauth_connector` installed from
+GitHub:
+
+```
+/auth/start           302 → the site's authorize endpoint, PKCE S256 + state
+login on their site   200
+consent screen        200 — "StudioOS wants to access…", Allow / Deny
+approve               302 → /auth/callback?code=…&state=…
+/auth/callback        302 → /projects
+                      studioos_auth cleared, studioos_session set (14 days)
+/auth/me              {"host":"localhost:8000","user":"studioos-test@example.com"}
+/auth/me (no cookie)  401
+/auth/logout          {"signedOut":true}, cookie cleared, /auth/me then 401
+```
+
+The callback validated `state`, exchanged the code with the PKCE verifier, and
+resolved identity from the site itself. **No password ever reached StudioOS.**
+
+#### Four traps, all found by running it
+
+1. **`oauth4webapi` refuses plain HTTP.** Waived only via `allowsInsecureTransport()`,
+   a fixed host list, never inferred — `localhost.evil.com` does not qualify.
+2. **Discovery must follow redirects; the token exchange must not.** Frappe Cloud
+   returns 200 on `/.well-known/openid-configuration`; a bench dev server 301s
+   it, and the library fetches with `redirect: 'manual'`.
+3. **Do not request the `openid` scope.** Frappe signs ID tokens with **HS256**,
+   symmetric, and `oauth4webapi` verifies asymmetric signatures only — an ID
+   token in the response fails validation and breaks every sign-in. Identity
+   comes from `frappe.auth.get_logged_user` on the token instead, which is a
+   stronger claim: the site answering about the token we actually hold.
+4. **Frappe shows a consent screen** (`skip_authorization` is 0), which POSTs to
+   `oauth2.approve` with a CSRF token. The flow is authorize → consent →
+   approve → callback, not authorize → callback.
+
+#### One long detour worth not repeating
+
+Hours went into "web login is broken" on `ezsandesh.dev`: credentials verified
+in `bench console` but `POST /api/method/login` returned 401 for every account.
+The cause was that **`default_site` had changed to `studio.os`**, so
+`localhost:8000` was serving a different site from the one where the users and
+OAuth client had been created. `find_by_credentials` was right — those accounts
+genuinely did not exist there.
+
+**Check `sites/common_site_config.json` `default_site` before trusting anything
+served on `localhost:8000`.**
+
+Still to do in 6b: silent refresh when the access token expires mid-session.
+Then 6c, the god-key swap.
 
 ### 6c — swap the god-key ⬜
 

@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProjectsListPage } from './features/projects/ProjectsListPage';
-
+ 
 /**
  * One route table for the whole app.
  *
@@ -22,7 +22,7 @@ import { ProjectsListPage } from './features/projects/ProjectsListPage';
  * unavailable rather than silently treated as zero. Until then a project link
  * lands on NotFound, which says so.
  */
-export const router = createBrowserRouter([
+export const router = createBrowserRouter([ 
   {
     path: '/',
     element: <AppLayout />,

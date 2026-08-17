@@ -7,7 +7,20 @@ import {
   allowsInsecureTransport,
   InvalidDomainError,
 } from '../lib/tenants';
-import { sealAuthState, authStateCookie } from '../lib/session';
+import {
+  sealAuthState,
+  openAuthState,
+  authStateCookie,
+  clearAuthStateCookie,
+  AUTH_STATE_COOKIE,
+  sealSession,
+  openSession,
+  sessionCookie,
+  clearSessionCookie,
+  SESSION_COOKIE,
+  type AuthState,
+  type Session,
+} from '../lib/session';
 import type { AppEnv } from '../types';
 
 /**
@@ -24,8 +37,19 @@ import type { AppEnv } from '../types';
  */
 const app = new Hono<AppEnv>();
 
-/** Scopes must be a subset of what the OAuth Client was registered with. */
-const SCOPE = 'openid all';
+/**
+ * Scopes must be a subset of what the OAuth Client was registered with, which
+ * is `all openid`.
+ *
+ * `openid` is deliberately NOT requested. Frappe signs ID tokens with HS256 --
+ * a symmetric algorithm keyed on the client secret -- and oauth4webapi verifies
+ * asymmetric signatures only, so an ID token in the response would fail
+ * validation and break every sign-in. Nothing here needs one: identity comes
+ * from an authenticated call to the site itself (see `whoami`), which is a
+ * stronger claim anyway because it is the site answering about the token we
+ * actually hold.
+ */
+const SCOPE = 'all';
 
 function redirectUri(env: { APP_ORIGIN: string }): string {
   return `${env.APP_ORIGIN.replace(/\/$/, '')}/auth/callback`;
@@ -157,5 +181,143 @@ app.get('/start', async (c) => {
 
   return c.redirect(authUrl.toString(), 302);
 });
+
+/**
+ * Return from the studio's ERPNext: `GET /auth/callback?code=…&state=…`
+ *
+ * The `state` check is what makes this safe. Without it, an attacker could hand
+ * a victim's browser an authorization code of their choosing and have StudioOS
+ * sign that victim into the attacker's account.
+ */
+app.get('/callback', async (c) => {
+  const secure = c.env.APP_ORIGIN.startsWith('https://');
+
+  let saved: AuthState;
+  try {
+    saved = await openAuthState(getCookie(c.req.header('cookie'), AUTH_STATE_COOKIE), c.env.SESSION_KEY);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Sign-in failed.' }, 400);
+  }
+
+  // Clear the round-trip cookie whatever happens next: it is single-use, and
+  // leaving it live would allow a second attempt with the same verifier.
+  c.header('Set-Cookie', clearAuthStateCookie(secure), { append: true });
+
+  const tenant = await getTenant(c.env, saved.host);
+  if (!tenant) return c.json({ error: `${saved.host} is no longer connected.` }, 404);
+
+  const insecureOk = allowsInsecureTransport(saved.host);
+  const issuer = new URL(tenant.origin);
+  const as = await oauth.processDiscoveryResponse(
+    issuer,
+    await oauth.discoveryRequest(issuer, {
+      algorithm: 'oidc',
+      [oauth.allowInsecureRequests]: insecureOk,
+      [oauth.customFetch]: followRedirects,
+    }),
+  );
+
+  const client: oauth.Client = { client_id: tenant.clientId };
+  const clientAuth = oauth.ClientSecretPost(tenant.clientSecret);
+
+  let params: URLSearchParams;
+  try {
+    params = oauth.validateAuthResponse(as, client, new URL(c.req.url), saved.state);
+  } catch (err) {
+    return c.json({ error: `${saved.host} refused the sign-in.`, detail: String(err) }, 400);
+  }
+
+  const tokenResponse = await oauth.authorizationCodeGrantRequest(
+    as,
+    client,
+    clientAuth,
+    params,
+    redirectUri(c.env),
+    saved.verifier,
+    { [oauth.allowInsecureRequests]: insecureOk },
+  );
+
+  const tokens = await oauth.processAuthorizationCodeResponse(as, client, tokenResponse);
+
+  const user = await whoami(tenant.origin, tokens.access_token);
+  if (!user) return c.json({ error: 'Signed in, but the site would not say who you are.' }, 502);
+
+  const session: Session = {
+    host: tenant.host,
+    user,
+    accessToken: tokens.access_token,
+    refreshToken: tokens.refresh_token,
+    accessExpiresAt: Math.floor(Date.now() / 1000) + (tokens.expires_in ?? 3600),
+  };
+  c.header('Set-Cookie', sessionCookie(await sealSession(session, c.env.SESSION_KEY), secure), {
+    append: true,
+  });
+
+  return c.redirect('/projects', 302);
+});
+
+/** Who the access token belongs to, according to the site that issued it. */
+async function whoami(origin: string, accessToken: string): Promise<string | null> {
+  const res = await fetch(`${origin}/api/method/frappe.auth.get_logged_user`, {
+    headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+  });
+  if (!res.ok) return null;
+  const body = (await res.json()) as { message?: string };
+  return body.message && body.message !== 'Guest' ? body.message : null;
+}
+
+/** Who am I, for the frontend. 401 when not signed in. */
+app.get('/me', async (c) => {
+  try {
+    const session = await openSession(
+      getCookie(c.req.header('cookie'), SESSION_COOKIE),
+      c.env.SESSION_KEY,
+    );
+    return c.json({ host: session.host, user: session.user });
+  } catch {
+    return c.json({ error: 'Not signed in.' }, 401);
+  }
+});
+
+/**
+ * Sign out. Revokes the token at the studio's own site as well as dropping our
+ * cookie -- otherwise the token stays valid there until it expires, and
+ * "signed out" would be true only in this browser.
+ */
+app.post('/logout', async (c) => {
+  const secure = c.env.APP_ORIGIN.startsWith('https://');
+  c.header('Set-Cookie', clearSessionCookie(secure), { append: true });
+
+  try {
+    const session = await openSession(
+      getCookie(c.req.header('cookie'), SESSION_COOKIE),
+      c.env.SESSION_KEY,
+    );
+    const tenant = await getTenant(c.env, session.host);
+    if (tenant) {
+      // Best effort. A failed revocation must not leave the user unable to
+      // sign out of StudioOS itself.
+      await fetch(`${tenant.origin}/api/method/frappe.integrations.oauth2.revoke_token`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ token: session.accessToken }),
+      }).catch(() => undefined);
+    }
+  } catch {
+    // Not signed in, or an unreadable cookie. Clearing it is still correct.
+  }
+
+  return c.json({ signedOut: true });
+});
+
+/** Minimal cookie reader -- Hono's helper is not worth a dependency here. */
+function getCookie(header: string | undefined, name: string): string | undefined {
+  if (!header) return undefined;
+  for (const part of header.split(';')) {
+    const [k, ...rest] = part.trim().split('=');
+    if (k === name) return rest.join('=') || undefined;
+  }
+  return undefined;
+}
 
 export default app;
