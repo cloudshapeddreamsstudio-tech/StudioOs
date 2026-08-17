@@ -133,23 +133,33 @@ export interface ProjectDetail {
   payments: DetailPayment[];
   files: DetailFile[];
   activity: ActivityEntry[];
-  expenses: Expense[];
-  expensesByCategory: Record<string, number>;
-  crewRoster: CrewEntry[];
+  /**
+   * `null` means "not in this release", which is NOT an empty list.
+   *
+   * These types are deliberately nullable rather than optional: a nullable type
+   * makes the compiler stop at every place that would otherwise treat the
+   * missing value as zero, which is the whole point of Phase 7b. See
+   * `unavailable` below and docs/PLAN-v2.md.
+   */
+  expenses: Expense[] | null;
+  expensesByCategory: Record<string, number> | null;
+  crewRoster: CrewEntry[] | null;
+  /** Which sources this release cannot see, stated rather than inferred. */
+  unavailable: { crewRoster: boolean; expenses: boolean; reason: string };
   completion: Completion;
   expenseOverview: {
-    rows: { category: string; planned: number; actual: number }[];
-    plannedTotal: number;
-    actualTotal: number;
+    rows: { category: string; planned: number | null; actual: number }[];
+    plannedTotal: number | null;
+    actualTotal: number | null;
     margin: {
       commissionPlanned: number;
       commissionActual: number;
-      productionPlanned: number;
-      productionActual: number;
+      productionPlanned: number | null;
+      productionActual: number | null;
       productionCeilingPlanned: number;
       productionCeilingActual: number;
-      profitPlanned: number;
-      profitActual: number;
+      profitPlanned: number | null;
+      profitActual: number | null;
       profitPlannedPercent: number | null;
       profitActualPercent: number | null;
       meetsTargetPlanned: boolean | null;
@@ -160,8 +170,8 @@ export interface ProjectDetail {
     sanctioned: number;
     billed: number;
     purchaseCost: number;
-    expenseTotal: number;
-    remaining: number;
+    expenseTotal: number | null;
+    remaining: number | null;
     grossMargin: number;
     marginPercent: number;
     commissionPercent: number;

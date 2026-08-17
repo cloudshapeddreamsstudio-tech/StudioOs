@@ -16,6 +16,18 @@ export function formatCurrency(value: number | string | null | undefined): strin
   return inr.format(Number.isFinite(n) ? n : 0);
 }
 
+/**
+ * For figures that can be genuinely unknown, as opposed to zero.
+ *
+ * `formatCurrency` coerces null to ₹0, which is right for "nothing has been
+ * spent" and badly wrong for "we cannot see what was spent". The backend is
+ * careful to return null rather than 0 for those (see projectFinance.ts); this
+ * is what stops that care being undone in the last inch before the screen.
+ */
+export function formatCurrencyOrDash(value: number | null | undefined): string {
+  return value === null || value === undefined ? '—' : formatCurrency(value);
+}
+
 /** Plain number with lakh grouping, no currency symbol. */
 export function formatNumber(value: number | string | null | undefined): string {
   const n = Number(value ?? 0);

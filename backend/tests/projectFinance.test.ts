@@ -280,3 +280,134 @@ describe('buildExpenseOverview', () => {
     expect(o.margin.meetsTargetActual).toBeNull();
   });
 });
+
+/**
+ * Phase 7b: the crew roster and project expenses are not in this release.
+ *
+ * The danger is not that figures are missing — it is that a missing figure
+ * silently becomes zero, which produces a confidently wrong number rather than
+ * an obviously absent one. Every wrong answer here flatters the owner: unseen
+ * spend makes the budget look healthier and the profit look larger, which is
+ * exactly the direction that causes overspending.
+ *
+ * So `null` must survive all the way out. These tests exist to stop a future
+ * `?? 0` from looking harmless.
+ */
+describe('unavailable inputs are never treated as zero', () => {
+  const completionBase = {
+    tasks: [] as TaskRow[],
+    liveSales: [] as SalesRow[],
+    livePurchases: [] as PurchaseRow[],
+    totalSalesCount: 0,
+    totalPurchaseCount: 0,
+  };
+
+  const financeBase = {
+    sanctioned: 100000,
+    billed: 0,
+    purchaseCost: 0,
+    commissionPercent: 5,
+    liveSales: [] as SalesRow[],
+    livePurchases: [] as PurchaseRow[],
+    grossMargin: 0,
+    marginPercent: 0,
+  };
+
+  const overviewBase = {
+    sanctioned: 100000,
+    commissionPercent: 5,
+    commissionOwed: 5000,
+    livePurchases: [] as PurchaseRow[],
+    vendorPurchases: [] as PurchaseRow[],
+  };
+
+  it('does not claim "no crew assigned" when the roster is simply unavailable', () => {
+    const withRoster = computeCompletion({ ...completionBase, crewRoster: [] });
+    const unavailable = computeCompletion({ ...completionBase, crewRoster: null });
+
+    // An empty roster genuinely means nobody is on it.
+    expect(withRoster.noCrewAssigned).toBe(true);
+    expect(withRoster.crewRosterUnavailable).toBe(false);
+
+    // A missing roster means we do not know, so we must not say.
+    expect(unavailable.noCrewAssigned).toBe(false);
+    expect(unavailable.crewRosterUnavailable).toBe(true);
+  });
+
+  it('leaves budget remaining unknown rather than overstating it', () => {
+    const known = computeFinance({ ...financeBase, purchaseCost: 30000, expenseTotal: 5000 });
+    expect(known.remaining).toBe(financeBase.sanctioned - 30000 - 5000);
+
+    const unknown = computeFinance({ ...financeBase, purchaseCost: 30000, expenseTotal: null });
+    expect(unknown.expenseTotal).toBeNull();
+    // NOT sanctioned - purchaseCost, which would overstate the budget by every
+    // expense nobody can see.
+    expect(unknown.remaining).toBeNull();
+  });
+
+  it('leaves planned spend and planned profit unknown when the roster is missing', () => {
+    const overview = buildExpenseOverview({
+      ...overviewBase,
+      crewEntries: null,
+      vendorEntries: null,
+      expenses: null,
+    });
+
+    expect(overview.plannedTotal).toBeNull();
+    expect(overview.margin.profitPlanned).toBeNull();
+    expect(overview.margin.profitPlannedPercent).toBeNull();
+    // "Does this project meet the 20% target?" is unanswerable, not a No.
+    expect(overview.margin.meetsTargetPlanned).toBeNull();
+  });
+
+  it('shows per-row actual spend, which comes from ERPNext and is known', () => {
+    const overview = buildExpenseOverview({
+      ...overviewBase,
+      crewEntries: null,
+      vendorEntries: null,
+      expenses: null,
+      livePurchases: [{ supplier_group: 'Crew', grand_total: 40000, outstanding_amount: 0 }],
+    });
+
+    const crewRow = overview.rows.find((r) => r.category === 'Crew');
+    expect(crewRow?.actual).toBe(40000);
+    // The row shows actual against an unknown plan, not against zero — which
+    // would read as "overspent by the entire amount".
+    expect(crewRow?.planned).toBeNull();
+  });
+
+  /**
+   * The subtler half, and the one that actually shipped wrong before a browser
+   * caught it: crew and vendor actuals come from purchase invoices and are
+   * known, but logged expenses are actual spend too. Totalling only the visible
+   * part understates spend and therefore overstates profit — the page reported
+   * a 95% margin on a project whose out-of-pocket costs cannot be seen at all.
+   */
+  it('leaves ACTUAL spend and profit unknown too, not just planned', () => {
+    const overview = buildExpenseOverview({
+      ...overviewBase,
+      crewEntries: null,
+      vendorEntries: null,
+      expenses: null,
+      livePurchases: [{ supplier_group: 'Crew', grand_total: 40000, outstanding_amount: 0 }],
+    });
+
+    expect(overview.actualTotal).toBeNull();
+    expect(overview.margin.profitActual).toBeNull();
+    expect(overview.margin.profitActualPercent).toBeNull();
+    expect(overview.margin.meetsTargetActual).toBeNull();
+  });
+
+  it('still totals actual spend normally when expenses ARE available', () => {
+    const overview = buildExpenseOverview({
+      ...overviewBase,
+      crewEntries: [],
+      vendorEntries: [],
+      expenses: [{ category: 'Transport', amount: 1250 }],
+      livePurchases: [{ supplier_group: 'Crew', grand_total: 40000, outstanding_amount: 0 }],
+    });
+
+    expect(overview.actualTotal).toBe(41250);
+    expect(overview.margin.profitActual).toBe(100000 - 5000 - 41250);
+  });
+});

@@ -4,6 +4,7 @@ import { logger } from 'hono/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { requireSession } from './middleware/requireSession';
 import projects from './routes/projects';
+import projectDetail from './routes/projectDetail';
 import auth from './routes/auth';
 import type { AppEnv, Env } from './types';
 
@@ -81,6 +82,9 @@ app.get('/api/health', (c) =>
 app.use('/api/*', requireSession);
 
 app.route('/api/projects', projects);
+// Mirrors the old app's /api/project (singular, one aggregate) vs
+// /api/projects (plural, the list) split.
+app.route('/api/project', projectDetail);
 
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
 

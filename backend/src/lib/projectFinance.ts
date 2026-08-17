@@ -64,7 +64,12 @@ export interface CompletionInput {
   tasks: TaskRow[];
   liveSales: SalesRow[];
   livePurchases: PurchaseRow[];
-  crewRoster: CrewRow[];
+  /**
+   * `null` means the roster is not available in this release, which is NOT the
+   * same as an empty roster. "No crew is assigned" is a claim about data; with
+   * no data we must not make it. See docs/PLAN-v2.md 7b.
+   */
+  crewRoster: CrewRow[] | null;
   /** Counts of the raw, pre-filter invoice lists — a cancelled invoice still
    *  proves something happened on this project. */
   totalSalesCount: number;
@@ -103,16 +108,23 @@ export function computeCompletion(input: CompletionInput) {
   const unpaidSales = liveSales.filter(isOwed);
   const clientFullyPaid = unpaidSales.length === 0;
 
-  const crewEntries = crewRoster.filter((e) => e.role === 'Crew');
-  const vendorEntries = crewRoster.filter((e) => e.role === 'Vendor');
+  const crewRosterUnavailable = crewRoster === null;
+  const crewEntries = (crewRoster ?? []).filter((e) => e.role === 'Crew');
+  const vendorEntries = (crewRoster ?? []).filter((e) => e.role === 'Vendor');
 
   /**
    * `crewFullyPaid` is vacuously true when there are no unpaid purchase
    * invoices — which includes "no crew at all". That is the exact bug this
    * flag guards: a project with NO crew assigned must not have "Crew Payment
    * Made" silently auto-complete.
+   *
+   * When the roster is unavailable this must be **false**, not true. An empty
+   * array and a missing source both produce zero entries, but they mean
+   * opposite things: one says "nobody is on this crew", the other says "we
+   * cannot see the crew". Telling an owner "no crew is assigned" about a
+   * project that has a full roster would be worse than saying nothing.
    */
-  const noCrewAssigned = crewEntries.length === 0;
+  const noCrewAssigned = !crewRosterUnavailable && crewEntries.length === 0;
 
   const vendorPurchases = livePurchases.filter(
     (i) => i.supplier_group === VENDOR_SUPPLIER_GROUP,
@@ -145,6 +157,7 @@ export function computeCompletion(input: CompletionInput) {
     clientOutstandingCount: unpaidSales.length,
     clientOutstandingAmount: sumOutstanding(unpaidSales),
     noCrewAssigned,
+    crewRosterUnavailable,
     hasVendorInvolvement,
     vendorFullyPaid,
     // Not part of the old response shape, but the route needs these and
@@ -203,7 +216,8 @@ export interface FinanceInput {
   commissionPercent: number;
   liveSales: SalesRow[];
   livePurchases: PurchaseRow[];
-  expenseTotal: number;
+  /** `null` when project expenses are unavailable — see CompletionInput.crewRoster. */
+  expenseTotal: number | null;
   grossMargin: number;
   marginPercent: number;
 }
@@ -228,8 +242,17 @@ export function computeFinance(input: FinanceInput) {
     billed,
     purchaseCost,
     expenseTotal: input.expenseTotal,
-    // Budget left = sanctioned, minus crew/rental spend, minus misc expenses.
-    remaining: sanctioned - purchaseCost - input.expenseTotal,
+    /**
+     * Budget left = sanctioned, minus crew/rental spend, minus misc expenses.
+     *
+     * With expenses unavailable this is **null**, not `sanctioned - purchaseCost`.
+     * Treating a missing figure as zero does not produce a slightly wrong
+     * number, it produces a confidently wrong one — always in the flattering
+     * direction, since every unseen expense makes the owner look richer than
+     * they are. A dash is honest; an overstated budget invites overspending.
+     */
+    remaining:
+      input.expenseTotal === null ? null : sanctioned - purchaseCost - input.expenseTotal,
     grossMargin: input.grossMargin,
     marginPercent: input.marginPercent,
     commissionPercent,
@@ -246,9 +269,11 @@ export interface ExpenseOverviewInput {
   commissionOwed: number;
   livePurchases: PurchaseRow[];
   vendorPurchases: PurchaseRow[];
-  crewEntries: CrewRow[];
-  vendorEntries: CrewRow[];
-  expenses: ExpenseRow[];
+  /** `null` when the roster is unavailable — see CompletionInput.crewRoster. */
+  crewEntries: CrewRow[] | null;
+  vendorEntries: CrewRow[] | null;
+  /** `null` when project expenses are unavailable. */
+  expenses: ExpenseRow[] | null;
 }
 
 /** The owner's "where did the money go" table: planned versus actual. */
@@ -265,23 +290,35 @@ export function buildExpenseOverview(input: ExpenseOverviewInput) {
   );
   const crewActual = crewPurchases.reduce((s, i) => s + Number(i.grand_total || 0), 0);
   const vendorActual = input.vendorPurchases.reduce((s, i) => s + Number(i.grand_total || 0), 0);
-  const crewPlanned = input.crewEntries.reduce((s, e) => s + Number(e.total || 0), 0);
-  const vendorPlanned = input.vendorEntries.reduce((s, e) => s + Number(e.total || 0), 0);
+  /**
+   * Planned figures come from the roster. When it is unavailable they are null,
+   * never zero: a row reading "Crew — planned ₹0, actual ₹40,000" tells the
+   * owner they overspent by the whole amount, when in truth the plan was simply
+   * not visible.
+   */
+  const rosterUnavailable = input.crewEntries === null || input.vendorEntries === null;
+  const crewPlanned = rosterUnavailable
+    ? null
+    : input.crewEntries!.reduce((s, e) => s + Number(e.total || 0), 0);
+  const vendorPlanned = rosterUnavailable
+    ? null
+    : input.vendorEntries!.reduce((s, e) => s + Number(e.total || 0), 0);
 
+  const expensesUnavailable = input.expenses === null;
   const actualByCategory: Record<string, number> = {};
   const plannedByCategory: Record<string, number> = {};
-  for (const e of input.expenses) {
+  for (const e of input.expenses ?? []) {
     const c = e.category || 'Other';
     actualByCategory[c] = (actualByCategory[c] ?? 0) + Number(e.amount || 0);
     plannedByCategory[c] = (plannedByCategory[c] ?? 0) + Number(e.estimatedAmount || 0);
   }
 
   // Only emit a row if it has a nonzero planned OR actual — no empty rows.
-  const rows: { category: string; planned: number; actual: number }[] = [];
-  if (crewPlanned > 0 || crewActual > 0) {
+  const rows: { category: string; planned: number | null; actual: number }[] = [];
+  if ((crewPlanned ?? 0) > 0 || crewActual > 0 || rosterUnavailable) {
     rows.push({ category: 'Crew', planned: crewPlanned, actual: crewActual });
   }
-  if (vendorPlanned > 0 || vendorActual > 0) {
+  if ((vendorPlanned ?? 0) > 0 || vendorActual > 0 || rosterUnavailable) {
     rows.push({ category: 'Vendor', planned: vendorPlanned, actual: vendorActual });
   }
   const categories = new Set([
@@ -294,8 +331,26 @@ export function buildExpenseOverview(input: ExpenseOverviewInput) {
     if (planned > 0 || actual > 0) rows.push({ category: cat, planned, actual });
   }
 
-  const plannedTotal = rows.reduce((s, r) => s + r.planned, 0);
-  const actualTotal = rows.reduce((s, r) => s + r.actual, 0);
+  /**
+   * A total across rows where some are unknown is itself unknown. Summing the
+   * knowable ones and presenting it as "planned" would understate the plan by
+   * exactly the hidden part.
+   */
+  const plannedTotal =
+    rosterUnavailable || expensesUnavailable
+      ? null
+      : rows.reduce((s, r) => s + (r.planned ?? 0), 0);
+
+  /**
+   * The *actual* total is unknown too when expenses are unavailable.
+   *
+   * Crew and vendor actuals come from purchase invoices and are fully known,
+   * but logged expenses contribute to actual spend as well. Summing only the
+   * visible part and labelling it "production actual" understates spend, which
+   * then overstates profit — the page would confidently report a 95% margin on
+   * a project whose out-of-pocket costs simply cannot be seen.
+   */
+  const actualTotal = expensesUnavailable ? null : rows.reduce((s, r) => s + r.actual, 0);
 
   /**
    * Margin model, per the owner's explicit split on SANCTIONED:
@@ -307,8 +362,12 @@ export function buildExpenseOverview(input: ExpenseOverviewInput) {
    */
   const commissionPlanned = Math.round((sanctioned * commissionPercent) / 100);
   const commissionActual = commissionOwed; // reuse, don't re-derive
-  const profitActual = sanctioned - commissionActual - actualTotal;
-  const profitPlanned = sanctioned - commissionPlanned - plannedTotal;
+  const profitActual =
+    actualTotal === null ? null : sanctioned - commissionActual - actualTotal;
+  // Planned profit is derived from planned production, so it inherits its
+  // unknown-ness rather than quietly assuming the plan was zero.
+  const profitPlanned =
+    plannedTotal === null ? null : sanctioned - commissionPlanned - plannedTotal;
   const targetProfit = 0.2 * sanctioned;
 
   return {
@@ -325,10 +384,14 @@ export function buildExpenseOverview(input: ExpenseOverviewInput) {
       productionCeilingActual: sanctioned - commissionActual - targetProfit,
       profitPlanned,
       profitActual,
-      profitPlannedPercent: sanctioned > 0 ? (profitPlanned / sanctioned) * 100 : null,
-      profitActualPercent: sanctioned > 0 ? (profitActual / sanctioned) * 100 : null,
-      meetsTargetPlanned: sanctioned > 0 ? profitPlanned >= targetProfit : null,
-      meetsTargetActual: sanctioned > 0 ? profitActual >= targetProfit : null,
+      profitPlannedPercent:
+        sanctioned > 0 && profitPlanned !== null ? (profitPlanned / sanctioned) * 100 : null,
+      profitActualPercent:
+        sanctioned > 0 && profitActual !== null ? (profitActual / sanctioned) * 100 : null,
+      meetsTargetPlanned:
+        sanctioned > 0 && profitPlanned !== null ? profitPlanned >= targetProfit : null,
+      meetsTargetActual:
+        sanctioned > 0 && profitActual !== null ? profitActual >= targetProfit : null,
     },
   };
 }

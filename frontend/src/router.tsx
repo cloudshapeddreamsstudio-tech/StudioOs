@@ -1,6 +1,7 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProjectsListPage } from './features/projects/ProjectsListPage';
+import { ProjectDetailPage } from './features/projects/ProjectDetailPage';
 import { SignInPage } from './features/auth/SignInPage';
 import { RequireSession } from './features/auth/RequireSession';
 
@@ -18,11 +19,10 @@ import { RequireSession } from './features/auth/RequireSession';
  * withdrawn, so re-adding one is a single line here plus mounting its API
  * route in the Worker.
  *
- * `projects/:name` is withdrawn too: project detail needs `/api/project`,
- * which reads the crew roster and expenses from a database that no longer
- * exists. Phase 7b brings it back with those inputs explicitly declared
- * unavailable rather than silently treated as zero. Until then a project link
- * lands on NotFound, which says so.
+ * `projects/:name` is back as of Phase 7b, with the crew roster and project
+ * expenses explicitly declared unavailable rather than silently treated as
+ * zero — so any figure derived from them shows a dash, not a number that
+ * would be wrong in the flattering direction.
  *
  * ## Sign-in sits outside the shell (Phase 7a)
  *
@@ -42,6 +42,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="/projects" replace /> },
           { path: 'projects', element: <ProjectsListPage /> },
+          { path: 'projects/:name', element: <ProjectDetailPage /> },
           { path: '*', element: <NotFound /> },
         ],
       },

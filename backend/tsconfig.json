@@ -49,7 +49,6 @@
     "src/routes/brand.ts",
     "src/routes/invoices.ts",
     "src/routes/projectCrew.ts",
-    "src/routes/projectDetail.ts",
     "src/routes/projectExpenses.ts",
     "src/routes/studioRental.ts",
     "src/routes/subscriptions.ts",

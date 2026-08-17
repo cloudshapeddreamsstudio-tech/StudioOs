@@ -422,7 +422,7 @@ Signing out clears the whole query cache, not just the session: the cache holds
 one studio's projects, and the next person to sign in on that browser must not
 be shown them while their own request is still in flight.
 
-### 7b — project detail, honest about what is missing ⬜
+### 7b — project detail, honest about what is missing ✅
 
 - ⬜ Four tabs ship as-is: **Checklist, Money, Docs, Activity** — all pure ERPNext
 - ⬜ **Crew** and **Expenses** tabs show an explicit "not in this release" state.
@@ -439,6 +439,54 @@ rather than as ₹11,000, and a note names why. Verified in a browser.
 **Test first, then prove it.** Add a test asserting that a missing-expenses
 input yields null rather than a number, then break it to return the sanctioned
 amount and watch it go red. That is the exact bug this guard exists to prevent.
+
+#### Done and verified, 2026-08-17
+
+`null` now travels from the route, through `projectFinance.ts`, into the types,
+and out to the screen. **145 tests pass.**
+
+Proven by breaking it: replacing the null-guard on `remaining` with
+`(input.expenseTotal ?? 0)` — the change any future reader would think harmless
+— turned the test red. Restored.
+
+| On PROJ-0001 | Value |
+|---|---|
+| `crewRoster` / `expenses` | `null`, with an `unavailable` block naming both |
+| `finance.remaining` | **null**, not ₹1,10,000 |
+| `expenseOverview.plannedTotal` / `actualTotal` | null / null |
+| `margin.profitPlanned` / `profitActual` | null / null |
+| `completion.noCrewAssigned` | **false** — the roster is unseen, not empty |
+
+In the browser: Money shows **"Budget remaining — Needs expenses"**, Expenses
+shows Production and Profit as dashes with an explanation, and Crew says the
+rosters are not in this release, spelling out that this is *not* an empty list.
+
+#### The bug the browser caught that the tests did not
+
+The first pass made every **planned** figure nullable and left the **actual**
+column alone, on the reasoning that actuals come from purchase invoices and are
+therefore known. The page then displayed **Profit ₹1,04,500, 95%** — a
+confident, wrong, flattering number.
+
+Logged expenses are actual spend too. Totalling only the visible part
+understates spend and so overstates profit, in the one direction that makes an
+owner comfortable. `actualTotal`, `profitActual`, `profitActualPercent` and
+`meetsTargetActual` are now null when expenses are unavailable, with a note on
+the page saying why. Two tests pin it.
+
+**This is the argument for looking at the page.** Every test passed, types were
+clean, and the screen still told the owner something untrue.
+
+#### Two traps worth remembering
+
+1. **`formatCurrency(null)` returns ₹0.** All the care taken in the backend is
+   undone in the last inch before the screen unless a dash-aware formatter is
+   used. `formatCurrencyOrDash` exists for exactly this, and the compiler cannot
+   catch its absence because the old formatter happily accepts null.
+2. **Nullable beats optional in the client types.** Making `expenses: Expense[]
+   | null` rather than optional made `tsc` stop at every site that would have
+   treated missing as zero — it found two immediately. Leaving the types
+   claiming non-null let the code compile while silently lying.
 
 ### 7c — writing back to ERPNext ⬜
 

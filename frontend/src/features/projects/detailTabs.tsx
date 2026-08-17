@@ -7,7 +7,7 @@ import type {
 import { projectFileUrl, useAddNote } from './detailApi';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Card, TableShell } from '@/components/ui/PageHeader';
-import { formatCurrency, formatDate, formatPercent } from '@/lib/format';
+import { formatCurrency, formatCurrencyOrDash, formatDate, formatPercent } from '@/lib/format';
 
 /**
  * The tabs of the project detail page.
@@ -119,10 +119,16 @@ export function MoneyTab({ data }: { data: ProjectDetail }) {
           <Figure label="Sanctioned" value={formatCurrency(f.sanctioned)} />
           <Figure label="Billed" value={formatCurrency(f.billed)} />
           <Figure label="Spent (crew/rental)" value={formatCurrency(f.purchaseCost)} />
+          {/**
+           * Unknown, not zero. Budget remaining subtracts project expenses,
+           * which this release cannot see — so a number here would always be
+           * too high, and too high is the direction that causes overspending.
+           */}
           <Figure
             label="Budget remaining"
-            value={formatCurrency(f.remaining)}
-            tone={f.remaining < 0 ? 'bad' : 'good'}
+            value={formatCurrencyOrDash(f.remaining)}
+            tone={f.remaining === null ? 'muted' : f.remaining < 0 ? 'bad' : 'good'}
+            note={f.remaining === null ? 'Needs expenses' : undefined}
           />
           <Figure
             label="To collect"
@@ -278,20 +284,51 @@ function Figure({
   label,
   value,
   hint,
+  note,
   tone,
 }: {
   label: string;
   value: string;
   hint?: string;
-  tone?: 'good' | 'bad';
+  /** Why a figure is a dash. Absence with no explanation reads as a bug. */
+  note?: string;
+  tone?: 'good' | 'bad' | 'muted';
 }) {
   const toneClass =
-    tone === 'bad' ? 'text-red-500' : tone === 'good' ? 'text-green-600 dark:text-green-500' : '';
+    tone === 'bad'
+      ? 'text-red-500'
+      : tone === 'good'
+        ? 'text-green-600 dark:text-green-500'
+        : tone === 'muted'
+          ? 'text-gray-400'
+          : '';
   return (
     <div>
       <div className="text-xs text-gray-400 uppercase font-semibold mb-1">{label}</div>
       <div className={`font-bold text-gray-800 dark:text-gray-100 ${toneClass}`}>{value}</div>
+      {note && <div className="text-xs text-amber-600 dark:text-amber-500">{note}</div>}
       {hint && <div className="text-xs text-gray-400">{hint}</div>}
+    </div>
+  );
+}
+
+/**
+ * What a tab shows when its data source is not in this release.
+ *
+ * Deliberately not an empty state. "No expenses logged" and "expenses are not
+ * available" look identical to a user and mean opposite things — the first
+ * invites them to trust a zero, the second warns them not to.
+ */
+function NotInThisRelease({ what }: { what: string }) {
+  return (
+    <div className="p-8 text-center">
+      <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+        {what} aren&apos;t available in this release.
+      </p>
+      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+        This is not an empty list — StudioOS cannot see this data yet, so any figure that depends
+        on it is shown as a dash rather than a number that would be wrong.
+      </p>
     </div>
   );
 }
@@ -320,30 +357,39 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
               }
             >
               {o.rows.map((r) => {
-                const variance = r.planned - r.actual;
+                /**
+                 * Variance against an unknown plan is unknown, not a surplus.
+                 * Computing `0 - actual` would render every row as overspent by
+                 * its full amount, which is alarming and false.
+                 */
+                const variance = r.planned === null ? null : r.planned - r.actual;
                 return (
                   <tr key={r.category}>
                     <td className="px-2 first:pl-5 py-3 font-medium text-gray-800 dark:text-gray-100">
                       {r.category}
                     </td>
-                    <td className="px-2 py-3 text-right">{formatCurrency(r.planned)}</td>
+                    <td className="px-2 py-3 text-right">{formatCurrencyOrDash(r.planned)}</td>
                     <td className="px-2 py-3 text-right">{formatCurrency(r.actual)}</td>
                     <td
                       className={`px-2 last:pr-5 py-3 text-right ${
-                        variance < 0 ? 'text-red-500' : 'text-gray-500'
+                        variance !== null && variance < 0 ? 'text-red-500' : 'text-gray-500'
                       }`}
                     >
-                      {formatCurrency(variance)}
+                      {formatCurrencyOrDash(variance)}
                     </td>
                   </tr>
                 );
               })}
               <tr className="font-semibold bg-gray-50 dark:bg-gray-900/20">
                 <td className="px-2 first:pl-5 py-3">Total</td>
-                <td className="px-2 py-3 text-right">{formatCurrency(o.plannedTotal)}</td>
-                <td className="px-2 py-3 text-right">{formatCurrency(o.actualTotal)}</td>
+                <td className="px-2 py-3 text-right">{formatCurrencyOrDash(o.plannedTotal)}</td>
+                <td className="px-2 py-3 text-right">{formatCurrencyOrDash(o.actualTotal)}</td>
                 <td className="px-2 last:pr-5 py-3 text-right">
-                  {formatCurrency(o.plannedTotal - o.actualTotal)}
+                  {formatCurrencyOrDash(
+                    o.plannedTotal === null || o.actualTotal === null
+                      ? null
+                      : o.plannedTotal - o.actualTotal,
+                  )}
                 </td>
               </tr>
             </TableShell>
@@ -359,7 +405,17 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
       <Card title="Margin against sanctioned">
         <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <Figure label="Commission" value={formatCurrency(m.commissionActual)} />
-          <Figure label="Production" value={formatCurrency(m.productionActual)} />
+          {/**
+           * `formatCurrency` renders null as ₹0, which is right for "nothing
+           * spent" and wrong for "cannot see the spend". These two figures can
+           * be genuinely unknown, so they go through the dash-aware formatter.
+           */}
+          <Figure
+            label="Production"
+            value={formatCurrencyOrDash(m.productionActual)}
+            tone={m.productionActual === null ? 'muted' : undefined}
+            note={m.productionActual === null ? 'Needs expenses' : undefined}
+          />
           <Figure
             label="Production ceiling"
             value={formatCurrency(m.productionCeilingActual)}
@@ -367,11 +423,20 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
           />
           <Figure
             label="Profit"
-            value={formatCurrency(m.profitActual)}
+            value={formatCurrencyOrDash(m.profitActual)}
             hint={
-              m.profitActualPercent !== null ? formatPercent(m.profitActualPercent) : 'no sanction set'
+              m.profitActualPercent !== null ? formatPercent(m.profitActualPercent) : undefined
             }
-            tone={m.meetsTargetActual === false ? 'bad' : m.meetsTargetActual ? 'good' : undefined}
+            note={m.profitActual === null ? 'Needs expenses' : undefined}
+            tone={
+              m.profitActual === null
+                ? 'muted'
+                : m.meetsTargetActual === false
+                  ? 'bad'
+                  : m.meetsTargetActual
+                    ? 'good'
+                    : undefined
+            }
           />
         </div>
         {m.meetsTargetActual === false && (
@@ -379,7 +444,14 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
             Profit is below the 20% of sanctioned the studio aims to clear.
           </div>
         )}
-        {m.meetsTargetActual === null && (
+        {m.profitActual === null && (
+          <div className="mx-5 mb-5 px-4 py-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-500 text-xs">
+            Profit can&apos;t be worked out yet: logged expenses are actual spend, and this release
+            can&apos;t see them. Showing a figure here would overstate the margin by whatever was
+            spent out of pocket.
+          </div>
+        )}
+        {m.profitActual !== null && m.meetsTargetActual === null && (
           <div className="mx-5 mb-5 px-4 py-3 rounded-lg bg-gray-500/10 text-gray-500 text-xs">
             No sanctioned amount is set on this project, so the margin model has nothing to measure
             against. Percentages are left blank rather than guessed.
@@ -387,8 +459,10 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
         )}
       </Card>
 
-      <Card title="Logged expenses" count={data.expenses.length}>
-        {data.expenses.length === 0 ? (
+      <Card title="Logged expenses" count={data.expenses?.length}>
+        {data.expenses === null ? (
+          <NotInThisRelease what="Project expenses" />
+        ) : data.expenses.length === 0 ? (
           <Empty>No out-of-pocket expenses logged.</Empty>
         ) : (
           <TableShell
@@ -427,6 +501,14 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
 /* ----------------------------------------------------------------------- Crew */
 
 export function CrewTab({ data }: { data: ProjectDetail }) {
+  if (data.crewRoster === null) {
+    return (
+      <Card title="Crew &amp; vendors">
+        <NotInThisRelease what="Crew and vendor rosters" />
+      </Card>
+    );
+  }
+
   const crew = data.crewRoster.filter((c) => c.role === 'Crew');
   const vendors = data.crewRoster.filter((c) => c.role === 'Vendor');
 

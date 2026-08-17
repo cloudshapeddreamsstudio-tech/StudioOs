@@ -1,8 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import type { FrappeClient } from '../lib/frappe';
-import { readExpensesForProject } from './projectExpenses';
-import { readCrewForProject } from './projectCrew';
 import {
   computeCompletion,
   computeFinance,
@@ -264,8 +262,17 @@ app.get('/:name', async (c) => {
   const liveSales = salesInvoices.filter((i) => i.status !== 'Cancelled');
   const livePurchases = purchaseInvoices.filter((i) => i.status !== 'Cancelled');
 
-  const crewRoster = await readCrewForProject(c.env, projectName);
-  const expenses = await readExpensesForProject(c.env, projectName);
+  /**
+   * Phase 7b: the crew roster and project expenses have no home yet.
+   *
+   * They lived in a database of ours that was removed when ERPNext became the
+   * only store, and where they land in ERPNext is the open question Phase 10
+   * answers. `null` here is load-bearing — it travels through
+   * `projectFinance.ts` and comes out as "unknown" rather than as zero, so the
+   * page shows a dash instead of an overstated budget.
+   */
+  const crewRoster = null;
+  const expenses = null;
 
   const completion = computeCompletion({
     tasks,
@@ -389,12 +396,8 @@ app.get('/:name', async (c) => {
     })),
   ].sort((a, b) => new Date(b.when).getTime() - new Date(a.when).getTime());
 
-  const expenseTotal = expenses.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const expensesByCategory: Record<string, number> = {};
-  for (const e of expenses) {
-    const cat = e.category || 'Other';
-    expensesByCategory[cat] = (expensesByCategory[cat] ?? 0) + Number(e.amount || 0);
-  }
+  const expenseTotal = expenses === null ? null : sumExpenses(expenses);
+  const expensesByCategory = expenses === null ? null : groupExpenses(expenses);
 
   const finance = computeFinance({
     sanctioned: Number(project.custom_sanction_amount || 0),
@@ -436,8 +439,32 @@ app.get('/:name', async (c) => {
     completion: completionResponse,
     expenseOverview,
     finance,
+    /**
+     * What this release cannot answer, named rather than left for the client to
+     * infer from nulls. The UI uses this to say "not in this release" instead
+     * of rendering an empty table that looks like "nothing here".
+     */
+    unavailable: {
+      crewRoster: crewRoster === null,
+      expenses: expenses === null,
+      reason: 'Crew and expenses are not in this release — see docs/PLAN-v2.md.',
+    },
   });
 });
+
+/** Kept as named helpers so the null-guard above reads as one decision. */
+function sumExpenses(rows: { amount?: number }[]): number {
+  return rows.reduce((s, e) => s + Number(e.amount || 0), 0);
+}
+
+function groupExpenses(rows: { category?: string; amount?: number }[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const e of rows) {
+    const cat = e.category || 'Other';
+    out[cat] = (out[cat] ?? 0) + Number(e.amount || 0);
+  }
+  return out;
+}
 
 /**
  * POST /api/project/:name/note — add a plain note to the activity timeline.
