@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { getListTolerant } from '../lib/optionalFields';
 import type { AppEnv } from '../types';
 
 /**
@@ -45,25 +46,35 @@ app.get('/files/:file_id/download', async (c) => {
 app.get('/', async (c) => {
   const frappe = c.get('frappe');
 
-  const items = await frappe.getList<{ item_code: string }>('Item', {
-    fields: [
-      'item_code',
-      'item_name',
-      'item_group',
-      'stock_uom',
-      'standard_rate',
-      'description',
-      'disabled',
-      'equipment_status',
-      'rental_source',
-    ],
-    filters: [
-      ['disabled', '=', 0],
-      ['item_group', 'in', GEAR_ITEM_GROUPS],
-    ],
-    limit: 500,
-    orderBy: 'item_name asc',
-  });
+  /**
+   * `equipment_status` and `rental_source` are custom fields CSDS added. A
+   * studio that has not added them is not an error — but asking for them on
+   * such a site fails the *entire* query, so this asks tolerantly and reports
+   * which columns the site lacks. See lib/optionalFields.ts.
+   */
+  const { rows: items, missingFields } = await getListTolerant<{ item_code: string }>(
+    frappe,
+    'Item',
+    {
+      fields: [
+        'item_code',
+        'item_name',
+        'item_group',
+        'stock_uom',
+        'standard_rate',
+        'description',
+        'disabled',
+        'equipment_status',
+        'rental_source',
+      ],
+      filters: [
+        ['disabled', '=', 0],
+        ['item_group', 'in', GEAR_ITEM_GROUPS],
+      ],
+      limit: 500,
+      orderBy: 'item_name asc',
+    },
+  );
 
   /**
    * Bills, warranties and service docs attached to these Items via ERPNext's
@@ -90,7 +101,16 @@ app.get('/', async (c) => {
     (filesByItem[f.attached_to_name] ||= []).push({ id: f.name, name: f.file_name });
   }
 
-  return c.json(items.map((item) => ({ ...item, documents: filesByItem[item.item_code] ?? [] })));
+  /**
+   * `missingFields` travels to the page on purpose. Without it every item
+   * arrives with no `equipment_status`, the page counts zero items out of
+   * service, and shows that in green -- a reassuring number about a question
+   * this site cannot answer. Same rule as Phase 7b: unavailable is not zero.
+   */
+  return c.json({
+    items: items.map((item) => ({ ...item, documents: filesByItem[item.item_code] ?? [] })),
+    missingFields,
+  });
 });
 
 /** GET /api/inventory/:item_code — single item detail. */

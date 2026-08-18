@@ -25,7 +25,17 @@ export function InventoryPage() {
   const [search, setSearch] = useState('');
   const [group, setGroup] = useState('All');
 
-  const all = useMemo(() => data ?? [], [data]);
+  const all = useMemo(() => data?.items ?? [], [data]);
+
+  /**
+   * This studio's ERPNext has no `equipment_status` field, so nothing here
+   * knows whether a camera is in the shop. That is not the same as nothing
+   * being in the shop, and the difference has to reach the screen — otherwise
+   * the tile below reads "0 out of service" in green on a site that has never
+   * been asked.
+   */
+  const statusUnknown = data?.missingFields.includes('equipment_status') ?? false;
+  const sourceUnknown = data?.missingFields.includes('rental_source') ?? false;
 
   const groups = useMemo(() => {
     const present = new Set(all.map((i) => i.item_group).filter(Boolean));
@@ -77,13 +87,39 @@ export function InventoryPage() {
       <div className="grid grid-cols-12 gap-6 mb-6">
         <StatTile label="Total gear" value={String(all.length)} span={4} />
         <StatTile label="Owned in-house" value={String(inHouse.length)} span={4} />
-        <StatTile
-          label="Out of service"
-          value={String(outOfService)}
-          tone={outOfService > 0 ? 'warn' : 'good'}
-          span={4}
-        />
+        {statusUnknown ? (
+          <StatTile label="Out of service" value="—" sub="Not tracked on this site" span={4} />
+        ) : (
+          <StatTile
+            label="Out of service"
+            value={String(outOfService)}
+            tone={outOfService > 0 ? 'warn' : 'good'}
+            span={4}
+          />
+        )}
       </div>
+
+      {(statusUnknown || sourceUnknown) && (
+        <div className="mb-6 px-4 py-3 rounded-xl bg-amber-500/10 text-sm text-gray-600 dark:text-gray-400">
+          <span className="font-semibold text-amber-700 dark:text-amber-500">
+            Some columns are blank because your ERPNext does not have them.
+          </span>{' '}
+          {statusUnknown && (
+            <>
+              There is no <code>equipment_status</code> field on Item, so StudioOS cannot tell which
+              gear is available, rented out or in the shop — and a blank status here means unknown,
+              not available.{' '}
+            </>
+          )}
+          {sourceUnknown && (
+            <>
+              There is no <code>rental_source</code> field, so rental-house gear does not say which
+              supplier it comes from.{' '}
+            </>
+          )}
+          Whoever administers your ERPNext can add them as custom fields on Item.
+        </div>
+      )}
 
       <Card title="Showing" count={items.length}>
         <TableShell

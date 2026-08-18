@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { getListTolerant, SchemaGapError } from '../lib/optionalFields';
 import type { AppEnv } from '../types';
 
 /**
@@ -60,14 +61,28 @@ app.get('/', async (c) => {
         limit: 500,
       },
     ),
-    frappe.getList<{ item_name: string; equipment_status: string }>('Item', {
+    /**
+     * `equipment_status` is a CSDS custom field. On a site without it this
+     * query cannot be answered at all — the filter is what makes it mean
+     * "broken gear", so there is no degraded version to fall back to.
+     *
+     * `null` therefore means "this site cannot say", which is deliberately not
+     * the same as an empty list. Before this, the raw 417 escaped and took the
+     * three unrelated insight cards down with it.
+     */
+    getListTolerant<{ item_name: string; equipment_status: string }>(frappe, 'Item', {
       fields: ['item_code', 'item_name', 'equipment_status'],
       filters: [
         ['item_group', '=', 'In-House Equipment'],
         ['equipment_status', 'in', ['In Repair', 'In Maintenance']],
       ],
       limit: 500,
-    }),
+    })
+      .then((r) => r.rows)
+      .catch((err: unknown) => {
+        if (err instanceof SchemaGapError) return null;
+        throw err;
+      }),
   ]);
 
   // 1. Overdue tasks, with the worst-affected projects named.
@@ -125,8 +140,8 @@ app.get('/', async (c) => {
     });
   }
 
-  // 4. In-house gear out of service.
-  if (outOfServiceEquipment.length) {
+  // 4. In-house gear out of service — only if this site tracks that at all.
+  if (outOfServiceEquipment?.length) {
     insights.push({
       severity: 'info',
       title: `${plural(outOfServiceEquipment.length, 'in-house item')} out of service`,
@@ -139,12 +154,21 @@ app.get('/', async (c) => {
     });
   }
 
+  /**
+   * "All clear" has to be true of what was actually checked. On a site with no
+   * `equipment_status` field, gear was never examined, and listing it as
+   * available would be the vacuous truth this codebase keeps guarding against
+   * -- the same shape as `noCrewAssigned` on project detail.
+   */
   if (!insights.length) {
+    const checked = ['No overdue tasks', 'no overdue invoices', 'no stale projects'];
     insights.push({
       severity: 'info',
       title: 'All clear',
       detail:
-        'No overdue tasks, no overdue invoices, no stale projects, all in-house gear available.',
+        outOfServiceEquipment === null
+          ? `${checked.join(', ')}. Gear condition is not tracked on this site, so it was not checked.`
+          : `${checked.join(', ')}, all in-house gear available.`,
       count: 0,
       link: null,
     });

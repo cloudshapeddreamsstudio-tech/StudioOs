@@ -53,10 +53,20 @@ export function useVendors() {
   return useQuery({ queryKey: ['vendors'], queryFn: () => api.get<Vendor[]>('/vendors') });
 }
 
+export interface InventoryResponse {
+  items: InventoryItem[];
+  /**
+   * Custom fields this studio's ERPNext does not have. Non-empty means the
+   * column is **unknown**, not empty — see backend lib/optionalFields.ts. The
+   * page must say so rather than counting the absence as a good result.
+   */
+  missingFields: string[];
+}
+
 export function useInventory() {
   return useQuery({
     queryKey: ['inventory'],
-    queryFn: () => api.get<InventoryItem[]>('/inventory'),
+    queryFn: () => api.get<InventoryResponse>('/inventory'),
   });
 }
 

@@ -77,15 +77,24 @@ const icons = {
 };
 
 /**
- * Phase 6a: the nav lists only what actually ships.
+ * The nav lists only what actually ships, and every item here is verified
+ * against real data on the signed-in user's own token.
  *
- * Dashboard, Tasks, Invoices, Payables, Clients, Vendors, Inventory, Studio
- * rental, Transactions and Subscriptions are all built and verified, and all
- * return in Phase 10 — see docs/PLAN-v2.md. Their pages and icons are still
- * here; a nav item that leads to a page this release cannot serve is worse
- * than no nav item, so they are withdrawn rather than left to 404.
+ * Phase 10a restored the pure-ERPNext surface. Invoices, Studio rental,
+ * Transactions and Subscriptions are built and still withdrawn — each waits on
+ * a named phase in docs/PLAN-v2.md, and their icons are kept below for when
+ * they come back. A nav item leading to a page this release cannot serve is
+ * worse than no nav item.
  */
-const navItems: NavItem[] = [{ to: '/projects', label: 'Projects', icon: icons.projects }];
+const navItems: NavItem[] = [
+  { to: '/dashboard', label: 'Dashboard', icon: icons.dashboard },
+  { to: '/projects', label: 'Projects', icon: icons.projects },
+  { to: '/tasks', label: 'Tasks', icon: icons.tasks },
+  { to: '/payables', label: 'Payables', icon: icons.payables },
+  { to: '/clients', label: 'Clients', icon: icons.clients },
+  { to: '/vendors', label: 'Vendors', icon: icons.vendors },
+  { to: '/inventory', label: 'Inventory', icon: icons.inventory },
+];
 
 interface SidebarProps {
   open: boolean;

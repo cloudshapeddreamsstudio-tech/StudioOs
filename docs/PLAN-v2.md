@@ -660,28 +660,200 @@ permanent. Changing it later means every customer reinstalling.
 
 ---
 
-## Phase 10 — widen the surface ⬜
+## Phase 10 — widen the surface to full parity with the old app ⬜
 
-Only now does the deferred work come back, and in the order the owner actually
-needs it rather than the order it was built.
+**Brief, 2026-08-18:** bring *everything* the old CSDS app does into this stack.
+Three answers were given before any code was written:
 
-Each of these is its own phase when it starts. The storage question has to be
-answered before any of the D1-backed ones can move:
+| Question | Answer |
+|---|---|
+| Where the six non-ERPNext datasets live | **Investigate native ERPNext homes first.** Custom DocTypes only for what genuinely has none |
+| The CSDS-specific account names in the write paths | **Resolve from ERPNext at runtime**, per studio — no configuration to fill in, and it cannot post to the wrong ledger |
+| Order | **Unblocked pages first** — everything that needs no storage decision ships before anything that does |
 
-- ⏸ **Where the non-ERPNext data lives.** Rental sessions, transactions,
-  subscriptions, brand, crew and expenses have no native ERPNext home. Some of
-  it may map onto existing ERPNext documents in a form not yet identified —
-  that investigation is the first task of this phase, and it is what makes a
-  `studioos_core` app either necessary or unnecessary
-- ⏸ Dashboard, Invoices, Payables, Tasks, Clients, Vendors, Inventory — all
-  built and verified, all waiting
-- ⏸ Crew and Expenses tabs on project detail, restoring the suppressed figures
-- ⏸ Studio Rental, Transactions, Subscriptions
-- ⏸ `equipment-catalogue.html` — probably subsumed by Inventory; confirm before
-  rebuilding
+### What the gap actually is
 
-Nothing here is lost work. It is finished, tested code sitting behind a release
-boundary.
+The port is further along than "implement the old app" suggests. All 26 of the
+old Express routes already have a TypeScript counterpart. The work splits three
+ways, and only the third is a build from nothing:
+
+| | Old app surface | State |
+|---|---|---|
+| **A — built, unmounted** | dashboard, insights, payables, tasks, clients, vendors, equipment, inventory, invoices | Withdrawn by 6a. Needs mounting and re-verifying **on per-user tokens**, which is not what they were built against |
+| **B — built, storage-blocked** | studio rental, transactions/theatre, subscriptions, brand, project crew, project expenses | Read D1, and D1 is gone. Ten files are excluded from `tsc` for this reason |
+| **C — never built** | `client-detail`, `analytics`, `fintech`, `invoice-designer`, `equipment-catalogue` | No React page exists |
+
+### 10a — the pure-ERPNext read surface returns ✅
+
+The cheapest real progress there is: eight routes and six pages that need no
+decision from anyone.
+
+- ✅ Mount `dashboard`, `insights`, `payables`, `tasks`, `clients`, `vendors`,
+  `equipment`, `inventory`
+- ✅ Restore their routes and nav items
+- ✅ **Re-verify each on the signed-in user's token.** Phases 0–5 proved them
+  against an admin key that no longer exists; "it worked in Phase 3" is not
+  evidence about a per-user request
+- ✅ A 403 on any of them must read as ERPNext's refusal, the way 7a made the
+  projects list read
+
+**Done when** every restored page renders real data for a signed-in user, and a
+restricted user gets the refusal wording rather than a broken page.
+
+#### Verified on the bench, 2026-08-18
+
+Signed in as `studioos-test@example.com` against `studio.os`. **153 tests pass.**
+
+| Page | Result |
+|---|---|
+| Dashboard | ₹3,16,000 outstanding, 1 overdue at ₹2,29,000, invoices by status, top customers, projects by status, chart renders |
+| Insights | the overdue-invoice card, on real data |
+| Tasks | Kanban with the five columns and its cards |
+| Payables | ₹1,84,293 across 3 suppliers, oldest due dates named |
+| Clients | 3 clients, 2 owing, **₹3,16,000** receivable |
+| Vendors | 3 suppliers, group filter |
+| Inventory | 0 gear, and it says why — see below |
+| Projects | unchanged, 5 rows |
+
+**Clients and Dashboard agree to the rupee on ₹3,16,000** by two separate code
+paths, which is the same cross-check that gave Phase 2 its confidence.
+
+Every one of the five restored endpoints returns **403 with ERPNext's own
+`PermissionError`** for the restricted user. The *rendering* of that refusal was
+not re-proven per page — it comes from `QueryState`, the shared component 7a
+verified — so it is inherited evidence, not fresh evidence.
+
+#### Two CSDS-only fields took two pages down completely
+
+`equipment_status` and `rental_source` are custom fields on `Item` that exist on
+the CSDS site and on no stock ERPNext v15. Asking for a field a site lacks does
+not return null — Frappe rejects **the whole query** with
+`DataError: Field not permitted in query`. So `/api/inventory` 417'd outright,
+and `/api/insights` 417'd too, taking down three insight cards that had nothing
+to do with equipment.
+
+This is the third instance of the same problem (`custom_sales_person`,
+`Project Template.disabled`), so it stopped being a per-query patch and became
+`lib/optionalFields.ts`: run the query, and when ERPNext names a column, drop it
+and run again. The site is asked rather than assumed, and no `DocField` read
+permission is needed — the error already carries the answer.
+
+**The distinction the module is built around.** Dropping a missing field from
+`fields` is safe; a column we cannot read renders blank, and blank is true.
+Dropping it from `filters` is not: `equipment_status in ('In Repair', 'In
+Maintenance')` is the only thing making that list mean "broken gear". So a
+missing field used in a filter raises `SchemaGapError` and the caller must
+answer it deliberately. Insights answers by omitting that one card, and by
+changing the "All clear" line — which otherwise ends "all in-house gear
+available" about gear it never looked at. Exactly the `noCrewAssigned` shape
+from 7b.
+
+**Proven by breaking it**, per the standing rule: commenting out the filter
+guard turned the test red. Restored.
+
+**And the number that would have been wrong.** Without `equipment_status` every
+item arrives with no status, the Inventory page counts zero items out of
+service, and renders that **in green**. It now reads "—, Not tracked on this
+site", with a banner saying a blank status means unknown and naming the two
+fields an administrator can add. `missingFields` travels from the route to the
+page for that single purpose.
+
+#### One measurement worth not misreading
+
+The first run showed `/api/dashboard` taking **126 seconds**. That was the
+bench's single-threaded dev server head-of-line blocking under four concurrent
+requests, not the route. Run one at a time, each endpoint answers in 2–10s.
+
+### 10b — client detail ⬜
+
+`GET /api/client/:name` and `PUT /api/client/:name` are already written and
+already pure ERPNext. Only the page is missing.
+
+- ⬜ `client-detail.html` → `ClientDetailPage`
+- ⬜ Keep the old app's honesty: Transactions / Statement / Comments / Mails
+  were visible tabs saying "coming soon" rather than fake data. Port that, not
+  a mock
+- ⬜ `Customer.email_id` and `mobile_no` are Frappe *fetch-from* fields sourced
+  from the linked Contact — **not directly PATCHable.** Edit goes through the
+  Contact's child tables
+
+### 10c — invoices, with brand resolved from ERPNext ⬜
+
+Invoices are pure ERPNext except for two routes. `readBrand` is the only D1
+call in the file, and only `/brand-preview` and `/:name/print` use it.
+
+- ⬜ Mount the list, detail, service-items, create, submit and amend routes
+- ⬜ Brand comes from **ERPNext at runtime** — Company, its Address, its Bank
+  Account — with the cosmetic remainder (accent colour, logo, tagline, notes)
+  falling back to defaults until 10f decides where studio-owned presentation
+  lives
+- ⬜ Print keeps working, including the Scan-to-Pay QR
+- ⬜ Draft-first stays absolute: `POST` creates `docstatus: 0`, and submitting
+  is a separate deliberate call. **The owner's hard rule**
+
+### 10d — accounts resolved from ERPNext, not named ⬜
+
+`Sales - CSDS`, `Debtors - CSDS`, `Main - CSDS` are hardcoded in
+`routes/invoices.ts`, `routes/payments.ts` and `routes/studioRental.ts`, and
+`CSDS_SINV_` is hardcoded in `lib/invoiceNumber.ts`. Correct for one studio;
+wrong for every other, and wrong *silently* — the accounts simply would not
+exist on another site.
+
+- ⬜ Ask the studio's own ERPNext for its default income account, receivable
+  account and cost centre for the signed-in company
+- ⬜ Derive the invoice-number prefix from the company abbreviation rather than
+  the letters `CSDS`
+- ⬜ Prove it on a site that is **not** CSDS — the same discipline that caught
+  `custom_sales_person` and `Project Template.disabled`
+
+This gates every write path except projects. Do it before invoicing ships to a
+second studio, not after.
+
+### 10e — analytics and fintech ⬜
+
+The two dashboard tabs that were never ported. `insights.ts` already computes
+the rule-based cards analytics.html renders.
+
+- ⬜ `analytics.html` → insight cards on their own route
+- ⬜ `fintech.html` → the financial KPI and chart view
+- ⬜ Chart.js returns with them, so the bundle note from 3c comes back with it —
+  a dynamic import, not a different library
+
+### 10f — where the non-ERPNext data lives ⬜
+
+**The investigation, and it comes before any of 10g.** The rule from the answer
+above: map onto what ERPNext already has, and build custom DocTypes only for
+what genuinely has no home.
+
+- ⬜ Establish, against a live site, what each of the six maps onto — candidates
+  worth checking rather than assuming: `Subscription` for recurring overheads,
+  `Timesheet` for rental sessions, `Journal Entry` for the theatre ledger,
+  `File`/`Letter Head` for brand assets
+- ⬜ Record what has **no** home. The crew roster is the likeliest: the old app's
+  own note says a person can be crew on one project and a billed vendor on
+  another, and no ERPNext doctype models that
+- ⬜ Only then decide whether `studioos_core` is necessary
+- ⬜ Whatever the answer, **migration is part of it.** `studioRental.json` holds
+  103 real sessions and `transactions.json` the entire theatre ledger; both
+  exist nowhere else
+
+### 10g — the six restored ⬜
+
+Blocked on 10f. Each is its own phase.
+
+- ⬜ Studio rental — bookings, session logs, invoice generation. Watch the
+  round-to-nearest-hour rule: `Math.round`, ties up, never `Math.ceil`
+- ⬜ Transactions / theatre education
+- ⬜ Subscriptions
+- ⬜ Crew and Expenses tabs on project detail, **restoring the figures 7b
+  suppressed** — this is what turns "Budget remaining —" back into a number
+- ⬜ Invoice designer, once brand has somewhere to be saved
+
+### 10h — equipment catalogue ⬜
+
+- ⬜ Confirm with the owner whether it still needs to exist separately from
+  Inventory before rebuilding it. The old app unlinked it from nav as
+  superseded, which is evidence but not an answer
 
 ---
 

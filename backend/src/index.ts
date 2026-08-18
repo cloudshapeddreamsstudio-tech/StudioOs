@@ -7,6 +7,14 @@ import projects from './routes/projects';
 import projectDetail from './routes/projectDetail';
 import customers from './routes/customers';
 import { salesPersons, projectTypes, projectTemplates } from './routes/lookups';
+import dashboard from './routes/dashboard';
+import insights from './routes/insights';
+import payables from './routes/payables';
+import tasks from './routes/tasks';
+import clients from './routes/clients';
+import vendors from './routes/vendors';
+import equipment from './routes/equipment';
+import inventory from './routes/inventory';
 import auth from './routes/auth';
 import type { AppEnv, Env } from './types';
 
@@ -22,17 +30,26 @@ import type { AppEnv, Env } from './types';
  *  - There is no per-route try/catch. `app.onError` handles every thrown error
  *    once, in middleware/errorHandler.ts.
  *
- * ## Only the Projects surface is mounted (Phase 6a)
+ * ## What is mounted, and what is still waiting (Phase 10a)
  *
- * Every other route file is finished, tested work that stays in the repo
- * unmounted until Phase 10 widens the surface — see docs/PLAN-v2.md. Do not
- * delete them, and do not re-mount one without doing its phase.
+ * Projects, plus the pure-ERPNext read surface that 6a had withdrawn:
+ * dashboard, insights, payables, tasks, clients, vendors, equipment and
+ * inventory. Every one of them runs on the signed-in user's token, which is
+ * not what they were originally built against — so each was re-verified rather
+ * than assumed to still work.
  *
- * The ones that read or write D1 (`brand`, `projectCrew`, `projectExpenses`,
- * `projectDetail`, `studioRental`, `subscriptions`, `transactions`) cannot be
- * mounted at all right now: the D1 binding is gone, because ERPNext is the only
- * database. They are excluded from type-checking in tsconfig.json for the same
- * reason.
+ * Still unmounted, and why:
+ *
+ *  - `invoices` — pure ERPNext except that `/brand-preview` and `/:name/print`
+ *    call `readBrand`, which is D1. Phase 10c resolves the brand from ERPNext
+ *    instead and mounts the file.
+ *  - `brand`, `projectCrew`, `projectExpenses`, `studioRental`, `subscriptions`,
+ *    `transactions` — all read D1, and the binding is gone because ERPNext is
+ *    the only database. Phase 10f decides where that data actually belongs
+ *    before any of them come back. They are excluded from type-checking in
+ *    tsconfig.json for the same reason.
+ *
+ * Do not delete them, and do not re-mount one without doing its phase.
  *
  * ## Auth
  *
@@ -95,6 +112,21 @@ app.route('/api/customers', customers);
 app.route('/api/sales-persons', salesPersons);
 app.route('/api/project-types', projectTypes);
 app.route('/api/project-templates', projectTemplates);
+
+// Phase 10a. All read-only against ERPNext apart from `tasks`, which the Kanban
+// writes to.
+app.route('/api/dashboard', dashboard);
+app.route('/api/insights', insights);
+app.route('/api/payables', payables);
+app.route('/api/tasks', tasks);
+app.route('/api/vendors', vendors);
+app.route('/api/equipment', equipment);
+app.route('/api/inventory', inventory);
+// Mounted twice, as in the old app: `/api/clients` is the list, `/api/client`
+// is one client's aggregate. Same router, and the paths are part of the
+// contract the pages were written against.
+app.route('/api/clients', clients);
+app.route('/api/client', clients);
 
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
 
