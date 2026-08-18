@@ -20,6 +20,14 @@ export const invoiceItemSchema = z.object({
 
 const invoiceBodyShape = {
   customer: z.string().min(1, 'customer is required'),
+  /**
+   * Which company's books this belongs in.
+   *
+   * Optional, and only *needed* when the site has more than one company — with
+   * one, there is nothing to disambiguate. When there are several, StudioOS
+   * refuses rather than guessing; see lib/companyProfile.ts for why.
+   */
+  company: z.string().optional(),
   project: z.string().optional(),
   posting_date: z.string().optional(),
   due_date: z.string().optional(),

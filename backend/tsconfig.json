@@ -47,7 +47,6 @@
     "src/db/schema.ts",
     "src/lib/backup.ts",
     "src/routes/brand.ts",
-    "src/routes/invoices.ts",
     "src/routes/projectCrew.ts",
     "src/routes/projectExpenses.ts",
     "src/routes/studioRental.ts",

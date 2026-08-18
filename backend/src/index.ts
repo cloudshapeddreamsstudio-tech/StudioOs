@@ -15,6 +15,8 @@ import clients from './routes/clients';
 import vendors from './routes/vendors';
 import equipment from './routes/equipment';
 import inventory from './routes/inventory';
+import invoices from './routes/invoices';
+import payments from './routes/payments';
 import auth from './routes/auth';
 import type { AppEnv, Env } from './types';
 
@@ -40,9 +42,6 @@ import type { AppEnv, Env } from './types';
  *
  * Still unmounted, and why:
  *
- *  - `invoices` — pure ERPNext except that `/brand-preview` and `/:name/print`
- *    call `readBrand`, which is D1. Phase 10c resolves the brand from ERPNext
- *    instead and mounts the file.
  *  - `brand`, `projectCrew`, `projectExpenses`, `studioRental`, `subscriptions`,
  *    `transactions` — all read D1, and the binding is gone because ERPNext is
  *    the only database. Phase 10f decides where that data actually belongs
@@ -127,6 +126,13 @@ app.route('/api/inventory', inventory);
 // contract the pages were written against.
 app.route('/api/clients', clients);
 app.route('/api/client', clients);
+
+// Phase 10c. Invoices write to a real accounting system, so two rules hold:
+// creation is always a DRAFT and submitting is a separate deliberate call, and
+// every account posted to is read from the studio's own Company record rather
+// than named here -- see lib/companyProfile.ts.
+app.route('/api/invoices', invoices);
+app.route('/api/payments', payments);
 
 app.notFound((c) => c.json({ error: 'Not found' }, 404));
 

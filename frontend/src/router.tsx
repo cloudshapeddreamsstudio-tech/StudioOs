@@ -10,6 +10,7 @@ import { ClientsPage } from './features/directory/ClientsPage';
 import { ClientDetailPage } from './features/directory/ClientDetailPage';
 import { VendorsPage } from './features/directory/VendorsPage';
 import { InventoryPage } from './features/directory/InventoryPage';
+import { InvoicesListPage } from './features/invoices/InvoicesListPage';
 import { SignInPage } from './features/auth/SignInPage';
 import { RequireSession } from './features/auth/RequireSession';
 
@@ -61,6 +62,7 @@ export const router = createBrowserRouter([
           { path: 'projects/new', element: <ProjectCreatePage /> },
           { path: 'projects/:name', element: <ProjectDetailPage /> },
           { path: 'projects/:name/edit', element: <ProjectEditPage /> },
+          { path: 'invoices', element: <InvoicesListPage /> },
           { path: 'tasks', element: <TasksKanbanPage /> },
           { path: 'payables', element: <PayablesPage /> },
           { path: 'clients', element: <ClientsPage /> },

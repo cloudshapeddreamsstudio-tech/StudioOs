@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { FrappeClient } from '../lib/frappe';
 import { validatePayment, type PaymentInvoice } from '../lib/paymentRules';
+import { resolveCompany } from '../lib/companyProfile';
 import { AppError, ValidationError } from '../lib/errors';
 import type { AppEnv } from '../types';
 
@@ -14,8 +15,30 @@ import type { AppEnv } from '../types';
  * `/submit` route does that.
  */
 
-/** Same receivable account the invoices route posts to. */
-const DEBIT_TO = 'Debtors - CSDS';
+/**
+ * The receivable account and company come from **the invoice being paid**.
+ *
+ * They were `Debtors - CSDS` and `c.env.COMPANY`, which is wrong twice over on
+ * a site with more than one company: a payment could be posted into a different
+ * company's books from the invoice it settles. The invoice already carries both
+ * exactly, so nothing here has to be resolved or configured — and `debit_to` is
+ * the very account the invoice was raised against, which is a stronger answer
+ * than the company default.
+ */
+interface InvoiceLedger {
+  company?: string;
+  debit_to?: string;
+}
+
+function ledgerOf(invoice: PaymentInvoice): { company: string; debitTo: string } {
+  const inv = invoice as PaymentInvoice & InvoiceLedger;
+  if (!inv.company || !inv.debit_to) {
+    throw new ValidationError(
+      'This invoice does not say which company or receivable account it belongs to, so a payment cannot be posted against it.',
+    );
+  }
+  return { company: inv.company, debitTo: inv.debit_to };
+}
 
 /**
  * The only valid "Deposit To" targets: non-group Bank/Cash accounts on this
@@ -99,7 +122,8 @@ export async function createDraftPayment(c: Context<AppEnv>) {
     notes?: string;
   };
 
-  const accounts = await getDepositAccounts(frappe, c.env.COMPANY);
+  const ledger = ledgerOf(invoice);
+  const accounts = await getDepositAccounts(frappe, ledger.company);
   const verdict = validatePayment(
     invoice,
     body,
@@ -129,10 +153,10 @@ export async function createDraftPayment(c: Context<AppEnv>) {
     naming_series: 'ACC-PAY-.YYYY.-',
     payment_type: 'Receive',
     posting_date: postingDate,
-    company: c.env.COMPANY,
+    company: ledger.company,
     party_type: 'Customer',
     party: invoice.customer,
-    paid_from: DEBIT_TO,
+    paid_from: ledger.debitTo,
     paid_from_account_currency: 'INR',
     paid_to: body.depositTo,
     paid_to_account_currency: 'INR',
@@ -176,10 +200,17 @@ export async function createDraftPayment(c: Context<AppEnv>) {
 
 const app = new Hono<AppEnv>();
 
-/** GET /api/payments/deposit-accounts — Bank/Cash accounts for the dropdown. */
+/**
+ * GET /api/payments/deposit-accounts — Bank/Cash accounts for the dropdown.
+ *
+ * `?company=` names which set. Without it, the site's only company is used and
+ * a site with several is refused rather than shown one arbitrarily — the same
+ * rule as everywhere else, in lib/companyProfile.ts.
+ */
 app.get('/deposit-accounts', async (c) => {
   const frappe = c.get('frappe');
-  return c.json(await getDepositAccounts(frappe, c.env.COMPANY));
+  const profile = await resolveCompany(frappe, c.req.query('company'));
+  return c.json(await getDepositAccounts(frappe, profile.name));
 });
 
 /** GET /api/payments/modes-of-payment — Mode of Payment dropdown options. */

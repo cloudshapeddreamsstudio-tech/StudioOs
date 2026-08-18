@@ -1,7 +1,8 @@
+import { SchemaGapError, missingFieldFrom } from './optionalFields';
 import type { FrappeClient } from './frappe';
 
 /**
- * Computes the studio's own invoice number: `CSDS_SINV_{NN}_{YYMM}{NN}`
+ * Computes the studio's own invoice number: `{ABBR}_SINV_{NN}_{YYMM}{NN}`
  *
  *   - first NN  = running count of studio-numbered invoices so far THIS YEAR
  *   - YYMM      = 2-digit year + 2-digit month of the invoice's posting date
@@ -9,6 +10,10 @@ import type { FrappeClient } from './frappe';
  *
  * e.g. `CSDS_SINV_01_260101` (1st of the year, Jan 2026) or
  *      `CSDS_SINV_45_260703` (45th of the year, 3rd of July 2026).
+ *
+ * The prefix is the **company's own abbreviation** from ERPNext, not the
+ * letters CSDS. It was hardcoded, which would have stamped one studio's initials
+ * onto every other studio's invoices.
  *
  * This is separate from ERPNext's internal Sales Invoice `name`, which its
  * controller always generates itself and cannot be overridden over REST -- so
@@ -67,6 +72,7 @@ export function lastDayOfMonth(year: number, month: number): number {
 
 /** Assemble the number from its parts. Split out so it can be tested directly. */
 export function formatInvoiceNumber(
+  prefix: string,
   year: number,
   month: number,
   yearCount: number,
@@ -76,47 +82,68 @@ export function formatInvoiceNumber(
   const mm = pad2(month);
   const yearSeq = pad2(yearCount + 1);
   const monthSeq = pad2(monthCount + 1);
-  return `CSDS_SINV_${yearSeq}_${yy}${mm}${monthSeq}`;
+  return `${prefix}_SINV_${yearSeq}_${yy}${mm}${monthSeq}`;
 }
 
+/**
+ * Counts invoices already numbered in a date window.
+ *
+ * `custom_invoice_number` is in the **filter**, so on a site without that field
+ * there is no degraded answer — see lib/optionalFields.ts. The original caught
+ * every failure and counted 0, which on such a site is not a missing feature
+ * but a **duplicate-number generator**: every invoice ever created would come
+ * out as `_01_`, because the count is always zero. Throwing is the only correct
+ * response, and the caller turns it into "this site does not do studio
+ * numbering" rather than into a collision.
+ */
+async function countNumbered(
+  frappe: FrappeClient,
+  from: string,
+  to: string,
+): Promise<number> {
+  try {
+    const rows = await frappe.getList('Sales Invoice', {
+      fields: ['name'],
+      filters: [
+        ['custom_invoice_number', '!=', ''],
+        ['posting_date', '>=', from],
+        ['posting_date', '<=', to],
+      ],
+      limit: 1000,
+    });
+    return rows.length;
+  } catch (err) {
+    if (missingFieldFrom(err)) throw new SchemaGapError('Sales Invoice', 'custom_invoice_number');
+    throw err;
+  }
+}
+
+/**
+ * The next studio invoice number, or **null** if this site does not carry the
+ * `custom_invoice_number` field at all.
+ *
+ * Null means "leave it off this invoice". ERPNext's own `name` is still there
+ * and is still the invoice's identity, so nothing is lost except a convention
+ * this studio never adopted.
+ */
 export async function computeInvoiceNumber(
   frappe: FrappeClient,
+  prefix: string,
   postingDate?: string | Date | null,
-): Promise<string> {
+): Promise<string | null> {
   const { year, month } = resolveYearMonth(postingDate);
   const mm = pad2(month);
 
-  const yearStart = `${year}-01-01`;
-  const yearEnd = `${year}-12-31`;
-  const monthStart = `${year}-${mm}-01`;
-  const monthEnd = `${year}-${mm}-${pad2(lastDayOfMonth(year, month))}`;
+  const monthEndDay = pad2(lastDayOfMonth(year, month));
 
-  const [yearCount, monthCount] = await Promise.all([
-    frappe
-      .getList('Sales Invoice', {
-        fields: ['name'],
-        filters: [
-          ['custom_invoice_number', '!=', ''],
-          ['posting_date', '>=', yearStart],
-          ['posting_date', '<=', yearEnd],
-        ],
-        limit: 1000,
-      })
-      .then((r) => r.length)
-      .catch(() => 0),
-    frappe
-      .getList('Sales Invoice', {
-        fields: ['name'],
-        filters: [
-          ['custom_invoice_number', '!=', ''],
-          ['posting_date', '>=', monthStart],
-          ['posting_date', '<=', monthEnd],
-        ],
-        limit: 1000,
-      })
-      .then((r) => r.length)
-      .catch(() => 0),
-  ]);
-
-  return formatInvoiceNumber(year, month, yearCount, monthCount);
+  try {
+    const [yearCount, monthCount] = await Promise.all([
+      countNumbered(frappe, `${year}-01-01`, `${year}-12-31`),
+      countNumbered(frappe, `${year}-${mm}-01`, `${year}-${mm}-${monthEndDay}`),
+    ]);
+    return formatInvoiceNumber(prefix, year, month, yearCount, monthCount);
+  } catch (err) {
+    if (err instanceof SchemaGapError) return null;
+    throw err;
+  }
 }

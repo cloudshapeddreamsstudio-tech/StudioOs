@@ -833,37 +833,92 @@ fail for the same reason — it is not compositing). Tab switching and form
 submission were driven through the DOM instead, which exercises the same React
 handlers. Anything needing a real screenshot has to wait for the pane.
 
-### 10c — invoices, with brand resolved from ERPNext ⬜
+### 10c — invoices, on the studio's own accounts ✅
 
-Invoices are pure ERPNext except for two routes. `readBrand` is the only D1
-call in the file, and only `/brand-preview` and `/:name/print` use it.
+Merged with what was planned as 10d. They could not sensibly be separated:
+mounting the invoice writes while `Sales - CSDS` was still hardcoded would have
+shipped a landmine, so the coordinates had to be resolved in the same change.
 
-- ⬜ Mount the list, detail, service-items, create, submit and amend routes
-- ⬜ Brand comes from **ERPNext at runtime** — Company, its Address, its Bank
-  Account — with the cosmetic remainder (accent colour, logo, tagline, notes)
-  falling back to defaults until 10f decides where studio-owned presentation
-  lives
-- ⬜ Print keeps working, including the Scan-to-Pay QR
-- ⬜ Draft-first stays absolute: `POST` creates `docstatus: 0`, and submitting
+- ✅ Mount the list, detail, service-items, create, submit, amend and payment
+  routes
+- ✅ Brand comes from **ERPNext at runtime** — Company, its Address, its Bank
+  Account — with the cosmetic remainder (accent colour, tagline, notes) falling
+  back to defaults until 10f decides where studio-owned presentation lives
+- ✅ Draft-first stays absolute: `POST` creates `docstatus: 0`, and submitting
   is a separate deliberate call. **The owner's hard rule**
+- ✅ Income, receivable and cost-centre accounts read from the Company record
+- ✅ Invoice-number prefix from the company abbreviation, not the letters `CSDS`
 
-### 10d — accounts resolved from ERPNext, not named ⬜
+#### The bench had two companies, and that turned out to matter
 
-`Sales - CSDS`, `Debtors - CSDS`, `Main - CSDS` are hardcoded in
-`routes/invoices.ts`, `routes/payments.ts` and `routes/studioRental.ts`, and
-`CSDS_SINV_` is hardcoded in `lib/invoiceNumber.ts`. Correct for one studio;
-wrong for every other, and wrong *silently* — the accounts simply would not
-exist on another site.
+`studio.os` carries **Cloud Shaped Dreams Studio** and **Cloud Shaped Dreams
+Studio (Demo)**, and they disagree in exactly the way that is dangerous:
 
-- ⬜ Ask the studio's own ERPNext for its default income account, receivable
-  account and cost centre for the signed-in company
-- ⬜ Derive the invoice-number prefix from the company abbreviation rather than
-  the letters `CSDS`
-- ⬜ Prove it on a site that is **not** CSDS — the same discipline that caught
-  `custom_sales_person` and `Project Template.disabled`
+```
+Global Defaults default_company : Cloud Shaped Dreams Studio        (Debtors - CSDS)
+the signed-in user's own default: Cloud Shaped Dreams Studio (Demo) (Debtors - CSDSD)
+every invoice that actually exists: Cloud Shaped Dreams Studio (Demo)
+```
 
-This gates every write path except projects. Do it before invoicing ships to a
-second studio, not after.
+Resolving from Global Defaults — the obvious implementation — would have posted
+new invoices into one ledger while every existing invoice sat in another,
+splitting a studio's books with nothing on screen to show it. `lib/companyProfile.ts`
+therefore **does not guess**: an explicitly named company wins, a site with one
+company is unambiguous, and anything else is refused with the choices listed.
+
+For most paths nothing has to be inferred at all, because the document already
+says: printing reads `invoice.company`, amending stays in the original's books,
+and a payment takes both the company and the receivable account off the invoice
+it settles — `payments.ts` used `c.env.COMPANY` and `Debtors - CSDS`, which on a
+two-company site could post a payment into different books from its own invoice.
+
+#### Verified against the bench, 2026-08-18
+
+| Check | Result |
+|---|---|
+| `/api/invoices` | **5 rows**, `custom_invoice_number` dropped tolerantly |
+| Invoices page | ₹3,63,000 billed, **₹3,16,000 outstanding**, filters, Print links |
+| Cross-check | that ₹3,16,000 matches the dashboard **and** the clients page — three paths, one number |
+| `/:name/print` | 200, and the header reads **"Cloud Shaped Dreams Studio (Demo)"** — the invoice's own company, not the site default |
+| Bank block / QR | **suppressed**, because that company has no bank account and ERPNext holds no UPI id anywhere |
+| Create, no company named | **400**, listing both companies, nothing written |
+| Create, company named | `SINV-26-00001`, `docstatus 0`, `debit_to: Debtors - **CSDSD**`, `cost_center: Main - CSDSD`, line `income_account: Sales - CSDSD` |
+| Written as whom | `owner` = **studioos-test@example.com** |
+| Studio number | **omitted**, because this site has no `custom_invoice_number` field |
+| Submit | `docstatus 1`, status Unpaid, outstanding ₹5,000 |
+| Submit twice | refused, "invoice is already submitted" |
+| Amend with no reason | **400** with a field error on `reason` |
+
+**Create and submit are verified end to end for the first time.** That has been
+a carried-forward item since Phase 2. It is proven on a stock bench, not on the
+live site, and the invoice was cancelled and deleted afterwards.
+
+#### The duplicate-invoice-number generator
+
+`computeInvoiceNumber` counted existing numbered invoices and caught every
+failure as `0`. On a site without the `custom_invoice_number` field that is not
+a missing feature — the count is *always* zero, so **every invoice ever created
+comes out as `_01_`**. Worse, on a working site a single unreachable moment
+mints a number that is already in a client's hands.
+
+The two cases are now distinguished, because they are genuinely different:
+
+- **field absent** → `null`, and the number is simply left off. ERPNext's own
+  invoice name still identifies it
+- **read failed** → throws. Failing to count is not evidence that the count is
+  zero
+
+A test pinned the old behaviour and had to be replaced; the replacement says so.
+
+#### Two findings to carry forward
+
+1. **Amend needs cancel permission, which `Accounts User` does not have.** The
+   attempt returned 403 from ERPNext and, importantly, **failed on the first
+   step**, leaving the invoice submitted and untouched.
+2. **But the ordering is a real hazard.** Amend cancels the original and then
+   re-issues. If the cancel succeeds and the re-issue fails, the studio is left
+   with a cancelled invoice and no replacement. Nothing exercised that path, and
+   it should be closed before amend is offered in the UI.
 
 ### 10e — analytics and fintech ⬜
 
@@ -929,9 +984,11 @@ daily. Phase 11 begins the moment Projects reaches parity, but finishes later.
 
 ## Carried forward, still open
 
-- ⬜ **Create / submit / amend are unverified end to end.** They write into a
-  real accounting system and need a throwaway customer set up deliberately. The
-  Phase 3b incident is the reason to do it that way rather than improvise.
+- 🔨 **Create / submit are verified end to end as of 10c**, on the bench, with
+  the invoice cancelled and deleted afterwards. **Amend is still unproven** — it
+  returned 403 because `Accounts User` cannot cancel a submitted invoice, and
+  its cancel-then-reissue ordering can strand a studio with a cancelled invoice
+  and no replacement. Neither has been run against the live site.
 - ⬜ **Phase 0 on the old repo** — still no remote, and its ledgers are the
   studio's only copy of the deferred data. Deferring the migration makes this
   *more* urgent, not less: that data now sits unbacked for longer.

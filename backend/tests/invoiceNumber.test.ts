@@ -5,6 +5,7 @@ import {
   lastDayOfMonth,
   resolveYearMonth,
 } from '../src/lib/invoiceNumber';
+import { FrappeError } from '../src/lib/errors';
 import type { FrappeClient } from '../src/lib/frappe';
 
 /**
@@ -61,33 +62,33 @@ describe('lastDayOfMonth', () => {
 describe('formatInvoiceNumber', () => {
   it('builds the documented shape', () => {
     // 1st invoice of the year, Jan 2026, 1st of the month.
-    expect(formatInvoiceNumber(2026, 1, 0, 0)).toBe('CSDS_SINV_01_260101');
+    expect(formatInvoiceNumber('CSDS', 2026, 1, 0, 0)).toBe('CSDS_SINV_01_260101');
     // 45th of the year, July 2026, 3rd of that month.
-    expect(formatInvoiceNumber(2026, 7, 44, 2)).toBe('CSDS_SINV_45_260703');
+    expect(formatInvoiceNumber('CSDS', 2026, 7, 44, 2)).toBe('CSDS_SINV_45_260703');
   });
 
   it('zero-pads every segment', () => {
-    expect(formatInvoiceNumber(2026, 9, 8, 4)).toBe('CSDS_SINV_09_260905');
+    expect(formatInvoiceNumber('CSDS', 2026, 9, 8, 4)).toBe('CSDS_SINV_09_260905');
   });
 
   it('counts are running totals, so the next number is count + 1', () => {
-    expect(formatInvoiceNumber(2026, 3, 11, 3)).toBe('CSDS_SINV_12_260304');
+    expect(formatInvoiceNumber('CSDS', 2026, 3, 11, 3)).toBe('CSDS_SINV_12_260304');
   });
 
   it('takes the last two digits of the year', () => {
-    expect(formatInvoiceNumber(2030, 11, 0, 0)).toBe('CSDS_SINV_01_301101');
+    expect(formatInvoiceNumber('CSDS', 2030, 11, 0, 0)).toBe('CSDS_SINV_01_301101');
   });
 });
 
 describe('computeInvoiceNumber', () => {
   it('combines year and month counts from ERPNext', async () => {
     const { client } = fakeClient({ year: 44, month: 2 });
-    expect(await computeInvoiceNumber(client, '2026-07-03')).toBe('CSDS_SINV_45_260703');
+    expect(await computeInvoiceNumber(client, 'CSDS', '2026-07-03')).toBe('CSDS_SINV_45_260703');
   });
 
   it('filters by the target year and the correct month end', async () => {
     const { client, calls } = fakeClient({ year: 0, month: 0 });
-    await computeInvoiceNumber(client, '2028-02-10');
+    await computeInvoiceNumber(client, 'CSDS', '2028-02-10');
 
     const yearFilters = calls[0] as unknown[][];
     const monthFilters = calls[1] as unknown[][];
@@ -101,20 +102,54 @@ describe('computeInvoiceNumber', () => {
 
   it('only counts invoices that already carry a studio number', async () => {
     const { client, calls } = fakeClient({ year: 0, month: 0 });
-    await computeInvoiceNumber(client, '2026-05-05');
+    await computeInvoiceNumber(client, 'CSDS', '2026-05-05');
     // Older pre-feature invoices have no custom_invoice_number and must not
     // skew the sequence.
     expect(calls[0]).toContainEqual(['custom_invoice_number', '!=', '']);
   });
 
-  it('treats an ERPNext failure as a zero count rather than throwing', async () => {
+  it('uses the company abbreviation, not the letters CSDS', async () => {
+    const { client } = fakeClient({ year: 0, month: 0 });
+    expect(await computeInvoiceNumber(client, 'MOON', '2026-07-03')).toBe('MOON_SINV_01_260701');
+  });
+
+  /**
+   * This replaces a test that pinned the opposite, and the old behaviour was a
+   * duplicate-number generator.
+   *
+   * It read: "treats an ERPNext failure as a zero count rather than throwing",
+   * degrading to `_01_`. On a studio with 44 invoices already issued, a single
+   * unreachable moment therefore mints invoice number 01 a second time — the
+   * same number, on paper, in a client's hands. Failing to count is not
+   * evidence that the count is zero.
+   */
+  it('throws rather than inventing number 01 when the count cannot be read', async () => {
     const failing = {
       async getList() {
         throw new Error('ERPNext unreachable');
       },
     } as unknown as FrappeClient;
-    // Degrades to "first of the year, first of the month" rather than blocking
-    // invoice creation entirely.
-    expect(await computeInvoiceNumber(failing, '2026-06-01')).toBe('CSDS_SINV_01_260601');
+
+    await expect(computeInvoiceNumber(failing, 'CSDS', '2026-06-01')).rejects.toThrow(
+      'ERPNext unreachable',
+    );
+  });
+
+  /**
+   * Absence of the field is a different thing from failure to read it. A site
+   * that never adopted the studio numbering convention should simply not get a
+   * number -- ERPNext's own invoice name is still there and still identifies it.
+   */
+  it('returns null when this site has no custom_invoice_number field', async () => {
+    const stockSite = {
+      async getList() {
+        throw new FrappeError(417, {
+          exception:
+            'frappe.exceptions.DataError: Field not permitted in query: custom_invoice_number',
+        });
+      },
+    } as unknown as FrappeClient;
+
+    expect(await computeInvoiceNumber(stockSite, 'ACME', '2026-06-01')).toBeNull();
   });
 });

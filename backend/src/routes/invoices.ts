@@ -2,7 +2,13 @@ import { Hono } from 'hono';
 import { renderInvoiceHtml, type InvoiceDoc } from '../lib/invoiceHtml';
 import { computeInvoiceNumber } from '../lib/invoiceNumber';
 import { buildPayQr } from '../lib/payQr';
-import { readBrand, BRAND_DEFAULTS, type BrandConfig } from './brand';
+import {
+  resolveBrand,
+  resolveCompany,
+  requirePostingAccounts,
+} from '../lib/companyProfile';
+import { getListTolerant } from '../lib/optionalFields';
+import type { BrandConfig } from '../schemas/brand';
 import {
   createInvoiceSchema,
   updateInvoiceSchema,
@@ -27,20 +33,31 @@ import type { AppEnv } from '../types';
 const app = new Hono<AppEnv>();
 
 /**
- * Accounting coordinates for this company, taken from the studio's existing
- * submitted invoices (see SINV-26-00002) so new invoices post to exactly the
- * same ledgers as the ones made by hand in ERPNext.
+ * Accounting coordinates come from the studio's own ERPNext, not from here.
+ *
+ * They used to be three constants — `Sales - CSDS`, `Debtors - CSDS`,
+ * `Main - CSDS` — copied off CSDS's existing invoices. Every other studio's
+ * chart of accounts is different, and those account names do not exist there,
+ * so the first invoice a second customer raised would have failed against an
+ * account nobody had heard of. ERPNext already knows all three; see
+ * lib/companyProfile.ts.
  */
-const INCOME_ACCOUNT = 'Sales - CSDS';
-const DEBIT_TO = 'Debtors - CSDS';
-const COST_CENTER = 'Main - CSDS';
+interface PostingAccounts {
+  incomeAccount: string;
+  receivableAccount: string;
+  costCenter: string;
+}
 
 /**
  * Normalises the UI's line items into valid Sales Invoice Item rows. `project`
  * is stamped on every line (studio rollup rule). Shared by create / edit-draft
  * / amend so all three build identical rows.
  */
-function buildInvoiceItems(items: InvoiceItemInput[], project?: string) {
+function buildInvoiceItems(
+  items: InvoiceItemInput[],
+  accounts: PostingAccounts,
+  project?: string,
+) {
   return (Array.isArray(items) ? items : [])
     .filter((it) => it && (it.item_name || it.item_code) && Number(it.qty) > 0)
     .map((it) => {
@@ -51,8 +68,8 @@ function buildInvoiceItems(items: InvoiceItemInput[], project?: string) {
         rate: Number(it.rate) || 0,
         uom: it.uom || 'Nos',
         conversion_factor: 1,
-        income_account: INCOME_ACCOUNT,
-        cost_center: COST_CENTER,
+        income_account: accounts.incomeAccount,
+        cost_center: accounts.costCenter,
         project: project || undefined,
       };
       if (it.item_code) line.item_code = it.item_code;
@@ -71,7 +88,10 @@ function requireItems(items: ReturnType<typeof buildInvoiceItems>) {
 /** GET /api/invoices -- list Sales Invoices with the fields the dashboard needs. */
 app.get('/', async (c) => {
   const frappe = c.get('frappe');
-  const data = await frappe.getList('Sales Invoice', {
+  // `custom_invoice_number` is a CSDS field. Asking for it on a site without it
+  // fails the whole query, so ask tolerantly -- the studio's own numbering is a
+  // convention, not a requirement for listing invoices.
+  const { rows } = await getListTolerant(frappe, 'Sales Invoice', {
     fields: [
       'name',
       'custom_invoice_number',
@@ -86,7 +106,7 @@ app.get('/', async (c) => {
     limit: 200,
     orderBy: 'posting_date desc',
   });
-  return c.json(data);
+  return c.json(rows);
 });
 
 /**
@@ -117,8 +137,14 @@ app.get('/service-items', async (c) => {
  * invoice designer without touching any real invoice.
  */
 app.post('/brand-preview', async (c) => {
-  const incoming = ((await c.req.json().catch(() => ({}))) ?? {}) as Partial<BrandConfig>;
-  const stored = await readBrand(c.env).catch(() => ({ ...BRAND_DEFAULTS }));
+  const frappe = c.get('frappe');
+  const incoming = ((await c.req.json().catch(() => ({}))) ?? {}) as Partial<BrandConfig> & {
+    company?: string;
+  };
+  // The base is the studio's real branding; the body is what the designer is
+  // trying out on top of it. Nothing is saved -- there is nowhere to save it
+  // until Phase 10f, which is why the invoice designer itself is still deferred.
+  const stored = await resolveBrand(frappe, incoming.company ?? incoming.companyName);
 
   const brand: BrandConfig = {
     ...stored,
@@ -157,8 +183,13 @@ app.post('/brand-preview', async (c) => {
  */
 app.get('/:name/print', async (c) => {
   const frappe = c.get('frappe');
-  const invoice = await frappe.getDoc<InvoiceDoc>('Sales Invoice', c.req.param('name'));
-  const brand = await readBrand(c.env);
+  const invoice = await frappe.getDoc<InvoiceDoc & { company?: string }>(
+    'Sales Invoice',
+    c.req.param('name'),
+  );
+  // The invoice names its own company, so printing never has to infer one --
+  // even on a site with several, this is exact.
+  const brand = await resolveBrand(frappe, invoice.company);
 
   // Resolve a readable project name for the QR note (invoice.project is the
   // PROJ id). Non-fatal if it can't be fetched.
@@ -193,26 +224,31 @@ app.post('/', async (c) => {
   const frappe = c.get('frappe');
   const body = createInvoiceSchema.parse(await c.req.json());
 
-  const cleanItems = requireItems(buildInvoiceItems(body.items, body.project));
-  const invoiceNumber = await computeInvoiceNumber(frappe, body.posting_date);
+  const profile = await resolveCompany(frappe, body.company);
+  const accounts = requirePostingAccounts(profile);
+
+  const cleanItems = requireItems(buildInvoiceItems(body.items, accounts, body.project));
+  // Null on a site that does not carry `custom_invoice_number`. Omitted rather
+  // than defaulted -- see lib/invoiceNumber.ts.
+  const invoiceNumber = await computeInvoiceNumber(frappe, profile.abbr, body.posting_date);
 
   const created = await frappe.createDoc('Sales Invoice', {
     docstatus: 0,
     naming_series: 'SINV-.YY.-',
-    company: c.env.COMPANY,
+    company: profile.name,
     customer: body.customer,
     project: body.project || undefined,
     posting_date: body.posting_date || undefined,
     set_posting_time: body.posting_date ? 1 : 0,
     due_date: body.due_date || undefined,
-    currency: 'INR',
+    currency: profile.currency,
     selling_price_list: 'Standard Selling',
-    debit_to: DEBIT_TO,
-    cost_center: COST_CENTER,
+    debit_to: accounts.receivableAccount,
+    cost_center: accounts.costCenter,
     apply_discount_on: 'Grand Total',
     discount_amount: Number(body.discount_amount) || 0,
     remarks: body.subject || undefined,
-    custom_invoice_number: invoiceNumber,
+    custom_invoice_number: invoiceNumber ?? undefined,
     items: cleanItems,
   });
 
@@ -246,7 +282,10 @@ app.put('/:name', async (c) => {
   const frappe = c.get('frappe');
   const name = c.req.param('name');
 
-  const current = await frappe.getDoc<{ docstatus: number }>('Sales Invoice', name);
+  const current = await frappe.getDoc<{ docstatus: number; company?: string }>(
+    'Sales Invoice',
+    name,
+  );
   if (current.docstatus !== 0) {
     throw new ValidationError(
       'Only draft invoices can be edited directly. A sent (submitted) invoice must be amended - cancelled and re-issued.',
@@ -254,7 +293,10 @@ app.put('/:name', async (c) => {
   }
 
   const body = updateInvoiceSchema.parse(await c.req.json());
-  const cleanItems = requireItems(buildInvoiceItems(body.items, body.project));
+  // A draft already has a company; keep it rather than re-deciding one.
+  const existing = current as { docstatus: number; company?: string };
+  const accounts = requirePostingAccounts(await resolveCompany(frappe, existing.company));
+  const cleanItems = requireItems(buildInvoiceItems(body.items, accounts, body.project));
 
   const updated = await frappe.updateDoc('Sales Invoice', name, {
     customer: body.customer,
@@ -285,7 +327,7 @@ app.post('/:name/amend', async (c) => {
   const frappe = c.get('frappe');
   const body = amendInvoiceSchema.parse(await c.req.json());
 
-  const old = await frappe.getDoc<InvoiceDoc & { docstatus: number; name: string }>(
+  const old = await frappe.getDoc<InvoiceDoc & { docstatus: number; name: string; company?: string }>(
     'Sales Invoice',
     c.req.param('name'),
   );
@@ -296,7 +338,14 @@ app.post('/:name/amend', async (c) => {
     );
   }
 
-  const cleanItems = requireItems(buildInvoiceItems(body.items, body.project || old.project));
+  // An amendment is a correction of *this* invoice, so it stays in the same
+  // books. The original's company is the answer, never a fresh decision.
+  const profile = await resolveCompany(frappe, old.company);
+  const accounts = requirePostingAccounts(profile);
+
+  const cleanItems = requireItems(
+    buildInvoiceItems(body.items, accounts, body.project || old.project),
+  );
 
   // 1. Cancel the original, reversing its GL entries. This fails if it has
   //    linked payments or returns -- ERPNext surfaces that and we pass its
@@ -308,16 +357,16 @@ app.post('/:name/amend', async (c) => {
   const created = await frappe.createDoc<{ name: string }>('Sales Invoice', {
     docstatus: 0,
     amended_from: old.name,
-    company: c.env.COMPANY,
+    company: profile.name,
     customer: body.customer || old.customer,
     project: body.project || old.project || undefined,
     posting_date: body.posting_date || undefined,
     set_posting_time: body.posting_date ? 1 : 0,
     due_date: body.due_date || undefined,
-    currency: 'INR',
+    currency: profile.currency,
     selling_price_list: 'Standard Selling',
-    debit_to: DEBIT_TO,
-    cost_center: COST_CENTER,
+    debit_to: accounts.receivableAccount,
+    cost_center: accounts.costCenter,
     apply_discount_on: 'Grand Total',
     discount_amount: Number(body.discount_amount) || 0,
     remarks: body.subject || old.remarks || undefined,

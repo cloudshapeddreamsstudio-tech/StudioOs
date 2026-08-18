@@ -89,6 +89,7 @@ const icons = {
 const navItems: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: icons.dashboard },
   { to: '/projects', label: 'Projects', icon: icons.projects },
+  { to: '/invoices', label: 'Invoices', icon: icons.invoices },
   { to: '/tasks', label: 'Tasks', icon: icons.tasks },
   { to: '/payables', label: 'Payables', icon: icons.payables },
   { to: '/clients', label: 'Clients', icon: icons.clients },
