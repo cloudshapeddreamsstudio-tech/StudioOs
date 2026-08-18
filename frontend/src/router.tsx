@@ -7,6 +7,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { PayablesPage } from './features/payables/PayablesPage';
 import { TasksKanbanPage } from './features/tasks/TasksKanbanPage';
 import { ClientsPage } from './features/directory/ClientsPage';
+import { ClientDetailPage } from './features/directory/ClientDetailPage';
 import { VendorsPage } from './features/directory/VendorsPage';
 import { InventoryPage } from './features/directory/InventoryPage';
 import { SignInPage } from './features/auth/SignInPage';
@@ -63,6 +64,7 @@ export const router = createBrowserRouter([
           { path: 'tasks', element: <TasksKanbanPage /> },
           { path: 'payables', element: <PayablesPage /> },
           { path: 'clients', element: <ClientsPage /> },
+          { path: 'clients/:name', element: <ClientDetailPage /> },
           { path: 'vendors', element: <VendorsPage /> },
           { path: 'inventory', element: <InventoryPage /> },
           { path: '*', element: <NotFound /> },

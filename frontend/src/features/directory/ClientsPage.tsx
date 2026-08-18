@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useClients } from './api';
 import { PageHeader, StatTile, Card, TableShell } from '@/components/ui/PageHeader';
 import { QueryState } from '@/components/ui/QueryState';
@@ -67,7 +68,12 @@ export function ClientsPage() {
             {clients.map((c) => (
               <tr key={c.name}>
                 <td className="px-2 first:pl-5 py-3 font-medium text-gray-800 dark:text-gray-100">
-                  {c.customer_name || c.name}
+                  <Link
+                    to={`/clients/${encodeURIComponent(c.name)}`}
+                    className="hover:text-violet-500"
+                  >
+                    {c.customer_name || c.name}
+                  </Link>
                   {c.disabled ? (
                     <span className="ml-2 text-xs text-gray-400">(disabled)</span>
                   ) : null}

@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
+import { getListTolerant } from '../lib/optionalFields';
 import type { AppEnv } from '../types';
 
 /**
@@ -78,6 +79,23 @@ app.get('/', async (c) => {
 });
 
 /**
+ * Read a section of the page, or admit it could not be read.
+ *
+ * The old app caught every failure here and substituted `[]`, which is how the
+ * detail page came to report **₹0 outstanding** for a client the list page said
+ * owed ₹2,29,000 — one query asked for `custom_invoice_number`, a CSDS field
+ * absent on a plain site, Frappe rejected the whole query, and the empty array
+ * became a reassuring total. Two pages of one build disagreeing about a
+ * client's money, with the detail page picking the flattering answer.
+ *
+ * `null` therefore means "this could not be read". It is not an empty list, and
+ * nothing downstream may total it as though it were.
+ */
+async function readOrNull<T>(promise: Promise<T>): Promise<T | null> {
+  return promise.catch(() => null);
+}
+
+/**
  * GET /api/client/:name — one client's whole page in a single call: the
  * Customer doc, their invoices, their projects, their address, and the
  * computed outstanding total.
@@ -93,36 +111,53 @@ app.get('/:name', async (c) => {
     customer_type?: string;
   }>('Customer', clientName);
 
-  const [salesInvoices, projects, address] = await Promise.all([
-    frappe
-      .getList<InvoiceRow>('Sales Invoice', {
-        fields: ['name', 'custom_invoice_number', 'posting_date', 'due_date', 'grand_total', 'outstanding_amount', 'status', 'creation'],
+  const [invoiceResult, projectResult, address] = await Promise.all([
+    // `custom_invoice_number` is CSDS-only; asking tolerantly costs one extra
+    // round trip on sites that lack it and keeps the real invoice data.
+    readOrNull(
+      getListTolerant<InvoiceRow>(frappe, 'Sales Invoice', {
+        fields: [
+          'name',
+          'custom_invoice_number',
+          'posting_date',
+          'due_date',
+          'grand_total',
+          'outstanding_amount',
+          'status',
+          'creation',
+        ],
         filters: [['customer', '=', clientName]],
         limit: 500,
         orderBy: 'posting_date desc',
-      })
-      .catch(() => [] as InvoiceRow[]),
-    frappe
-      .getList('Project', {
+      }),
+    ),
+    // Same for `custom_shoot_date` and `custom_brand`.
+    readOrNull(
+      getListTolerant(frappe, 'Project', {
         fields: ['name', 'project_name', 'status', 'custom_shoot_date', 'custom_brand', 'creation'],
         filters: [['customer', '=', clientName]],
         limit: 500,
         orderBy: 'creation desc',
-      })
-      .catch(() => []),
+      }),
+    ),
     customer.customer_primary_address
       ? frappe.getDoc('Address', customer.customer_primary_address).catch(() => null)
       : Promise.resolve(null),
   ]);
 
-  const liveSales = salesInvoices.filter((i) => i.status !== 'Cancelled');
+  const liveSales = invoiceResult
+    ? invoiceResult.rows.filter((i) => i.status !== 'Cancelled')
+    : null;
 
   return c.json({
     customer,
     address,
     salesInvoices: liveSales,
-    projects,
-    outstandingReceivables: outstandingOf(liveSales),
+    projects: projectResult?.rows ?? null,
+    /** Null, not zero, when the invoices behind it could not be read. */
+    outstandingReceivables: liveSales ? outstandingOf(liveSales) : null,
+    /** Columns this site does not have, so the page can leave them blank honestly. */
+    missingFields: [...(invoiceResult?.missingFields ?? []), ...(projectResult?.missingFields ?? [])],
   });
 });
 

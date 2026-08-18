@@ -764,18 +764,74 @@ The first run showed `/api/dashboard` taking **126 seconds**. That was the
 bench's single-threaded dev server head-of-line blocking under four concurrent
 requests, not the route. Run one at a time, each endpoint answers in 2–10s.
 
-### 10b — client detail ⬜
+### 10b — client detail ✅
 
 `GET /api/client/:name` and `PUT /api/client/:name` are already written and
 already pure ERPNext. Only the page is missing.
 
-- ⬜ `client-detail.html` → `ClientDetailPage`
-- ⬜ Keep the old app's honesty: Transactions / Statement / Comments / Mails
+- ✅ `client-detail.html` → `ClientDetailPage`
+- ✅ Keep the old app's honesty: Transactions / Statement / Comments / Mails
   were visible tabs saying "coming soon" rather than fake data. Port that, not
   a mock
-- ⬜ `Customer.email_id` and `mobile_no` are Frappe *fetch-from* fields sourced
+- ✅ `Customer.email_id` and `mobile_no` are Frappe *fetch-from* fields sourced
   from the linked Contact — **not directly PATCHable.** Edit goes through the
   Contact's child tables
+
+#### The bug the port found before it wrote a line of UI
+
+`GET /api/client/:name` reported **₹0 outstanding** for West View Software Ltd.
+The list page, the dashboard and the client page all read the same books, and
+the client page was the one that said the client owed nothing.
+
+The route asked for `custom_invoice_number` — a CSDS field, absent on a plain
+site — so Frappe rejected the whole invoice query, and a blanket
+`.catch(() => [])` turned that into an empty list, which totalled to zero. The
+page then displayed the reassuring number with no indication anything had
+failed.
+
+Fixed twice over: the query goes through `getListTolerant`, and what remains of
+the catch returns **`null`** rather than `[]`. `salesInvoices`, `projects` and
+`outstandingReceivables` are all nullable now, and the page renders a dash and
+says the data could not be read. Nothing totals a null.
+
+| On West View Software Ltd. | Before | After |
+|---|---|---|
+| `outstandingReceivables` | 0 | **229000** |
+| `salesInvoices` | `[]` | 2 invoices |
+| `missingFields` | — | `['custom_invoice_number']` |
+
+**₹2,29,000 now agrees with the list page and the dashboard**, which is what
+made the original wrong.
+
+#### Verified in a browser, 2026-08-18
+
+| Check | Result |
+|---|---|
+| Page | To collect ₹2,29,000 · Total invoiced ₹2,61,000 · 1 project |
+| Arithmetic | ₹32,000 + ₹2,29,000 = ₹2,61,000 |
+| Tabs | all five switch; the four stubs carry the old app's own wording |
+| History | derived from invoice and project creation, newest first |
+| Edit → save | Contact **created and linked**, Address created, page refetched and showed all of it |
+| Written as whom | Contact and Address `owner` = **studioos-test@example.com** |
+| Restricted user, GET | **403** |
+| Restricted user, PUT | **403**, ERPNext's own `PermissionError` |
+
+Test data removed afterwards. Note that deleting the Contact left
+`Customer.email_id` and `mobile_no` still populated — a fetch-from field keeps
+its copied value when the source goes away — so those had to be cleared
+separately. Worth knowing before anyone treats those fields as a live mirror of
+the Contact.
+
+`describeSaveError` moved to `lib/saveError.ts` rather than being copied for the
+second form. The old app had `statusBadgeClass` defined per page and the copies
+had drifted; one is enough.
+
+#### An environment limitation, not a page bug
+
+Synthetic mouse clicks do not reach the page in this Browser pane (screenshots
+fail for the same reason — it is not compositing). Tab switching and form
+submission were driven through the DOM instead, which exercises the same React
+handlers. Anything needing a real screenshot has to wait for the pane.
 
 ### 10c — invoices, with brand resolved from ERPNext ⬜
 
