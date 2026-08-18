@@ -9,6 +9,7 @@ import {
 } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { useDashboard, useInsights, type Insight } from '@/features/dashboard/api';
+import { DashboardTabs } from '@/features/dashboard/DashboardTabs';
 import { PageHeader, StatTile, Card, TableShell } from '@/components/ui/PageHeader';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { formatCurrency, formatPercent } from '@/lib/format';
@@ -36,6 +37,7 @@ export function DashboardPage() {
     return (
       <>
         <PageHeader title="Dashboard" />
+        <DashboardTabs />
         <div className="px-4 py-3 rounded-lg bg-red-500/10 text-red-600 text-sm">
           Couldn&apos;t load the dashboard: {(error as Error).message}
         </div>
@@ -50,8 +52,10 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader title="Dashboard" />
+      <DashboardTabs />
 
-      {/* What needs attention, before any numbers. */}
+      {/* What needs attention, before any numbers. The Analytics tab shows the
+          same cards in full, with their severity visible. */}
       {insights && insights.length > 0 && (
         <div className="grid grid-cols-12 gap-4 mb-6">
           {insights.map((ins) => (

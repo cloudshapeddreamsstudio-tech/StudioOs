@@ -920,15 +920,56 @@ A test pinned the old behaviour and had to be replaced; the replacement says so.
    with a cancelled invoice and no replacement. Nothing exercised that path, and
    it should be closed before amend is offered in the UI.
 
-### 10e — analytics and fintech ⬜
+### 10e — analytics and fintech ✅
 
 The two dashboard tabs that were never ported. `insights.ts` already computes
 the rule-based cards analytics.html renders.
 
-- ⬜ `analytics.html` → insight cards on their own route
-- ⬜ `fintech.html` → the financial KPI and chart view
+- ✅ `analytics.html` → insight cards on their own route
+- ✅ `fintech.html` → the financial KPI and chart view
 - ⬜ Chart.js returns with them, so the bundle note from 3c comes back with it —
   a dynamic import, not a different library
+
+Backend work: none. Both pages read `/api/dashboard` and `/api/insights`, which
+have existed since Phase 3a — the whole gap was three HTML files nobody had
+turned into components.
+
+#### One nav item, three URLs
+
+The old app reached these through a Dashboard dropdown, as three separate
+130–170 KB files each carrying its own copy of the sidebar. Here they are three
+routes under one nav item with a tab strip. They are `NavLink`s rather than
+local state, so the Fintech view has an address that can be sent to someone.
+
+#### Verified in a browser, 2026-08-18
+
+| Check | Result |
+|---|---|
+| `/dashboard/analytics` | the overdue-invoice card with its severity colour and a working **View** link |
+| `/dashboard/fintech` | all five charts render — receivables, commission, billed vs purchase cost, billed vs outstanding, and the three-line six-month trend |
+| Receivables | **₹3,16,000 · 1 overdue**, agreeing with Main, Clients and Invoices |
+| Tabs | Main / Analytics / Fintech all reachable, active state follows the URL |
+| `tsc`, build | clean |
+
+#### What looking at the page caught
+
+Fintech's Financials summary read **Total billed +₹0** directly beneath
+**Accounts receivable ₹3,16,000**. Both are correct: the summary rolls up each
+*project's* `total_billed_amount`, and on this bench no invoice is attached to a
+project. Main already carries a footnote explaining that distinction; Fintech
+did not, so on real data it read as a contradiction. The row is now labelled
+"Total billed (project rollup)" and the note explains the ₹0 explicitly.
+
+#### Backup and Savings are deliberately not shipped
+
+The old page ended its summary with "Backup (20% of margin)" and "Savings (80%
+of margin)". That split is **CSDS's own policy**, recorded in its handoff notes,
+with no source in ERPNext — it was arithmetic on a constant.
+
+For CSDS it is true. For any other studio it is a confident statement about
+money they never agreed to, set in the same type as figures that came from their
+books. There is nowhere to store a per-studio split, so the rows are omitted and
+the page says why. **Carried into 10f as a named item**, not dropped.
 
 ### 10f — where the non-ERPNext data lives ⬜
 
@@ -940,9 +981,16 @@ what genuinely has no home.
   worth checking rather than assuming: `Subscription` for recurring overheads,
   `Timesheet` for rental sessions, `Journal Entry` for the theatre ledger,
   `File`/`Letter Head` for brand assets
-- ⬜ Record what has **no** home. The crew roster is the likeliest: the old app's
-  own note says a person can be crew on one project and a billed vendor on
-  another, and no ERPNext doctype models that
+- ⬜ Record what has **no** home. Three are already known:
+  - the **crew roster** — the old app's own note says a person can be crew on
+    one project and a billed vendor on another, and no ERPNext doctype models
+    that
+  - a **UPI id** for the invoice Scan-to-Pay QR. 10c looked; ERPNext has no
+    field for one anywhere, so the QR does not render at all today
+  - **studio-owned presentation and policy** — invoice accent colour, tagline
+    and notes wording, and the margin split the old Fintech page showed as
+    "backup 20% / savings 80%". That split is one studio's policy, so it is
+    withheld rather than shown to every studio (see 10e)
 - ⬜ Only then decide whether `studioos_core` is necessary
 - ⬜ Whatever the answer, **migration is part of it.** `studioRental.json` holds
   103 real sessions and `transactions.json` the entire theatre ledger; both

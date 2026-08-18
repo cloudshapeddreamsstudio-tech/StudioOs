@@ -4,6 +4,8 @@ import { ProjectsListPage } from './features/projects/ProjectsListPage';
 import { ProjectDetailPage } from './features/projects/ProjectDetailPage';
 import { ProjectCreatePage, ProjectEditPage } from './features/projects/ProjectFormPages';
 import { DashboardPage } from './pages/DashboardPage';
+import { AnalyticsPage } from './features/dashboard/AnalyticsPage';
+import { FintechPage } from './features/dashboard/FintechPage';
 import { PayablesPage } from './features/payables/PayablesPage';
 import { TasksKanbanPage } from './features/tasks/TasksKanbanPage';
 import { ClientsPage } from './features/directory/ClientsPage';
@@ -56,7 +58,12 @@ export const router = createBrowserRouter([
           // sign-in still lands on /projects — that was chosen deliberately in
           // 7a and is where the work actually is.
           { index: true, element: <Navigate to="/dashboard" replace /> },
+          // Three views of the same two endpoints, as in the old app's
+          // Dashboard dropdown — one nav item, three URLs, so a link to the
+          // Fintech view can be sent to someone.
           { path: 'dashboard', element: <DashboardPage /> },
+          { path: 'dashboard/analytics', element: <AnalyticsPage /> },
+          { path: 'dashboard/fintech', element: <FintechPage /> },
           { path: 'projects', element: <ProjectsListPage /> },
           // Before /projects/:name, or "new" would be read as a project id.
           { path: 'projects/new', element: <ProjectCreatePage /> },
