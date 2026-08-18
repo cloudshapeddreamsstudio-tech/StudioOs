@@ -205,3 +205,66 @@ Not yet revised, listed so the conflict is not silent:
   Cloudflare Access authenticates at the edge… no login page, no session table".
   StudioOS will need its own session layer; it still never handles a password.
 - Acceptance criterion 4 — "reachable only through Cloudflare Access".
+
+---
+
+## Storage for non-ERPNext data — verified findings (2026-08-18)
+
+Established against `studio.os`, a **stock ERPNext v15** — chosen deliberately,
+because the question is what every studio has, not what CSDS added.
+
+### V6 — a studio can be given custom DocTypes without installing anything
+
+A studio's own **System Manager** can create a custom DocType over the API and
+write rows to it. No developer mode, no bench access, no Frappe app. Proven end
+to end as `studioos-test@example.com` with no `ignore_permissions`, then torn
+down. A user without System Manager gets `PermissionError`.
+
+**This removes the distribution blocker from the storage question.** Frappe
+Cloud's managed plan does not allow installing custom apps, so a `studioos_core`
+*app* was never going to reach most customers. Provisioning DocTypes at
+onboarding, as the owner, on the owner's own site, reaches all of them — and the
+data stays in the studio's database under the studio's own permissions, so
+"ERPNext is the only database" holds without exception.
+
+Note this is a **different question from the connector**, which still needs an
+OAuth Client. That can also be created by hand in the desk UI, so it does not
+require an app install either — see the distribution note above, which this
+narrows but does not close.
+
+### V7 — Timesheet models hourly studio rental, with no Employee
+
+`Timesheet` saved and submitted with `employee: null`. That was the load-bearing
+question: this studio has zero Employee records on principle, since all crew are
+Suppliers.
+
+It also keeps more than the old JSON did — `hours` is the true duration and
+`billing_hours` the studio's rounded figure, where the JSON kept only the
+rounded one. `Timesheet.sales_invoice` is native, so invoicing from sessions
+stops being hand-rolled.
+
+### C4 — `Expense Claim` does not exist on stock ERPNext
+
+It ships in **HRMS**, a separate app, and is absent from a plain v15. Any design
+that assumed it for per-project out-of-pocket expenses is wrong. What remains
+native is `Purchase Invoice` (needs a Supplier) or `Journal Entry` (submittable,
+GL-impacting) — neither of which is light enough for "₹300 of transport".
+
+### C5 — two mappings exist but change what the data means
+
+- `Subscription` accepts `party_type: Supplier` and generates **Purchase
+  Invoices** (confirmed in ERPNext's controller, which picks the invoice type
+  from the party). The old ledger was for *visibility* — it carries a ₹0
+  placeholder for a bill nobody wants posted monthly.
+- The theatre ledger's only native home is `Journal Entry`: submittable, hits
+  the GL, needs a bank Account that line of the business does not have. This is
+  the same reason it was rejected when the old app was built.
+
+Both are the owner's decision, not an implementation detail.
+
+### C6 — the invoice UPI id has no home anywhere in ERPNext
+
+There is no field for one on `Company`, `Bank Account` or `Letter Head`. The
+Scan-to-Pay QR therefore does not render at all today (10c). `Letter Head` holds
+the logo and header/footer HTML; accent colour, tagline and notes wording have
+no field either.

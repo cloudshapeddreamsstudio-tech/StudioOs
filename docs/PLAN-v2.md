@@ -971,16 +971,97 @@ money they never agreed to, set in the same type as figures that came from their
 books. There is nowhere to store a per-studio split, so the rows are omitted and
 the page says why. **Carried into 10f as a named item**, not dropped.
 
-### 10f — where the non-ERPNext data lives ⬜
+### 10f — where the non-ERPNext data lives 🔨
 
 **The investigation, and it comes before any of 10g.** The rule from the answer
 above: map onto what ERPNext already has, and build custom DocTypes only for
 what genuinely has no home.
 
-- ⬜ Establish, against a live site, what each of the six maps onto — candidates
-  worth checking rather than assuming: `Subscription` for recurring overheads,
-  `Timesheet` for rental sessions, `Journal Entry` for the theatre ledger,
-  `File`/`Letter Head` for brand assets
+Run against `studio.os`, which is a **stock ERPNext v15** — deliberately, since
+the question is what every studio has, not what CSDS added.
+
+#### The finding that changes the architecture
+
+**A studio's own System Manager can create a custom DocType at runtime, over the
+API, and write rows to it.** No developer mode, no bench access, no app install.
+Proven end to end and then torn down:
+
+| Check | Result |
+|---|---|
+| DocType created as `studioos-test@example.com`, no `ignore_permissions` | **created**, `custom: 1`, module Custom |
+| Row written and queried back | **yes** |
+| Same attempt as a user without System Manager | **PermissionError** |
+
+This matters more than any single mapping. It means **`studioos_core` does not
+have to be a Frappe app that customers install** — which was never going to work
+anyway, because Frappe Cloud's managed plan does not allow installing custom
+apps. StudioOS can provision what it needs at onboarding, as the owner, on the
+owner's own site, and the data stays in the studio's database under the studio's
+own permissions. Decision 2 — "ERPNext is the only database" — survives intact.
+
+#### What each of the six actually maps onto
+
+| Dataset | Native home | Verdict |
+|---|---|---|
+| **Studio rental sessions** | `Timesheet` + `Timesheet Detail` | **Strong fit, proven** — see below |
+| **Subscriptions** (recurring overheads) | `Subscription` with `party_type: Supplier` | Exists, but changes what the data *means* — see below |
+| **Theatre Education ledger** | `Journal Entry` only | Forced fit. Submittable and GL-impacting, which the owner explicitly rejected once already |
+| **Project crew roster** | `Purchase Order` per crew member; `project` is on both the order and its lines | Plausible — planned spend becomes a real procurement document, and the Purchase Invoice against it is the actual |
+| **Project expenses** | **None that is light.** `Expense Claim` **does not exist** on stock ERPNext — it ships in HRMS, a separate app. Only `Purchase Invoice` (needs a Supplier) or `Journal Entry` remain | Custom DocType |
+| **Brand config** | `Letter Head` holds the logo and header/footer HTML; `Company` holds name, address, bank | Partial — accent colour, tagline, notes wording and **UPI id** have no field anywhere |
+
+#### Timesheet is a better model than the JSON it replaces
+
+Proven on the bench, created and submitted and then deleted:
+
+```
+Timesheet with NO employee      saved and submitted   (employee: null)
+2026-08-01 18:30 → 20:37        hours: 2.116667       the true duration
+                                billing_hours: 2      the studio's rounded hour
+                                billing_amount: ₹100  2 × ₹50, its own rate card
+```
+
+Three things follow.
+
+1. **No `Employee` is required.** That was the load-bearing question — this
+   studio has zero Employee records on principle, because all crew are
+   Suppliers. Timesheet saves and submits without one.
+2. **It keeps the truth and the bill separately.** `studioRental.json` stored
+   only the rounded hours, so 2h07m became "2" and the real duration was gone.
+   Here `hours` is exact and `billing_hours` is the rounded figure, and the
+   studio's rule — nearest whole hour, ties up — is simply `Math.round(hours)`.
+   2h07m → 2, 4h30m → 5, unchanged.
+3. **ERPNext already invoices from it.** `Timesheet.sales_invoice` and the
+   per-log `sales_invoice` exist natively, which is what
+   `POST /api/studio-rental/:id/invoice` currently hand-rolls.
+
+A booking maps to one Timesheet, its sessions to `time_logs`. Flat-rate sessions
+are `billing_hours: 1` at the flat rate. The 103 real sessions become two
+Timesheets of 87 and 16 rows.
+
+#### The two mappings that are decisions, not facts
+
+Both exist natively. Both change the meaning of the data, so neither is mine to
+choose:
+
+- **Subscriptions.** `Subscription` accepts `party_type: Supplier` and generates
+  **Purchase Invoices** — confirmed in ERPNext's own controller, which picks the
+  invoice type from the party. That is real bookkeeping on a schedule. The old
+  ledger was for visibility: it carries a **₹0 placeholder** for the
+  grandmother's electricity bill, which is a perfectly good note and not a
+  posting anyone wants generated monthly.
+- **Theatre Education.** The only native home is `Journal Entry`, which is
+  submittable and hits the general ledger, and needs a bank Account this line of
+  the business does not have. That is exactly why it was rejected when the old
+  app was built. Nothing has changed.
+
+#### Still to do in 10f
+
+- ⬜ Decide the two above with the owner
+- ⬜ Design the custom DocTypes for what has no home, and **how they are
+  provisioned** — at onboarding, by the signing-in owner, idempotently
+- ⬜ **Migration is part of it.** `studioRental.json` holds 103 real sessions and
+  `transactions.json` the entire theatre ledger; both exist nowhere else
 - ⬜ Record what has **no** home. Three are already known:
   - the **crew roster** — the old app's own note says a person can be crew on
     one project and a billed vendor on another, and no ERPNext doctype models
