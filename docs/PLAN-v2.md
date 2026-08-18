@@ -1055,9 +1055,76 @@ choose:
   the business does not have. That is exactly why it was rejected when the old
   app was built. Nothing has changed.
 
+#### Decisions taken, 2026-08-18
+
+The owner's steer was **prefer whatever ERPNext already has**, driven by a
+concern worth quoting: *"they are non-tech users, they can not create that
+custom doctypes."*
+
+That concern rests on a misreading worth correcting in the record, because it
+cuts the other way. **No studio owner ever creates a DocType by hand.** StudioOS
+creates them through the API on the owner's own session at connect time — the
+owner approves the same consent screen they already approve to sign in, and sees
+a progress line, not a form. The real argument for native doctypes is different
+and still good: a custom DocType is unfamiliar inside their own ERPNext, and if
+a studio stops using StudioOS the data sits in a shape only StudioOS
+understands. Native is portable.
+
+| Dataset | Decision | Why |
+|---|---|---|
+| **Crew roster** | **Purchase Orders**, one per crew member | Owner's decision. Planned spend becomes a real procurement document and ERPNext computes planned-versus-actual against the Purchase Invoice |
+| **Theatre ledger** | **Journal Entry** | Native, and the original objection turned out to be wrong — see below |
+| **Rental sessions** | **Timesheet** | Proven above |
+| **Overheads** | still open, and native is the *worse* answer here — see below |
+| **Project expenses** | custom DocType; nothing light exists |
+| **Brand** | Letter Head + Company; accent, tagline, notes and UPI have no field |
+
+#### The theatre ledger's original rejection does not hold
+
+It was refused when the old app was built because a Journal Entry "needs a bank
+Account this line of the business does not have". **Every ERPNext company is
+created with a `Cash - ABBR` account already.** Proven by posting one:
+
+```
+Journal Entry   ACC-JV-2026-00001   submitted, docstatus 1, ₹5,000
+                Dr  Cash - CSDSD        5,000
+                Cr  Service - CSDSD     5,000
+                no bank account, no setup, no new accounts created
+```
+
+Created, submitted and deleted. So the theatre ledger can be real bookkeeping
+with **zero configuration by the owner**. What is genuinely true, and different
+from the old objection: a submitted Journal Entry cannot be edited — correcting
+one means cancel and re-post — and every entry lands in the P&L alongside the
+video business. That is a feature if the owner wants one set of books, which
+their answer says they do.
+
+#### Overheads are the case where native costs the owner *more*
+
+`Subscription` needs a **Subscription Plan** per overhead, and every plan needs
+an **Item** and a **Supplier**. So "track the electricity bill" becomes: create
+a supplier, create an item, create a plan, create a subscription — four records
+of setup, by the owner, per overhead. A custom DocType StudioOS provisions
+silently is *less* work for a non-technical owner, not more.
+
+It also cannot hold what the ledger currently holds: the **₹0 placeholder** for
+the grandmother's electricity bill is a useful note and an impossible invoice.
+
+**Recommendation: lightweight, provisioned automatically.** This is the one
+place where the owner's stated principle and the owner's stated concern point in
+opposite directions, so it goes back to them named rather than decided quietly.
+
+#### An empty `studioos` app is already installed on the bench
+
+`frappe.get_installed_apps()` returns `frappe, erpnext, studioos,
+oauth_connector`. The `studioos` app has a `StudioOS` module and **zero
+DocTypes** — a scaffold from an earlier session. It is not load-bearing, and
+nothing above depends on it. Decide whether to keep it as the home for
+fixtures or remove it, but do not let it linger as a half-thing.
+
 #### Still to do in 10f
 
-- ⬜ Decide the two above with the owner
+- ⬜ Settle overheads with the owner
 - ⬜ Design the custom DocTypes for what has no home, and **how they are
   provisioned** — at onboarding, by the signing-in owner, idempotently
 - ⬜ **Migration is part of it.** `studioRental.json` holds 103 real sessions and

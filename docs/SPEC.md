@@ -256,9 +256,14 @@ GL-impacting) — neither of which is light enough for "₹300 of transport".
   Invoices** (confirmed in ERPNext's controller, which picks the invoice type
   from the party). The old ledger was for *visibility* — it carries a ₹0
   placeholder for a bill nobody wants posted monthly.
-- The theatre ledger's only native home is `Journal Entry`: submittable, hits
-  the GL, needs a bank Account that line of the business does not have. This is
-  the same reason it was rejected when the old app was built.
+- The theatre ledger's only native home is `Journal Entry`. It was rejected when
+  the old app was built because it "needs a bank Account this line of the
+  business does not have" — **that turned out to be wrong.** Every ERPNext
+  company is created with a `Cash - ABBR` account already, and a theatre-style
+  entry posted and submitted against it with no setup and no new accounts
+  (`ACC-JV-2026-00001`, Dr Cash / Cr Service, ₹5,000; deleted afterwards).
+  What remains true is different: a submitted Journal Entry cannot be edited,
+  only cancelled and re-posted, and every entry lands in the P&L.
 
 Both are the owner's decision, not an implementation detail.
 
