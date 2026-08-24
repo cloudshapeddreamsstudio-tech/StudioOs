@@ -11,6 +11,7 @@ import {
   type PurchaseRow,
 } from '../lib/projectFinance';
 import { NotFoundError } from '../lib/errors';
+import { readCrewForProject } from './projectCrew';
 import type { AppEnv } from '../types';
 
 /**
@@ -141,7 +142,7 @@ app.get('/:name', async (c) => {
 
   // Fire the rest in parallel — none depend on each other. Each is wrapped so
   // one empty or failed section doesn't sink the whole page.
-  const [tasks, salesInvoices, purchaseInvoices, payments, files, comments, communications] =
+  const [tasks, salesInvoices, purchaseInvoices, payments, files, comments, communications, crewRoster] =
     await Promise.all([
       frappe
         .getList<TaskRow>('Task', {
@@ -209,6 +210,7 @@ app.get('/:name', async (c) => {
           orderBy: 'communication_date desc',
         })
         .catch(() => []),
+      readCrewForProject(frappe, projectName).catch(() => []),
     ]);
 
   // --- Milestone task matching -------------------------------------------
@@ -263,15 +265,16 @@ app.get('/:name', async (c) => {
   const livePurchases = purchaseInvoices.filter((i) => i.status !== 'Cancelled');
 
   /**
-   * Phase 7b: the crew roster and project expenses have no home yet.
+   * Phase 7b: project expenses have no home yet.
    *
    * They lived in a database of ours that was removed when ERPNext became the
-   * only store, and where they land in ERPNext is the open question Phase 10
-   * answers. `null` here is load-bearing — it travels through
-   * `projectFinance.ts` and comes out as "unknown" rather than as zero, so the
-   * page shows a dash instead of an overstated budget.
+   * only store, and where they land in ERPNext is still open (Phase 10f).
+   * `null` here is load-bearing — it travels through `projectFinance.ts` and
+   * comes out as "unknown" rather than as zero, so the page shows a dash
+   * instead of an overstated budget. The crew roster's own null was retired
+   * in Phase 10f: it now comes back real, above, as a Draft Purchase Order
+   * per crew/vendor member.
    */
-  const crewRoster = null;
   const expenses = null;
 
   const completion = computeCompletion({
@@ -445,9 +448,8 @@ app.get('/:name', async (c) => {
      * of rendering an empty table that looks like "nothing here".
      */
     unavailable: {
-      crewRoster: crewRoster === null,
       expenses: expenses === null,
-      reason: 'Crew and expenses are not in this release — see docs/PLAN-v2.md.',
+      reason: 'Expenses are not in this release — see docs/PLAN-v2.md.',
     },
   });
 });

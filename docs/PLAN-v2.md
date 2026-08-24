@@ -1129,10 +1129,17 @@ fixtures or remove it, but do not let it linger as a half-thing.
   provisioned** — at onboarding, by the signing-in owner, idempotently
 - ⬜ **Migration is part of it.** `studioRental.json` holds 103 real sessions and
   `transactions.json` the entire theatre ledger; both exist nowhere else
-- ⬜ Record what has **no** home. Three are already known:
-  - the **crew roster** — the old app's own note says a person can be crew on
-    one project and a billed vendor on another, and no ERPNext doctype models
-    that
+- ✅ ~~the **crew roster**~~ — resolved by the 2026-08-18 decision above:
+  one Draft `Purchase Order` per crew/vendor member. The old app's concern
+  (a person can be crew on one project and a billed vendor on another) turned
+  out not to be a blocker: the role is read off the *booking* (which
+  `supplier_group` the Purchase Order's Supplier is in), not stored as a fixed
+  property of the person, so the same Supplier can be Crew on one project's PO
+  and Vendor on another's. Implemented — `routes/projectCrew.ts`,
+  `readCrewForProject` wired into `projectDetail.ts`. Not yet verified live
+  (`frappe-ctl` was unauthorized against `prod` this session); the first real
+  create against `cloudshapeddreamsstudio.m.erpnext.com` is the actual proof.
+- ⬜ Record what has **no** home. Two remain:
   - a **UPI id** for the invoice Scan-to-Pay QR. 10c looked; ERPNext has no
     field for one anywhere, so the QR does not render at all today
   - **studio-owned presentation and policy** — invoice accent colour, tagline
@@ -1152,8 +1159,12 @@ Blocked on 10f. Each is its own phase.
   round-to-nearest-hour rule: `Math.round`, ties up, never `Math.ceil`
 - ⬜ Transactions / theatre education
 - ⬜ Subscriptions
-- ⬜ Crew and Expenses tabs on project detail, **restoring the figures 7b
-  suppressed** — this is what turns "Budget remaining —" back into a number
+- ✅ Crew tab on project detail — implemented via `Purchase Order`, see 10f
+  above. Live verification against the bench still pending.
+- ⬜ Expenses tab on project detail, **restoring the figure 7b suppressed** —
+  this is what turns "Budget remaining —" back into a number (crew alone
+  doesn't: `computeFinance`'s `remaining` is driven by `expenseTotal`, not the
+  roster)
 - ⬜ Invoice designer, once brand has somewhere to be saved
 
 ### 10h — equipment catalogue ⬜

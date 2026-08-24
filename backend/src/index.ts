@@ -5,6 +5,7 @@ import { errorHandler } from './middleware/errorHandler';
 import { requireSession } from './middleware/requireSession';
 import projects from './routes/projects';
 import projectDetail from './routes/projectDetail';
+import projectCrew from './routes/projectCrew';
 import customers from './routes/customers';
 import { salesPersons, projectTypes, projectTemplates } from './routes/lookups';
 import dashboard from './routes/dashboard';
@@ -42,11 +43,15 @@ import type { AppEnv, Env } from './types';
  *
  * Still unmounted, and why:
  *
- *  - `brand`, `projectCrew`, `projectExpenses`, `studioRental`, `subscriptions`,
+ *  - `brand`, `projectExpenses`, `studioRental`, `subscriptions`,
  *    `transactions` — all read D1, and the binding is gone because ERPNext is
  *    the only database. Phase 10f decides where that data actually belongs
  *    before any of them come back. They are excluded from type-checking in
  *    tsconfig.json for the same reason.
+ *
+ *  - `projectCrew` is mounted: Phase 10f decided the crew/vendor roster maps
+ *    onto a Draft `Purchase Order` per member (native ERPNext, no D1), so it
+ *    no longer belongs on the D1-blocked list above.
  *
  * Do not delete them, and do not re-mount one without doing its phase.
  *
@@ -103,6 +108,7 @@ app.route('/api/projects', projects);
 // Mirrors the old app's /api/project (singular, one aggregate) vs
 // /api/projects (plural, the list) split.
 app.route('/api/project', projectDetail);
+app.route('/api/project-crew', projectCrew);
 
 // Pickers for the project form (Phase 7c). Read-only lists; each runs on the
 // signed-in user's token like everything else, so a user who cannot read

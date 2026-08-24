@@ -31,8 +31,11 @@
    *
    * The list is the *transitive* set, which is bigger than it first looks:
    *
-   *  - `projectDetail` reads the crew roster and expenses. Phase 7b brings it
-   *    back with an explicit "inputs unavailable" path instead.
+   *  - `projectDetail` reads project expenses through this path. Phase 7b
+   *    gave it an explicit "inputs unavailable" fallback instead. The crew
+   *    roster half of that (`projectCrew`) came back in Phase 10f as a Draft
+   *    Purchase Order per member -- pure ERPNext, no D1 -- so it is no
+   *    longer on this list.
    *  - `invoices` reads brand settings through `readBrand`, so the print route
    *    is D1-backed even though invoices themselves are pure ERPNext.
    *
@@ -47,7 +50,6 @@
     "src/db/schema.ts",
     "src/lib/backup.ts",
     "src/routes/brand.ts",
-    "src/routes/projectCrew.ts",
     "src/routes/projectExpenses.ts",
     "src/routes/studioRental.ts",
     "src/routes/subscriptions.ts",
