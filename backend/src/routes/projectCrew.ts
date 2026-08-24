@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { FrappeClient } from '../lib/frappe';
+import { resolveCompany } from '../lib/companyProfile';
 import { createCrewSchema, updateCrewSchema } from '../schemas/crew';
 import { ValidationError, NotFoundError } from '../lib/errors';
 import type { AppEnv } from '../types';
@@ -28,10 +29,42 @@ import type { AppEnv } from '../types';
  * uses for real purchase invoices -- `VENDOR_SUPPLIER_GROUP` -- rather than
  * inventing a second one. A Supplier in that group is a Vendor entry;
  * everyone else is Crew.
+ *
+ * Every field name and requirement below was proven live against
+ * cloudshapeddreamsstudio.m.erpnext.com (create, inspect, delete -- same
+ * proof pattern as Timesheet/Journal Entry in docs/PLAN-v2.md), not assumed:
+ *
+ *  - `Purchase Order` has no `remarks` field (that's Sales Invoice only).
+ *    Its free-text home is `terms` (Text Editor, always writable).
+ *  - `Purchase Order Item.item_code` is a required Link to a real `Item` --
+ *    unlike Sales Invoice Item on this site, a free-text line does not work
+ *    here. A "designation" is therefore a real Item (this studio already has
+ *    "Cinematographer", "Director" etc. in the Services group -- a roster
+ *    entry's designation reuses or creates one, the same on-the-fly pattern
+ *    as everything else in this file).
+ *  - `Item` creation needs a `gst_hsn_code` (an India Compliance validation,
+ *    not visible in the DocType schema's `reqd` flags). `998431` matches
+ *    this studio's own existing service Items (motion picture / video
+ *    production services).
+ *  - `Purchase Order` itself needs `naming_series`, `company`, `currency`,
+ *    `conversion_rate` explicitly -- they have schema defaults, but this
+ *    studio's site did not apply them without an explicit value.
+ *  - `Purchase Order Item`'s `uom`, `stock_uom`, `conversion_factor`,
+ *    `base_rate`, `base_amount` are all `reqd: 1` in the schema but are
+ *    populated automatically server-side from the Item master and
+ *    `qty` * `rate` -- supplying `item_code`, `qty`, `rate`, `schedule_date`
+ *    is sufficient and was proven sufficient live.
+ *  - `supplier_group` is fetched directly onto `Purchase Order` itself (not
+ *    just onto `Purchase Invoice`), so the Crew/Vendor split needs no
+ *    separate Supplier lookup.
  */
 
-const CREW_SUPPLIER_GROUP = 'Crew & Freelancers';
+const CREW_SUPPLIER_GROUP = 'Freelance Crew';
 const VENDOR_SUPPLIER_GROUP = 'Rental House';
+/** This studio's own convention for service-designation Items -- see file header. */
+const DESIGNATION_ITEM_GROUP = 'Services';
+const DESIGNATION_ITEM_HSN_CODE = '998431';
+const FALLBACK_DESIGNATION = 'Crew Service';
 
 interface SupplierRow {
   name: string;
@@ -67,49 +100,68 @@ async function resolveCrewSupplier(
   return { ...created, supplier_group: supplierGroup };
 }
 
+/**
+ * Resolve a designation ("Cinematographer", "Boom Operator", ...) to a real
+ * Item, or create one on the fly. `item_code` is a mandatory Link on
+ * Purchase Order Item -- there is no free-text line here, so the
+ * designation itself has to be a document, not a string.
+ */
+async function resolveDesignationItem(
+  frappe: FrappeClient,
+  designation: string,
+): Promise<{ item_code: string; item_name: string }> {
+  const itemCode = designation.trim() || FALLBACK_DESIGNATION;
+
+  const existing = await frappe
+    .getDoc<{ item_code: string; item_name: string }>('Item', itemCode)
+    .catch(() => null);
+  if (existing) return existing;
+
+  const created = await frappe.createDoc<{ item_code: string; item_name: string }>('Item', {
+    item_code: itemCode,
+    item_name: itemCode,
+    item_group: DESIGNATION_ITEM_GROUP,
+    stock_uom: 'Day',
+    is_stock_item: 0,
+    is_purchase_item: 1,
+    gst_hsn_code: DESIGNATION_ITEM_HSN_CODE,
+  });
+  return created;
+}
+
 interface PurchaseOrderRow {
   name: string;
   supplier: string;
   supplier_name?: string;
+  supplier_group?: string;
   docstatus: number;
   schedule_date?: string;
   grand_total?: number;
-  items?: { qty?: number; rate?: number; description?: string }[];
-  remarks?: string;
+  items?: { item_code?: string; item_name?: string; qty?: number; rate?: number }[];
+  terms?: string;
 }
 
 /**
- * ERPNext's Purchase Order has nowhere native for "designation on this
- * booking" or "contact number for this crew member" -- those aren't
- * properties of the Supplier (a Supplier can be crew on one project and a
- * billed vendor on another, with a different designation each time) and
- * inventing a custom field would need bench access this route doesn't
- * assume. `remarks` is a plain, always-writable text field on every ERPNext
- * transaction, so the three planning-layer fields that have no home live
- * there, one per labelled line -- readable by a human looking at the PO
- * directly in ERPNext, not just by this app.
+ * ERPNext's Purchase Order has nowhere native for "contact number for this
+ * crew member on this booking" -- that isn't a property of the Supplier (the
+ * same person can be booked on many projects with different numbers on
+ * file, or none). `terms` (Text Editor) is a plain, always-writable field on
+ * Purchase Order, so the two planning-layer fields with no home live there,
+ * one per labelled line -- readable by a human looking at the PO directly in
+ * ERPNext, not just by this app.
  */
-function encodeRemarks(designation: string, contact: string, notes: string): string | undefined {
+function encodeTerms(contact: string, notes: string): string | undefined {
   const lines: string[] = [];
-  if (designation) lines.push(`Designation: ${designation}`);
   if (contact) lines.push(`Contact: ${contact}`);
   if (notes) lines.push(`Notes: ${notes}`);
   return lines.length ? lines.join('\n') : undefined;
 }
 
-function decodeRemarks(remarks: string | undefined): {
-  designation: string;
-  contact: string;
-  notes: string;
-} {
-  const text = remarks || '';
+function decodeTerms(terms: string | undefined): { contact: string; notes: string } {
+  const text = terms || '';
   const match = (label: string) =>
     new RegExp(`^${label}: (.*)$`, 'm').exec(text)?.[1]?.trim() ?? '';
-  return {
-    designation: match('Designation'),
-    contact: match('Contact'),
-    notes: match('Notes'),
-  };
+  return { contact: match('Contact'), notes: match('Notes') };
 }
 
 /** One roster row's shape, as the frontend already expects it. */
@@ -134,13 +186,15 @@ function rateAndDaysFrom(po: PurchaseOrderRow): { rate: number; days: number } {
   return { rate, days };
 }
 
-function toRosterRow(po: PurchaseOrderRow, supplierGroup: string | undefined): CrewRosterRow {
+function toRosterRow(po: PurchaseOrderRow): CrewRosterRow {
   const { rate, days } = rateAndDaysFrom(po);
-  const { designation, contact, notes } = decodeRemarks(po.remarks);
+  const { contact, notes } = decodeTerms(po.terms);
+  const item = po.items?.[0];
+  const designation = item?.item_code === FALLBACK_DESIGNATION ? '' : item?.item_name || '';
   return {
     id: po.name,
     project: '', // filled by the caller, which already knows it
-    role: supplierGroup === VENDOR_SUPPLIER_GROUP ? 'Vendor' : 'Crew',
+    role: po.supplier_group === VENDOR_SUPPLIER_GROUP ? 'Vendor' : 'Crew',
     name: po.supplier_name || po.supplier,
     designation,
     rate,
@@ -161,31 +215,22 @@ export async function readCrewForProject(
   project: string,
 ): Promise<CrewRosterRow[]> {
   const orders = await frappe.getList<PurchaseOrderRow>('Purchase Order', {
-    fields: ['name', 'supplier', 'supplier_name', 'docstatus', 'schedule_date', 'grand_total', 'remarks'],
+    fields: [
+      'name', 'supplier', 'supplier_name', 'supplier_group', 'docstatus',
+      'schedule_date', 'grand_total', 'terms',
+    ],
     filters: [['project', '=', project], ['docstatus', '!=', 2]],
     limit: 200,
   });
   if (!orders.length) return [];
 
-  // Batch-resolve supplier groups rather than one lookup per order.
-  const supplierNames = [...new Set(orders.map((o) => o.supplier))];
-  const suppliers = await frappe.getList<SupplierRow>('Supplier', {
-    fields: ['name', 'supplier_name', 'supplier_group'],
-    filters: [['name', 'in', supplierNames]],
-    limit: supplierNames.length,
-  });
-  const groupBySupplier = new Map(suppliers.map((s) => [s.name, s.supplier_group]));
-
   // items[] isn't in the list query above (ERPNext list views don't return
-  // child tables); fetch each order's rate/days from its own doc.
+  // child tables); fetch each order's rate/days/designation from its own doc.
   const withItems = await Promise.all(
     orders.map((o) => frappe.getDoc<PurchaseOrderRow>('Purchase Order', o.name)),
   );
 
-  return withItems.map((po) => ({
-    ...toRosterRow(po, groupBySupplier.get(po.supplier)),
-    project,
-  }));
+  return withItems.map((po) => ({ ...toRosterRow(po), project }));
 }
 
 const app = new Hono<AppEnv>();
@@ -209,43 +254,45 @@ app.post('/', async (c) => {
   const frappe = c.get('frappe');
   const body = createCrewSchema.parse(await c.req.json());
 
-  const supplier = await resolveCrewSupplier(frappe, body.name, body.role);
+  const [supplier, item, profile, project] = await Promise.all([
+    resolveCrewSupplier(frappe, body.name, body.role),
+    resolveDesignationItem(frappe, body.designation || ''),
+    resolveCompany(frappe),
+    frappe.getDoc<{ expected_start_date?: string; custom_shoot_date?: string }>(
+      'Project',
+      body.project,
+    ),
+  ]);
 
   const rate = Number(body.rate) || 0;
   const days = Number(body.days) || 1;
   const total = body.total !== undefined && body.total !== '' ? Number(body.total) : rate * days;
-
-  const project = await frappe.getDoc<{ expected_start_date?: string; custom_shoot_date?: string }>(
-    'Project',
-    body.project,
-  );
   const scheduleDate =
     project.custom_shoot_date || project.expected_start_date || new Date().toISOString().slice(0, 10);
 
   const created = await frappe.createDoc<PurchaseOrderRow>('Purchase Order', {
     docstatus: 0,
+    naming_series: 'PUR-ORD-.YYYY.-',
     supplier: supplier.name,
     project: body.project,
+    company: profile.name,
+    currency: profile.currency,
+    conversion_rate: 1,
     transaction_date: new Date().toISOString().slice(0, 10),
     schedule_date: scheduleDate,
-    remarks: encodeRemarks(body.designation || '', body.contact || '', body.notes || ''),
+    terms: encodeTerms(body.contact || '', body.notes || ''),
     items: [
       {
-        item_name: body.designation ? `${body.designation} — ${body.name}` : body.name,
-        description: body.designation || body.name,
+        item_code: item.item_code,
+        item_name: item.item_name,
+        schedule_date: scheduleDate,
         qty: days,
         rate: total / days || rate,
-        uom: 'Day',
-        conversion_factor: 1,
-        schedule_date: scheduleDate,
       },
     ],
   });
 
-  return c.json({
-    ...toRosterRow(created, supplier.supplier_group),
-    project: body.project,
-  });
+  return c.json({ ...toRosterRow(created), project: body.project });
 });
 
 /**
@@ -266,23 +313,17 @@ app.put('/:id', async (c) => {
   }
 
   const patch: Record<string, unknown> = {};
-  let supplierName = existing.supplier_name || existing.supplier;
 
   if (body.name !== undefined || body.role !== undefined) {
-    const name = body.name ?? supplierName;
-    const role = body.role ?? 'Crew';
+    const name = body.name ?? existing.supplier_name ?? existing.supplier;
+    const role = body.role ?? (existing.supplier_group === VENDOR_SUPPLIER_GROUP ? 'Vendor' : 'Crew');
     const supplier = await resolveCrewSupplier(frappe, name, role);
     patch.supplier = supplier.name;
-    supplierName = name;
   }
 
-  const existingFields = decodeRemarks(existing.remarks);
-  if (body.designation !== undefined || body.contact !== undefined || body.notes !== undefined) {
-    patch.remarks = encodeRemarks(
-      body.designation ?? existingFields.designation,
-      body.contact ?? existingFields.contact,
-      body.notes ?? existingFields.notes,
-    );
+  const existingFields = decodeTerms(existing.terms);
+  if (body.contact !== undefined || body.notes !== undefined) {
+    patch.terms = encodeTerms(body.contact ?? existingFields.contact, body.notes ?? existingFields.notes);
   }
 
   const { rate: existingRate, days: existingDays } = rateAndDaysFrom(existing);
@@ -295,31 +336,26 @@ app.put('/:id', async (c) => {
         ? rate * days
         : undefined;
 
-  if (total !== undefined) {
-    const designation = body.designation ?? existingFields.designation;
-    patch.items = [
-      {
-        item_name: designation ? `${designation} — ${supplierName}` : supplierName,
-        description: designation || supplierName,
-        qty: days,
-        rate: total / days || rate,
-        uom: 'Day',
-        conversion_factor: 1,
-        schedule_date: existing.schedule_date,
-      },
-    ];
+  if (total !== undefined || body.designation !== undefined) {
+    const item =
+      body.designation !== undefined
+        ? await resolveDesignationItem(frappe, body.designation)
+        : existing.items?.[0];
+    if (item?.item_code) {
+      patch.items = [
+        {
+          item_code: item.item_code,
+          item_name: item.item_name,
+          schedule_date: existing.schedule_date,
+          qty: days,
+          rate: (total ?? existingRate * existingDays) / days || rate,
+        },
+      ];
+    }
   }
 
   const updated = await frappe.updateDoc<PurchaseOrderRow>('Purchase Order', id, patch);
-  const supplierGroup = (
-    await frappe.getList<SupplierRow>('Supplier', {
-      fields: ['name', 'supplier_group'],
-      filters: [['name', '=', updated.supplier]],
-      limit: 1,
-    })
-  )[0]?.supplier_group;
-
-  return c.json({ ...toRosterRow(updated, supplierGroup), project: '' });
+  return c.json({ ...toRosterRow(updated), project: '' });
 });
 
 /** DELETE /api/project-crew/:id -- only drafts; nothing here submits one. */

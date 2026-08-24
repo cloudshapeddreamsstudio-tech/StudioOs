@@ -1136,9 +1136,22 @@ fixtures or remove it, but do not let it linger as a half-thing.
   `supplier_group` the Purchase Order's Supplier is in), not stored as a fixed
   property of the person, so the same Supplier can be Crew on one project's PO
   and Vendor on another's. Implemented — `routes/projectCrew.ts`,
-  `readCrewForProject` wired into `projectDetail.ts`. Not yet verified live
-  (`frappe-ctl` was unauthorized against `prod` this session); the first real
-  create against `cloudshapeddreamsstudio.m.erpnext.com` is the actual proof.
+  `readCrewForProject` wired into `projectDetail.ts`. **Verified live**
+  2026-08-24 against `cloudshapeddreamsstudio.m.erpnext.com`: created,
+  inspected, edited, and deleted a real Draft Purchase Order end to end
+  (same proof pattern as Timesheet/Journal Entry above). Two assumptions the
+  first draft of this code got wrong, caught only by the live create, not by
+  `frappe_describe`'s required-fields list:
+  - `Purchase Order` has no `remarks` field (unlike Sales Invoice) — the
+    free-text home is `terms`.
+  - `Purchase Order Item.item_code` is a mandatory Link to a real `Item`; a
+    free-text line (which works on Sales Invoice Item on this site) silently
+    fails to persist here. A roster entry's designation is therefore a real
+    Item, reusing this studio's own existing convention (`Cinematographer`,
+    `Director`, ... in the `Services` group) rather than a fabricated
+    string. New Items also need a `gst_hsn_code` (an India Compliance
+    validation, not visible in the schema's `reqd` flags) — `998431`,
+    matching what this studio's own service Items already use.
 - ⬜ Record what has **no** home. Two remain:
   - a **UPI id** for the invoice Scan-to-Pay QR. 10c looked; ERPNext has no
     field for one anywhere, so the QR does not render at all today
@@ -1159,8 +1172,8 @@ Blocked on 10f. Each is its own phase.
   round-to-nearest-hour rule: `Math.round`, ties up, never `Math.ceil`
 - ⬜ Transactions / theatre education
 - ⬜ Subscriptions
-- ✅ Crew tab on project detail — implemented via `Purchase Order`, see 10f
-  above. Live verification against the bench still pending.
+- ✅ Crew tab on project detail — implemented and verified live via
+  `Purchase Order`, see 10f above.
 - ⬜ Expenses tab on project detail, **restoring the figure 7b suppressed** —
   this is what turns "Budget remaining —" back into a number (crew alone
   doesn't: `computeFinance`'s `remaining` is driven by `expenseTotal`, not the
