@@ -3,8 +3,10 @@ import type {
   ProjectDetail,
   DetailTask,
   ActivityEntry,
+  CrewEntry,
+  CrewEntryInput,
 } from './detailApi';
-import { projectFileUrl, useAddNote } from './detailApi';
+import { projectFileUrl, useAddNote, useAddCrew, useUpdateCrew, useDeleteCrew } from './detailApi';
 import { StatusBadge } from '@/components/ui/StatusBadge';
 import { Card, TableShell } from '@/components/ui/PageHeader';
 import { formatCurrency, formatCurrencyOrDash, formatDate, formatPercent } from '@/lib/format';
@@ -500,17 +502,165 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
 
 /* ----------------------------------------------------------------------- Crew */
 
+const emptyCrewForm: CrewEntryInput = {
+  name: '',
+  role: 'Crew',
+  designation: '',
+  rate: undefined,
+  days: undefined,
+  total: '',
+  contact: '',
+  notes: '',
+};
+
+function crewFormFrom(entry: CrewEntry): CrewEntryInput {
+  return {
+    name: entry.name,
+    role: entry.role,
+    designation: entry.designation,
+    rate: entry.rate,
+    days: entry.days,
+    total: entry.total,
+    contact: entry.contact,
+    notes: entry.notes,
+  };
+}
+
+/** Add-or-edit form, shared between both modes so they can't drift apart. */
+function CrewForm({
+  initial,
+  onSubmit,
+  onCancel,
+  submitting,
+  error,
+}: {
+  initial: CrewEntryInput;
+  onSubmit: (values: CrewEntryInput) => void;
+  onCancel?: () => void;
+  submitting: boolean;
+  error?: string;
+}) {
+  const [values, setValues] = useState(initial);
+  const set = <K extends keyof CrewEntryInput>(key: K, value: CrewEntryInput[K]) =>
+    setValues((v) => ({ ...v, [key]: value }));
+
+  return (
+    <div className="p-5 grid gap-3 sm:grid-cols-2">
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Name</label>
+        <input
+          className="form-input w-full"
+          value={values.name}
+          onChange={(e) => set('name', e.target.value)}
+          placeholder="Who's booked"
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Role</label>
+        <select
+          className="form-select w-full"
+          value={values.role}
+          onChange={(e) => set('role', e.target.value as 'Crew' | 'Vendor')}
+        >
+          <option value="Crew">Crew</option>
+          <option value="Vendor">Vendor</option>
+        </select>
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Designation</label>
+        <input
+          className="form-input w-full"
+          value={values.designation}
+          onChange={(e) => set('designation', e.target.value)}
+          placeholder="Cameraman, editor, rental house…"
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Contact</label>
+        <input
+          className="form-input w-full"
+          value={values.contact}
+          onChange={(e) => set('contact', e.target.value)}
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Rate / day</label>
+        <input
+          type="number"
+          min="0"
+          className="form-input w-full"
+          value={values.rate ?? ''}
+          onChange={(e) => set('rate', e.target.value === '' ? undefined : Number(e.target.value))}
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Days</label>
+        <input
+          type="number"
+          min="0"
+          className="form-input w-full"
+          value={values.days ?? ''}
+          onChange={(e) => set('days', e.target.value === '' ? undefined : Number(e.target.value))}
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">
+          Total <span className="text-gray-400 font-normal">(overrides rate × days)</span>
+        </label>
+        <input
+          type="number"
+          min="0"
+          className="form-input w-full"
+          value={values.total ?? ''}
+          onChange={(e) => set('total', e.target.value === '' ? '' : Number(e.target.value))}
+        />
+      </div>
+      <div>
+        <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
+        <input
+          className="form-input w-full"
+          value={values.notes}
+          onChange={(e) => set('notes', e.target.value)}
+        />
+      </div>
+
+      {error && <p className="sm:col-span-2 text-xs text-red-500">{error}</p>}
+
+      <div className="sm:col-span-2 flex justify-end gap-2">
+        {onCancel && (
+          <button type="button" className="btn bg-white dark:bg-gray-800" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={!values.name.trim() || submitting}
+          onClick={() => onSubmit(values)}
+        >
+          {submitting ? 'Saving…' : onCancel ? 'Save changes' : 'Add to roster'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function CrewTab({ data }: { data: ProjectDetail }) {
-  if (data.crewRoster === null) {
-    return (
-      <Card title="Crew &amp; vendors">
-        <NotInThisRelease what="Crew and vendor rosters" />
-      </Card>
-    );
-  }
+  const [editingId, setEditingId] = useState<string | null>(null);
+  // Bumped on a successful add so the form below remounts blank, the same
+  // way ActivityTab clears its textarea after a successful note.
+  const [addNonce, setAddNonce] = useState(0);
+  const addCrew = useAddCrew(data.project.name);
+  const updateCrew = useUpdateCrew(data.project.name);
+  const deleteCrew = useDeleteCrew(data.project.name);
 
   const crew = data.crewRoster.filter((c) => c.role === 'Crew');
   const vendors = data.crewRoster.filter((c) => c.role === 'Vendor');
+  const editingEntry = data.crewRoster.find((c) => c.id === editingId) ?? null;
+
+  const remove = (id: string) => {
+    if (window.confirm('Remove this entry from the roster?')) deleteCrew.mutate(id);
+  };
 
   const table = (rows: typeof crew, title: string) => (
     <Card title={title} count={rows.length}>
@@ -521,10 +671,11 @@ export function CrewTab({ data }: { data: ProjectDetail }) {
           head={
             <tr>
               <th className="px-2 first:pl-5 py-3 text-left">Name</th>
-              <th className="px-2 py-3 text-left">Role</th>
+              <th className="px-2 py-3 text-left">Designation</th>
               <th className="px-2 py-3 text-right">Rate</th>
               <th className="px-2 py-3 text-right">Days</th>
-              <th className="px-2 last:pr-5 py-3 text-right">Total</th>
+              <th className="px-2 py-3 text-right">Total</th>
+              <th className="px-2 last:pr-5 py-3 text-right">&nbsp;</th>
             </tr>
           }
         >
@@ -537,8 +688,26 @@ export function CrewTab({ data }: { data: ProjectDetail }) {
               <td className="px-2 py-3">{c.designation || '—'}</td>
               <td className="px-2 py-3 text-right">{formatCurrency(c.rate)}</td>
               <td className="px-2 py-3 text-right">{c.days}</td>
-              <td className="px-2 last:pr-5 py-3 text-right font-medium">
-                {formatCurrency(c.total)}
+              <td className="px-2 py-3 text-right font-medium">{formatCurrency(c.total)}</td>
+              <td className="px-2 last:pr-5 py-3 text-right whitespace-nowrap">
+                {c.docstatus === 0 ? (
+                  <>
+                    <button
+                      className="text-violet-500 hover:text-violet-600 text-xs font-medium"
+                      onClick={() => setEditingId(c.id)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="text-red-500 hover:text-red-600 text-xs font-medium ml-3"
+                      onClick={() => remove(c.id)}
+                    >
+                      Remove
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-xs text-gray-400">Submitted</span>
+                )}
               </td>
             </tr>
           ))}
@@ -549,11 +718,40 @@ export function CrewTab({ data }: { data: ProjectDetail }) {
 
   return (
     <div className="space-y-6">
+      <Card title={editingEntry ? `Edit ${editingEntry.name}` : 'Add to the roster'}>
+        <CrewForm
+          key={editingId ?? `new-${addNonce}`}
+          initial={editingEntry ? crewFormFrom(editingEntry) : emptyCrewForm}
+          submitting={editingEntry ? updateCrew.isPending : addCrew.isPending}
+          error={
+            editingEntry
+              ? updateCrew.isError
+                ? (updateCrew.error as Error).message
+                : undefined
+              : addCrew.isError
+                ? (addCrew.error as Error).message
+                : undefined
+          }
+          onCancel={editingEntry ? () => setEditingId(null) : undefined}
+          onSubmit={(values) => {
+            if (editingEntry) {
+              updateCrew.mutate(
+                { id: editingEntry.id, ...values },
+                { onSuccess: () => setEditingId(null) },
+              );
+            } else {
+              addCrew.mutate(values, { onSuccess: () => setAddNonce((n) => n + 1) });
+            }
+          }}
+        />
+      </Card>
+
       {table(crew, 'Crew')}
       {table(vendors, 'Vendors')}
       <p className="text-xs text-gray-400">
         The roster is a planning layer, deliberately not tied to purchase invoices — someone can be
-        booked here with no bill raised yet, or billed without ever being on the roster.
+        booked here with no bill raised yet, or billed without ever being on the roster. Each entry is
+        a Draft Purchase Order in ERPNext, editable here until it's submitted directly in ERPNext.
       </p>
     </div>
   );

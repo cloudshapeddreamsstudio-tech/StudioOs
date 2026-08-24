@@ -83,8 +83,21 @@ export interface CrewEntry {
   total: number;
   contact: string;
   notes: string;
-  createdAt: string;
+  /** 0 = Draft (editable/deletable here), 1 = Submitted. Phase 10f never
+   *  submits one, but the field is real ERPNext state, not assumed. */
+  docstatus: number;
 }
+
+export type CrewEntryInput = {
+  name: string;
+  role: 'Crew' | 'Vendor';
+  designation?: string;
+  rate?: number;
+  days?: number;
+  total?: number | '';
+  contact?: string;
+  notes?: string;
+};
 
 export interface Expense {
   id: string;
@@ -143,9 +156,12 @@ export interface ProjectDetail {
    */
   expenses: Expense[] | null;
   expensesByCategory: Record<string, number> | null;
-  crewRoster: CrewEntry[] | null;
+  /** The crew/vendor roster — real since Phase 10f (one Draft Purchase Order
+   *  per member). No longer nullable: unlike expenses, this is not "not in
+   *  this release". */
+  crewRoster: CrewEntry[];
   /** Which sources this release cannot see, stated rather than inferred. */
-  unavailable: { crewRoster: boolean; expenses: boolean; reason: string };
+  unavailable: { expenses: boolean; reason: string };
   completion: Completion;
   expenseOverview: {
     rows: { category: string; planned: number | null; actual: number }[];
@@ -206,6 +222,44 @@ export function useAddNote(projectName: string) {
   return useMutation({
     mutationFn: (content: string) =>
       api.post(`/project/${encodeURIComponent(projectName)}/note`, { content }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: projectDetailKeys.detail(projectName) });
+    },
+  });
+}
+
+/**
+ * Crew/vendor roster mutations. Each writes through `/api/project-crew`
+ * (a Draft Purchase Order per entry — see routes/projectCrew.ts) and
+ * invalidates the same aggregate query the note mutation above does, since
+ * the roster is embedded in it rather than fetched separately.
+ */
+export function useAddCrew(projectName: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (entry: CrewEntryInput) =>
+      api.post<CrewEntry>('/project-crew', { project: projectName, ...entry }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: projectDetailKeys.detail(projectName) });
+    },
+  });
+}
+
+export function useUpdateCrew(projectName: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...entry }: CrewEntryInput & { id: string }) =>
+      api.put<CrewEntry>(`/project-crew/${encodeURIComponent(id)}`, entry),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: projectDetailKeys.detail(projectName) });
+    },
+  });
+}
+
+export function useDeleteCrew(projectName: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.del(`/project-crew/${encodeURIComponent(id)}`),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: projectDetailKeys.detail(projectName) });
     },
