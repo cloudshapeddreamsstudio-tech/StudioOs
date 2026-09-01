@@ -17,7 +17,7 @@ import { useDarkMode } from '@/lib/useDarkMode';
  * split the owner confirmed was a bug, not two intentional landing points.
  *
  * Same visual language as the in-app `Header` (sticky, blurred, bordered,
- * shared dark-mode toggle) and the `STUDIOOS` wordmark from `SignInPage`,
+ * shared dark-mode toggle) and the real `StudioOS` wordmark from `Sidebar`,
  * because this is the same product's front door, not a separate site.
  */
 export function HomePage() {
@@ -38,6 +38,22 @@ export function HomePage() {
   );
 }
 
+/* ------------------------------------------------------------------- Logo */
+
+/**
+ * The app's real wordmark, exactly as `Sidebar.tsx` renders it -- not the
+ * small letter-spaced "STUDIOOS" caption on `SignInPage`, which is a
+ * different, smaller treatment. This is the one a signed-in user actually
+ * sees everywhere else in the product.
+ */
+function Logo() {
+  return (
+    <span className="text-xl font-bold text-gray-800 dark:text-gray-100">
+      Studio<span className="text-violet-500">OS</span>
+    </span>
+  );
+}
+
 /* ----------------------------------------------------------------- Header */
 
 function PublicHeader() {
@@ -47,7 +63,7 @@ function PublicHeader() {
     <header className="sticky top-0 before:absolute before:inset-0 before:backdrop-blur-md before:bg-white/90 dark:before:bg-gray-800/90 before:-z-10 z-30">
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 border-b border-gray-200 dark:border-gray-700/60">
-          <div className="text-xs font-bold tracking-[0.2em] text-violet-500">STUDIOOS</div>
+          <Logo />
 
           <div className="flex items-center gap-4">
             <a
@@ -226,11 +242,10 @@ function Features() {
 /* ----------------------------------------------------------------- Footer */
 
 /**
- * Every value below is a placeholder. Contact email and social links have
- * not been supplied yet -- swap these before this page goes live. See the
- * implementation plan for the note this was flagged with.
+ * Social links are still placeholders (`#`) -- not supplied yet. Swap them
+ * in before this page goes live.
  */
-const CONTACT_EMAIL = 'hello@studioos.app';
+const CONTACT_EMAIL = 'cloudshapeddreamsstudio@gmail.com';
 
 const SOCIALS: { label: string; href: string; icon: React.ReactNode }[] = [
   {
@@ -268,7 +283,7 @@ function Footer() {
     <footer className="px-4 sm:px-6 lg:px-8 py-10 border-t border-gray-200 dark:border-gray-700/60">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="text-center sm:text-left">
-          <div className="text-xs font-bold tracking-[0.2em] text-violet-500">STUDIOOS</div>
+          <Logo />
           <a
             href={`mailto:${CONTACT_EMAIL}`}
             className="mt-1 block text-sm text-gray-500 dark:text-gray-400 hover:text-violet-500"
