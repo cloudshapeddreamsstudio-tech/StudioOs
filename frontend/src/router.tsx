@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 import { AppLayout } from './components/layout/AppLayout';
 import { ProjectsListPage } from './features/projects/ProjectsListPage';
 import { ProjectDetailPage } from './features/projects/ProjectDetailPage';
@@ -15,6 +15,7 @@ import { InventoryPage } from './features/directory/InventoryPage';
 import { InvoicesListPage } from './features/invoices/InvoicesListPage';
 import { SignInPage } from './features/auth/SignInPage';
 import { RequireSession } from './features/auth/RequireSession';
+import { HomePage } from './features/marketing/HomePage';
 
 /**
  * One route table for the whole app.
@@ -38,26 +39,34 @@ import { RequireSession } from './features/auth/RequireSession';
  * zero — so any figure derived from them shows a dash, not a number that
  * would be wrong in the flattering direction.
  *
- * ## Sign-in sits outside the shell (Phase 7a)
+ * ## Home and sign-in sit outside the shell
+ *
+ * `/` is the public marketing page (`HomePage`) — a signed-out visitor's
+ * actual front door, added because there wasn't one: `/` used to be inside
+ * RequireSession, so an unauthenticated visit just bounced straight to
+ * `/sign-in` with nothing to see. `HomePage` does its own check and redirects
+ * a signed-in visitor straight to `/dashboard`, so it never shows a pitch to
+ * someone already using the product.
  *
  * `/sign-in` renders with no sidebar and no header, because there is nothing to
  * navigate to until we know which studio this is. Everything else lives behind
  * RequireSession, which checks once rather than letting each page discover its
  * own 401.
+ *
+ * `AppLayout` is a pathless layout route (no `path: '/'` of its own) precisely
+ * so it doesn't compete with the public `/` route above it for the same exact
+ * match — its children's relative paths (`dashboard`, `projects`, ...) still
+ * resolve the same way with no path segment in the ancestor chain.
  */
 export const router = createBrowserRouter([
+  { path: '/', element: <HomePage /> },
   { path: '/sign-in', element: <SignInPage /> },
   {
     element: <RequireSession />,
     children: [
       {
-        path: '/',
         element: <AppLayout />,
         children: [
-          // The old app's home was index.html, the dashboard. Note that
-          // sign-in still lands on /projects — that was chosen deliberately in
-          // 7a and is where the work actually is.
-          { index: true, element: <Navigate to="/dashboard" replace /> },
           // Three views of the same two endpoints, as in the old app's
           // Dashboard dropdown — one nav item, three URLs, so a link to the
           // Fintech view can be sent to someone.

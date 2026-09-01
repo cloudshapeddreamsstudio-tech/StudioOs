@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
 import { useSession, useSignOut } from '@/features/auth/api';
+import { useDarkMode } from '@/lib/useDarkMode';
 
 /**
  * Who is signed in, and which studio.
@@ -29,26 +29,6 @@ function SignedInAs() {
       </button>
     </div>
   );
-}
-
-/**
- * Dark mode reads and writes the same `dark-mode` localStorage key the old
- * Mosaic app used, so the owner's existing preference survives the migration
- * rather than silently resetting to light on first load.
- */
-function useDarkMode() {
-  const [dark, setDark] = useState(
-    () => typeof window !== 'undefined' && localStorage.getItem('dark-mode') === 'true',
-  );
-
-  useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle('dark', dark);
-    root.style.colorScheme = dark ? 'dark' : 'light';
-    localStorage.setItem('dark-mode', String(dark));
-  }, [dark]);
-
-  return [dark, setDark] as const;
 }
 
 interface HeaderProps {
