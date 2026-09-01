@@ -264,7 +264,7 @@ app.get('/callback', async (c) => {
     append: true,
   });
 
-  return c.redirect(`${c.env.APP_UI_ORIGIN.replace(/\/$/, '')}/projects`, 302);
+  return c.redirect(`${c.env.APP_UI_ORIGIN.replace(/\/$/, '')}/dashboard`, 302);
 });
 
 /** Who the access token belongs to, according to the site that issued it. */
