@@ -1,0 +1,782 @@
+<title>The StudioOS Seam</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --paper:#F2F3F0; --panel:#FCFCFB; --panel2:#E9EBE6;
+  --ink:#15181A; --muted:#5A6560;
+  --rule:rgba(20,24,26,.15); --rule-soft:rgba(20,24,26,.07);
+  --erp:#2C5F4F; --erp-soft:rgba(44,95,79,.10);
+  --d1:#A9560B; --d1-soft:rgba(169,86,11,.10);
+  --stop:#A32017; --stop-soft:rgba(163,32,23,.09);
+  --serif:"IBM Plex Serif",Georgia,serif;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --paper:#101311; --panel:#181C1A; --panel2:#1F2422;
+    --ink:#E7EAE5; --muted:#95A19A;
+    --rule:rgba(231,234,229,.17); --rule-soft:rgba(231,234,229,.07);
+    --erp:#77C6AA; --erp-soft:rgba(119,198,170,.12);
+    --d1:#E0A055; --d1-soft:rgba(224,160,85,.12);
+    --stop:#F2867A; --stop-soft:rgba(242,134,122,.12);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#101311; --panel:#181C1A; --panel2:#1F2422;
+  --ink:#E7EAE5; --muted:#95A19A;
+  --rule:rgba(231,234,229,.17); --rule-soft:rgba(231,234,229,.07);
+  --erp:#77C6AA; --erp-soft:rgba(119,198,170,.12);
+  --d1:#E0A055; --d1-soft:rgba(224,160,85,.12);
+  --stop:#F2867A; --stop-soft:rgba(242,134,122,.12);
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1060px;margin:0 auto;padding:0 24px 96px}
+
+/* ---- hero ---- */
+header.hero{padding:64px 0 40px;border-bottom:1px solid var(--rule)}
+.kicker{font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+h1{font:600 clamp(38px,7vw,68px)/1.02 var(--serif);margin:14px 0 0;letter-spacing:-.02em;text-wrap:balance}
+.thesis{font:400 clamp(17px,2.4vw,21px)/1.5 var(--serif);color:var(--ink);max-width:33em;margin:20px 0 0}
+.thesis em{font-style:normal;color:var(--d1)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.chip{font:500 11px var(--mono);letter-spacing:.06em;padding:5px 10px;border:1px solid var(--rule);border-radius:2px;color:var(--muted)}
+
+/* ---- sections ---- */
+section{padding-top:56px}
+.sechead{display:flex;gap:18px;align-items:baseline;border-top:1px solid var(--rule-soft);padding-top:18px}
+.secnum{font:500 11px var(--mono);letter-spacing:.14em;color:var(--muted);white-space:nowrap;padding-top:6px}
+h2{font:600 clamp(24px,3.6vw,34px)/1.15 var(--serif);margin:0;letter-spacing:-.015em;text-wrap:balance}
+h3{font:600 15px/1.35 var(--sans);margin:30px 0 0;letter-spacing:-.005em}
+p{margin:14px 0 0;max-width:66ch}
+p.lede{font-size:16.5px;color:var(--ink)}
+.muted{color:var(--muted)}
+ul,ol{margin:14px 0 0;padding-left:20px;max-width:66ch}
+li{margin:7px 0}
+li::marker{color:var(--muted)}
+code{font:400 .89em var(--mono);background:var(--panel2);padding:1px 5px;border-radius:2px}
+
+/* ---- law: the quoted rule ---- */
+.law{margin:26px 0 0;padding:22px 26px;background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--ink);border-radius:2px}
+.law p{margin:0;font:400 19px/1.45 var(--serif);max-width:44ch}
+.law .src{display:block;margin-top:10px;font:500 10.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.law.stop{border-left-color:var(--stop);background:var(--stop-soft)}
+.law.erp{border-left-color:var(--erp)}
+
+/* ---- cost / benefit split ---- */
+.split{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:26px}
+.col h4{font:500 10.5px var(--mono);letter-spacing:.14em;text-transform:uppercase;margin:0 0 10px;color:var(--muted)}
+.col.gain h4{color:var(--erp)}
+.col.cost h4{color:var(--d1)}
+.col ul{margin:0;padding-left:18px}
+
+/* ---- figures ---- */
+figure{margin:34px 0 0}
+.figbox{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:18px;overflow-x:auto}
+figure svg{display:block;width:100%;min-width:640px;height:auto;color:var(--ink)}
+figcaption{margin-top:12px;font:400 13px/1.5 var(--sans);color:var(--muted);max-width:70ch}
+
+.sv-lbl{font:500 10.5px var(--mono);letter-spacing:.1em}
+.sv-h{font:600 20px var(--serif)}
+.sv-h2{font:600 15px var(--serif)}
+.sv-t{font:400 13px var(--sans)}
+.sv-s{font:400 11.5px var(--sans)}
+.sv-m{font:400 11.5px var(--mono)}
+.sv-mb{font:500 11.5px var(--mono)}
+
+/* ---- tables ---- */
+.tablewrap{overflow-x:auto;margin-top:26px;border:1px solid var(--rule);border-radius:3px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;min-width:600px;font-size:13.5px}
+th{text-align:left;font:500 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:12px 16px;border-bottom:1px solid var(--rule);white-space:nowrap}
+td{padding:11px 16px;border-bottom:1px solid var(--rule-soft);vertical-align:top}
+tr:last-child td{border-bottom:0}
+th.e,td.e{color:var(--erp)} th.d,td.d{color:var(--d1)}
+td b{font-weight:600}
+.tag{font:500 10px var(--mono);letter-spacing:.08em;padding:2px 6px;border-radius:2px;white-space:nowrap}
+.tag.e{background:var(--erp-soft);color:var(--erp)}
+.tag.d{background:var(--d1-soft);color:var(--d1)}
+.tag.both{background:var(--panel2);color:var(--muted)}
+
+/* ---- code ---- */
+pre{margin:20px 0 0;padding:16px 18px;background:var(--panel);border:1px solid var(--rule);border-radius:3px;overflow-x:auto;font:400 12.5px/1.65 var(--mono);color:var(--ink)}
+pre .c{color:var(--muted)}
+pre .k{color:var(--d1)}
+
+/* ---- steps ---- */
+ol.steps{list-style:none;padding:0;margin:26px 0 0;max-width:none;display:grid;gap:0;counter-reset:s}
+ol.steps li{counter-increment:s;display:grid;grid-template-columns:44px 1fr;gap:16px;padding:16px 0;border-top:1px solid var(--rule-soft);margin:0;align-items:start}
+ol.steps li::before{content:counter(s,decimal-leading-zero);font:500 11px var(--mono);letter-spacing:.08em;color:var(--muted);padding-top:3px}
+ol.steps b{font-weight:600}
+ol.steps span{display:block;color:var(--muted);font-size:13.5px;margin-top:3px}
+
+/* ---- checklist / open ---- */
+.open{margin-top:26px;display:grid;gap:0}
+.open div{padding:14px 0;border-top:1px solid var(--rule-soft);display:grid;grid-template-columns:minmax(0,1fr);gap:2px}
+.open b{font-weight:600}
+.open span{color:var(--muted);font-size:13.5px}
+
+footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--rule);font:400 12.5px var(--mono);color:var(--muted);display:flex;flex-wrap:wrap;gap:14px;justify-content:space-between}
+@media (max-width:640px){header.hero{padding-top:44px}.sechead{flex-direction:column;gap:6px}}
+</style>
+
+<svg style="position:absolute;width:0;height:0" aria-hidden="true"><defs>
+<marker id="ar" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+<marker id="ar-e" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--erp)"/></marker>
+<marker id="ar-d" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--d1)"/></marker>
+<marker id="ar-x" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--stop)"/></marker>
+</defs></svg>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">StudioOS &nbsp;/&nbsp; v1 on Cloudflare &nbsp;/&nbsp; rules, not tasks</div>
+  <h1>The Seam</h1>
+  <p class="thesis">ERPNext holds the data that stays if you delete StudioOS. D1 holds the data that <em>goes</em>. Every rule on this page exists to keep that line, and the security property behind it, intact while other people &mdash; and other agents &mdash; write the code.</p>
+  <div class="chips">
+    <span class="chip">ASD-STE100</span>
+    <span class="chip">better-auth &middot; D1 &middot; KV</span>
+    <span class="chip">Resend</span>
+    <span class="chip">answers Phase 10f</span>
+    <span class="chip">does not replace SPEC.md</span>
+  </div>
+</header>
+
+<!-- ================= 0 ================= -->
+<section>
+  <div class="sechead"><div class="secnum">RULE 00</div><div>
+    <h2>The application has no permission code</h2>
+  </div></div>
+
+  <div class="law">
+    <p>Each read and each write of studio data uses the access token of the person who signed in. StudioOS does not hold a credential that can read the accounts of a studio.</p>
+    <span class="src">the security property &middot; section 0</span>
+  </div>
+
+  <p class="lede">The backend is roughly 7000 lines. No line decides whether a user can see a document. ERPNext decides that before the data reaches StudioOS. The rule is not only a preference &mdash; it deletes a whole category of code.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 920 330" role="img" aria-label="With the rule, a forgotten permission check makes a user see nothing, which is a visible bug. Without the rule, it makes a user see another studio's data, which is silent.">
+        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">THE SAME MISTAKE, TWICE: A CONTRIBUTOR ADDS AN ENDPOINT AND FORGETS THE CHECK</text>
+
+        <rect x="24" y="40" width="416" height="266" rx="6" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".35"/>
+        <text x="48" y="70" class="sv-lbl" fill="var(--erp)">WITH THE RULE &mdash; USER TOKEN ONLY</text>
+        <rect x="48" y="86" width="368" height="40" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".2"/>
+        <text x="64" y="111" class="sv-t" fill="currentColor">endpoint calls ERPNext with this user's token</text>
+        <line x1="232" y1="126" x2="232" y2="152" stroke="currentColor" stroke-opacity=".5" marker-end="url(#ar)"/>
+        <rect x="48" y="152" width="368" height="40" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".2"/>
+        <text x="64" y="177" class="sv-t" fill="currentColor">ERPNext answers 403 / 404</text>
+        <line x1="232" y1="192" x2="232" y2="218" stroke="currentColor" stroke-opacity=".5" marker-end="url(#ar)"/>
+        <rect x="48" y="218" width="368" height="40" rx="4" fill="var(--panel)" stroke="var(--erp)" stroke-opacity=".5"/>
+        <text x="64" y="243" class="sv-t" fill="currentColor">the user sees too little</text>
+        <text x="48" y="286" class="sv-mb" fill="var(--erp)">VISIBLE. THE USER REPORTS IT TODAY.</text>
+
+        <rect x="480" y="40" width="416" height="266" rx="6" fill="var(--stop-soft)" stroke="var(--stop)" stroke-opacity=".35"/>
+        <text x="504" y="70" class="sv-lbl" fill="var(--stop)">WITHOUT &mdash; A SERVICE ACCOUNT EXISTS</text>
+        <rect x="504" y="86" width="368" height="40" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".2"/>
+        <text x="520" y="111" class="sv-t" fill="currentColor">endpoint calls ERPNext with the admin key</text>
+        <line x1="688" y1="126" x2="688" y2="152" stroke="var(--stop)" stroke-opacity=".7" marker-end="url(#ar-x)"/>
+        <rect x="504" y="152" width="368" height="40" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".2"/>
+        <text x="520" y="177" class="sv-t" fill="currentColor">ERPNext answers 200 for every document</text>
+        <line x1="688" y1="192" x2="688" y2="218" stroke="var(--stop)" stroke-opacity=".7" marker-end="url(#ar-x)"/>
+        <rect x="504" y="218" width="368" height="40" rx="4" fill="var(--panel)" stroke="var(--stop)" stroke-opacity=".5"/>
+        <text x="520" y="243" class="sv-t" fill="currentColor">the user sees another person's data</text>
+        <text x="504" y="286" class="sv-mb" fill="var(--stop)">SILENT. NOBODY REPORTS IT, EVER.</text>
+      </svg>
+    </div>
+    <figcaption>The rule does not prevent the mistake. It changes what the mistake produces &mdash; and only one of the two outcomes generates a bug report. This matters most for changes an agent makes: an agent never holds the whole application in context, and one forgotten line must not be a leak.</figcaption>
+  </figure>
+
+  <div class="split">
+    <div class="col gain">
+      <h4>What the rule gives</h4>
+      <ul>
+        <li>A safe failure mode &mdash; forgetting a check under-serves data, never leaks it.</li>
+        <li>One place to debug &ldquo;I cannot see project X&rdquo;: what does ERPNext permit? No second model, no cache, no sync.</li>
+        <li>Full control of StudioOS still yields an attacker no studio data. There is no credential to steal.</li>
+      </ul>
+    </div>
+    <div class="col cost">
+      <h4>What the rule costs &mdash; read before you agree</h4>
+      <ul>
+        <li>A scheduled task has no user, so no token, so it cannot read ERPNext. Section 7 is this cost, not a separate decision.</li>
+        <li>Anything that runs while the user is away is hard: night reports, payment reminders.</li>
+        <li>An invited person with no ERPNext account gets the interface and no data. That is correct, not a bug.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="law stop">
+    <p>One sentence starts the failure: &ldquo;we need a service account for this task.&rdquo; If a change needs StudioOS to read studio data with no user present, the design is wrong. Change the design &mdash; a code review cannot catch this.</p>
+    <span class="src">how the rule breaks</span>
+  </div>
+
+  <p class="muted">An error in Section 1 makes an application that is hard to maintain. An error in Section 0 makes a data leak. That is why this is Section 0. <i>Phase 6c removed the admin key to get this property; the history is the origin of the rule, not its reason.</i></p>
+</section>
+
+<!-- ================= 1 ================= -->
+<section>
+  <div class="sechead"><div class="secnum">RULE 01</div><div>
+    <h2>One test decides where data lives</h2>
+  </div></div>
+
+  <div class="law erp">
+    <p>ERPNext holds the data that stays if you delete StudioOS.<br>D1 holds the data that goes if you delete StudioOS.</p>
+    <span class="src">the seam rule &middot; section 1</span>
+  </div>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 920 606" role="img" aria-label="The seam: ERPNext on the left holds records that survive deleting StudioOS; D1 on the right holds arrangement and presentation that goes with it.">
+        <text x="460" y="24" text-anchor="middle" class="sv-lbl" fill="var(--muted)">THE ONE TEST</text>
+        <text x="460" y="52" text-anchor="middle" class="sv-h" fill="currentColor">You delete StudioOS tomorrow. What is still there?</text>
+
+        <line x1="460" y1="78" x2="460" y2="586" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5" stroke-dasharray="3 7"/>
+        <text x="460" y="98" text-anchor="middle" class="sv-lbl" fill="currentColor" opacity=".55">S</text>
+        <text x="460" y="112" text-anchor="middle" class="sv-lbl" fill="currentColor" opacity=".55">E</text>
+        <text x="460" y="126" text-anchor="middle" class="sv-lbl" fill="currentColor" opacity=".55">A</text>
+        <text x="460" y="140" text-anchor="middle" class="sv-lbl" fill="currentColor" opacity=".55">M</text>
+
+        <rect x="24" y="78" width="404" height="508" rx="8" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".35"/>
+        <text x="48" y="110" class="sv-lbl" fill="var(--erp)">STAYS &middot; SYSTEM OF RECORD</text>
+        <text x="48" y="142" class="sv-h" fill="currentColor">ERPNext</text>
+        <text x="48" y="166" class="sv-s" fill="var(--muted)">the back office &mdash; the accountant opens this</text>
+        <line x1="48" y1="184" x2="404" y2="184" stroke="var(--erp)" stroke-opacity=".3"/>
+        <text x="48" y="212" class="sv-t" fill="currentColor">Project &middot; Task &middot; Customer &middot; Supplier</text>
+        <text x="48" y="240" class="sv-t" fill="currentColor">Sales Invoice &middot; Payment Entry &middot; Purchase Order</text>
+        <text x="48" y="268" class="sv-t" fill="currentColor">Journal Entry &middot; Expense Claim &middot; Subscription</text>
+        <text x="48" y="296" class="sv-t" fill="currentColor">Item &middot; Stock &middot; Sales Person &middot; Project Type</text>
+        <text x="48" y="330" class="sv-t" fill="currentColor">Anything with money, tax, or an audit trail</text>
+        <text x="48" y="358" class="sv-t" fill="currentColor">Anything the accountant opens ERPNext to see</text>
+        <line x1="48" y1="392" x2="404" y2="392" stroke="var(--erp)" stroke-opacity=".3"/>
+        <text x="48" y="420" class="sv-lbl" fill="var(--erp)">AND OWNS THE ANSWER TO</text>
+        <text x="48" y="446" class="sv-m" fill="currentColor">&ldquo;can this person see PROJ-0042?&rdquo;</text>
+        <text x="48" y="500" class="sv-s" fill="var(--muted)">You delete StudioOS: none of this moves.</text>
+        <text x="48" y="522" class="sv-s" fill="var(--muted)">The studio keeps running from ERPNext alone.</text>
+
+        <rect x="492" y="78" width="404" height="508" rx="8" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".35"/>
+        <text x="516" y="110" class="sv-lbl" fill="var(--d1)">GOES &middot; NEVER WAS A RECORD</text>
+        <text x="516" y="142" class="sv-h" fill="currentColor">StudioOS &mdash; D1 + KV</text>
+        <text x="516" y="166" class="sv-s" fill="var(--muted)">the front office &mdash; nobody audits this</text>
+        <line x1="516" y1="184" x2="872" y2="184" stroke="var(--d1)" stroke-opacity=".3"/>
+        <text x="516" y="212" class="sv-t" fill="currentColor">user &middot; session &middot; account &middot; organization &middot; member</text>
+        <text x="516" y="240" class="sv-t" fill="currentColor">studio (the tenant) &middot; connector status &middot; plan</text>
+        <text x="516" y="268" class="sv-t" fill="currentColor">saved views &middot; filters &middot; column preferences</text>
+        <text x="516" y="296" class="sv-t" fill="currentColor">notes &middot; checklists &middot; internal status ERP lacks</text>
+        <text x="516" y="330" class="sv-t" fill="currentColor">brand files &middot; moodboards &middot; deliverable links</text>
+        <text x="516" y="358" class="sv-t" fill="currentColor">email log &middot; op log &middot; cache_ tables</text>
+        <line x1="516" y1="392" x2="872" y2="392" stroke="var(--d1)" stroke-opacity=".3"/>
+        <text x="516" y="420" class="sv-lbl" fill="var(--d1)">AND OWNS THE ANSWER TO</text>
+        <text x="516" y="446" class="sv-m" fill="currentColor">&ldquo;who is this person, and what did they arrange?&rdquo;</text>
+        <text x="516" y="500" class="sv-s" fill="var(--muted)">You delete StudioOS: all of this goes,</text>
+        <text x="516" y="522" class="sv-s" fill="var(--muted)">and you lose no records &mdash; these were never records.</text>
+      </svg>
+    </div>
+    <figcaption>The seam is not a layer or a service. It is a question you ask about each field before you write it.</figcaption>
+  </figure>
+
+  <h3>The six open data sets from Phase 10f</h3>
+  <p>The rule answers all of them. Two split across the seam, and that is correct: ERPNext takes the money, StudioOS takes the schedule and the presentation.</p>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Data set</th><th>Why</th><th>Lands</th></tr></thead>
+      <tbody>
+        <tr><td><b>Expenses</b></td><td class="muted">money, with an audit trail</td><td><span class="tag e">ERPNEXT</span> Purchase Invoice or Expense Claim</td></tr>
+        <tr><td><b>Transactions</b></td><td class="muted">money, with an audit trail</td><td><span class="tag e">ERPNEXT</span> Journal Entry or Payment Entry</td></tr>
+        <tr><td><b>Subscriptions</b></td><td class="muted">money, at intervals</td><td><span class="tag e">ERPNEXT</span> Subscription + the invoice it makes</td></tr>
+        <tr><td><b>Studio rental</b></td><td class="muted">money, plus a calendar</td><td><span class="tag both">SPLIT</span> Item + Sales Invoice in ERPNext &middot; <b>booking calendar in D1</b></td></tr>
+        <tr><td><b>Crew</b></td><td class="muted">decided in Phase 10f</td><td><span class="tag both">SPLIT</span> a draft Purchase Order each in ERPNext &middot; <b>rates and availability in D1</b></td></tr>
+        <tr><td><b>Brand</b></td><td class="muted">goes with StudioOS</td><td><span class="tag d">D1</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="muted">A rental booking with no invoice is a row in D1. When the invoice exists, ERPNext holds the money and D1 keeps only the reference.</p>
+</section>
+
+<!-- ================= 2 ================= -->
+<section>
+  <div class="sechead"><div class="secnum">RULE 02</div><div>
+    <h2>Identity and authority are different questions</h2>
+  </div></div>
+
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th></th><th>The question</th><th>Answered by</th><th>Stored in</th></tr></thead>
+      <tbody>
+        <tr><td><b>Identity</b></td><td>Who is this person? Do they have a StudioOS account? Which studio are they a member of?</td><td class="d">better-auth</td><td class="d">D1</td></tr>
+        <tr><td><b>Authority</b></td><td>Can this person see <code>PROJ-0042</code>?</td><td class="e">ERPNext</td><td class="muted">Nowhere. Asked again on every request.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="lede">A better-auth session does not grant access to data. It grants access to the interface. ERPNext decides what appears inside that interface, using that person's token.</p>
+
+  <h3>Do not move the ERPNext sign-in into a better-auth plugin</h3>
+  <ul>
+    <li><code>genericOAuth</code> providers are configured once, at start. StudioOS has a different issuer and different client credentials per studio. Per-request providers are not supported.</li>
+    <li>The <code>sso</code> plugin does register per-organization providers &mdash; and then verifies the ID token, issuer and <code>sub</code>. Frappe signs ID tokens with HS256. <code>auth.ts</code> deliberately skips the <code>openid</code> scope and asks the site itself via <code>frappe.auth.get_logged_user</code>, which answers about the token StudioOS actually holds.</li>
+    <li><code>routes/auth.ts</code> is 334 lines of Frappe-correct code: the 301 discovery redirect on a bench versus the 200 on Frappe Cloud, the plain-HTTP host list, PKCE, <code>state</code>. Rewriting it inside a plugin will reintroduce those bugs.</li>
+  </ul>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 920 320" role="img" aria-label="Before: a sealed cookie carries the ERPNext tokens and cannot be revoked. After: the cookie carries a better-auth session id, the session row lives in D1, and the ERPNext tokens live in the account table keyed by user and studio, so deleting the row revokes access.">
+        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">CHANGE ONE STEP AT THE END OF /AUTH/CALLBACK &mdash; NOT THE OAUTH FLOW</text>
+
+        <rect x="24" y="40" width="404" height="250" rx="6" fill="none" stroke="currentColor" stroke-opacity=".2" stroke-dasharray="4 4"/>
+        <text x="48" y="70" class="sv-lbl" fill="var(--muted)">TODAY</text>
+        <rect x="48" y="86" width="150" height="52" rx="4" fill="var(--panel2)" stroke="currentColor" stroke-opacity=".25"/>
+        <text x="123" y="110" text-anchor="middle" class="sv-t" fill="currentColor">browser</text>
+        <text x="123" y="127" text-anchor="middle" class="sv-s" fill="var(--muted)">sealed cookie</text>
+        <line x1="198" y1="112" x2="254" y2="112" stroke="currentColor" stroke-opacity=".5" marker-end="url(#ar)"/>
+        <rect x="254" y="86" width="150" height="52" rx="4" fill="var(--stop-soft)" stroke="var(--stop)" stroke-opacity=".5"/>
+        <text x="329" y="110" text-anchor="middle" class="sv-t" fill="currentColor">ERP tokens</text>
+        <text x="329" y="127" text-anchor="middle" class="sv-s" fill="var(--muted)">inside the cookie</text>
+        <text x="48" y="180" class="sv-t" fill="currentColor">Valid until it expires.</text>
+        <text x="48" y="204" class="sv-mb" fill="var(--stop)">NO WAY TO CANCEL IT</text>
+        <text x="48" y="234" class="sv-s" fill="var(--muted)">&ldquo;sign out everywhere&rdquo; does nothing.</text>
+        <text x="48" y="256" class="sv-s" fill="var(--muted)">&ldquo;remove this person&rdquo; does nothing.</text>
+
+        <rect x="492" y="40" width="404" height="250" rx="6" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".35"/>
+        <text x="516" y="70" class="sv-lbl" fill="var(--d1)">AFTER</text>
+        <rect x="516" y="86" width="126" height="52" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".25"/>
+        <text x="579" y="110" text-anchor="middle" class="sv-t" fill="currentColor">browser</text>
+        <text x="579" y="127" text-anchor="middle" class="sv-s" fill="var(--muted)">session id only</text>
+        <line x1="642" y1="112" x2="698" y2="112" stroke="var(--d1)" stroke-opacity=".7" marker-end="url(#ar-d)"/>
+        <rect x="698" y="86" width="174" height="52" rx="4" fill="var(--panel)" stroke="var(--d1)" stroke-opacity=".5"/>
+        <text x="785" y="110" text-anchor="middle" class="sv-t" fill="currentColor">session row &middot; D1</text>
+        <text x="785" y="127" text-anchor="middle" class="sv-s" fill="var(--muted)">better-auth owns the cookie</text>
+        <line x1="785" y1="138" x2="785" y2="168" stroke="var(--d1)" stroke-opacity=".7" marker-end="url(#ar-d)"/>
+        <rect x="640" y="168" width="232" height="52" rx="4" fill="var(--panel)" stroke="var(--d1)" stroke-opacity=".5"/>
+        <text x="756" y="192" text-anchor="middle" class="sv-m" fill="currentColor">account table</text>
+        <text x="756" y="209" text-anchor="middle" class="sv-s" fill="var(--muted)">ERP access + refresh, key (user, studio)</text>
+        <text x="516" y="252" class="sv-mb" fill="var(--d1)">DELETE THE ROW = ACCESS ENDS</text>
+        <text x="516" y="274" class="sv-s" fill="var(--muted)">sign out everywhere, and removal from a studio, both work.</text>
+      </svg>
+    </div>
+    <figcaption>Keep the oauth4webapi flow exactly as it is. At the end of the callback, find-or-create the better-auth user, create a session, and put the ERPNext tokens in the <code>account</code> table &mdash; never in the cookie. Revocability is the whole prize.</figcaption>
+  </figure>
+
+  <h3>Why better-auth at all</h3>
+  <ul>
+    <li>A <code>user</code> row. Every D1 table needs it as a foreign key. A stateless cookie cannot be one. This reason alone is enough.</li>
+    <li><code>organization</code>, <code>member</code>, <code>invitation</code> &mdash; the multi-studio model. That is Phase 8.</li>
+    <li>Email sign-in, OTP, magic link. The ERPNext OAuth flow cannot start a studio before the connector is installed, and cannot invite someone with no ERPNext account.</li>
+  </ul>
+  <p>Bind it with <code>database: env.DB</code>. D1 has no interactive transactions; better-auth uses <code>batch()</code> to stay consistent.</p>
+</section>
+
+<!-- ================= 3 ================= -->
+<section>
+  <div class="sechead"><div class="secnum">RULE 03</div><div>
+    <h2>How a D1 row points at an ERPNext document</h2>
+  </div></div>
+
+  <p class="lede">Three columns. Always all three. Every index on them starts with <code>studio_id</code>.</p>
+
+<pre><span class="k">studio_id</span>     TEXT NOT NULL REFERENCES studio(id),  <span class="c">-- which ERPNext site</span>
+<span class="k">erp_doctype</span>   TEXT NOT NULL,                        <span class="c">-- 'Project'</span>
+<span class="k">erp_name</span>      TEXT NOT NULL,                        <span class="c">-- 'PROJ-0042'</span></pre>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 920 336" role="img" aria-label="PROJ-0042 exists on every customer site, so an index without studio_id matches rows from two studios and leaks private notes across tenants; an index starting with studio_id matches only one.">
+        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">WHY STUDIO_ID CANNOT BE DERIVED: THE SAME DOCUMENT NAME EXISTS ON EVERY SITE</text>
+
+        <rect x="24" y="40" width="240" height="60" rx="4" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".4"/>
+        <text x="44" y="66" class="sv-m" fill="var(--erp)">acme.erpnext.com</text>
+        <text x="44" y="88" class="sv-t" fill="currentColor">Project PROJ-0042</text>
+
+        <rect x="656" y="40" width="240" height="60" rx="4" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".4"/>
+        <text x="676" y="66" class="sv-m" fill="var(--erp)">rival.erpnext.com</text>
+        <text x="676" y="88" class="sv-t" fill="currentColor">Project PROJ-0042</text>
+
+        <rect x="304" y="150" width="312" height="56" rx="4" fill="var(--stop-soft)" stroke="var(--stop)" stroke-opacity=".5"/>
+        <text x="460" y="174" text-anchor="middle" class="sv-m" fill="currentColor">INDEX (erp_doctype, erp_name)</text>
+        <text x="460" y="194" text-anchor="middle" class="sv-s" fill="var(--stop)">matches both &mdash; Acme's private notes render on Rival's project</text>
+        <path d="M304 168 L 150 104" fill="none" stroke="var(--stop)" stroke-opacity=".8" marker-end="url(#ar-x)"/>
+        <path d="M616 168 L 770 104" fill="none" stroke="var(--stop)" stroke-opacity=".8" marker-end="url(#ar-x)"/>
+
+        <rect x="304" y="248" width="312" height="56" rx="4" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".5"/>
+        <text x="460" y="272" text-anchor="middle" class="sv-m" fill="currentColor">INDEX (studio_id, erp_doctype, erp_name)</text>
+        <text x="460" y="292" text-anchor="middle" class="sv-s" fill="var(--erp)">matches exactly one site</text>
+        <path d="M304 266 C 200 266 160 180 148 112" fill="none" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ar-e)"/>
+        <text x="176" y="228" class="sv-s" fill="var(--erp)">studio_id = acme</text>
+      </svg>
+    </div>
+    <figcaption>Leave <code>studio_id</code> out of an index and you have not made a slow query &mdash; you have made a cross-tenant read that returns 200.</figcaption>
+  </figure>
+
+<pre>CREATE TABLE project_note (
+  id          TEXT PRIMARY KEY,
+  studio_id   TEXT NOT NULL REFERENCES studio(id),
+  erp_doctype TEXT NOT NULL,
+  erp_name    TEXT NOT NULL,
+  author_id   TEXT NOT NULL REFERENCES user(id),
+  body        TEXT NOT NULL,
+  created_at  INTEGER NOT NULL
+);
+CREATE INDEX idx_project_note_doc
+  ON project_note (studio_id, erp_doctype, erp_name, created_at DESC);</pre>
+
+  <h3>Do not copy ERPNext values into D1</h3>
+  <p>Not <code>project_name</code>, not <code>customer</code>, not <code>status</code>, not <code>grand_total</code> &mdash; not even to render a list page fast. Two sources means one of them is wrong, and the client is the one who tells you. Keep the reference; read the values. Rule 04 is the only exception.</p>
+
+  <h3>The reference points one way</h3>
+  <p>D1 refers to ERPNext. ERPNext never refers to D1. <b>No custom fields on ERPNext doctypes in v1.</b> A <code>custom_studioos_id</code> on Project means you now maintain a Frappe app: migrations, version skew, an install step on every customer site. ERPNext must not know StudioOS exists.</p>
+  <p class="muted"><i>Known v1 limitation:</i> renaming a Frappe document orphans the D1 row. Accept it, record it, do not fix it now. A later version reconciles names with a webhook.</p>
+</section>
+
+<!-- ================= 4 ================= -->
+<section>
+  <div class="sechead"><div class="secnum">RULE 04</div><div>
+    <h2>A cache is named like a cache</h2>
+  </div></div>
+  <p class="lede">Sometimes you must copy ERPNext data into D1 &mdash; a dashboard that would otherwise make 40 requests, a scheduled job that needs yesterday's numbers. Allowed, on three conditions.</p>
+  <ol>
+    <li>The table name starts with <code>cache_</code>.</li>
+    <li>It has a <code>fetched_at</code> column, and a written procedure to rebuild it.</li>
+    <li>It is never the source of truth in a join, and never written back to ERPNext.</li>
+  </ol>
+  <p>If the cache and ERPNext disagree, ERPNext is right and the cache is stale. <b>If a procedure writes into a <code>cache_</code> table, it is not a cache</b> &mdash; rename it or delete it.</p>
+</section>
+
+<!-- ================= 5 ================= -->
+<section>
+  <div class="sechead"><div class="secnum">RULE 05</div><div>
+    <h2>Permissions at the seam</h2>
+  </div></div>
+
+  <div class="law stop">
+    <p>Every read of D1 data that refers to an ERPNext document must first read that document from ERPNext, with the signed-in person's token, in the same request.</p>
+    <span class="src">the control that fails silently &middot; section 5</span>
+  </div>
+
+  <p class="lede">D1 rows carry no ERPNext permissions. Without this, a person who cannot open <code>PROJ-0042</code> in ERPNext can still read the StudioOS notes attached to it. Order matters: ERPNext first, then D1. Never in parallel.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 940 430" role="img" aria-label="A request path: better-auth answers identity from D1, then getDoc against ERPNext with the user's token answers authority; only a 200 permits the D1 read, and a 403 or 404 is returned unchanged.">
+        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">ONE REQUEST FOR STUDIOOS DATA ABOUT AN ERPNEXT DOCUMENT</text>
+
+        <rect x="24" y="176" width="118" height="58" rx="4" fill="var(--panel2)" stroke="currentColor" stroke-opacity=".25"/>
+        <text x="83" y="211" text-anchor="middle" class="sv-t" fill="currentColor">browser</text>
+        <line x1="142" y1="205" x2="196" y2="205" stroke="currentColor" stroke-opacity=".5" marker-end="url(#ar)"/>
+
+        <rect x="196" y="176" width="150" height="58" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".35"/>
+        <text x="271" y="200" text-anchor="middle" class="sv-t" fill="currentColor">Worker &middot; Hono</text>
+        <text x="271" y="219" text-anchor="middle" class="sv-s" fill="var(--muted)">withDocAccess</text>
+
+        <rect x="196" y="56" width="150" height="58" rx="4" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".5"/>
+        <text x="271" y="80" text-anchor="middle" class="sv-t" fill="currentColor">better-auth &middot; D1</text>
+        <text x="271" y="99" text-anchor="middle" class="sv-s" fill="var(--muted)">session &rarr; user, studio, token</text>
+        <line x1="271" y1="114" x2="271" y2="170" stroke="var(--d1)" stroke-opacity=".7" marker-end="url(#ar-d)"/>
+        <text x="284" y="148" class="sv-mb" fill="var(--d1)">IDENTITY</text>
+
+        <path d="M346 190 L 470 100" fill="none" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ar-e)"/>
+        <text x="358" y="140" class="sv-mb" fill="var(--erp)">1. getDoc(doctype, name)</text>
+        <text x="358" y="158" class="sv-s" fill="var(--muted)">with the user's access token</text>
+
+        <rect x="486" y="56" width="212" height="72" rx="4" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".5"/>
+        <text x="592" y="82" text-anchor="middle" class="sv-t" fill="currentColor">ERPNext</text>
+        <text x="592" y="103" text-anchor="middle" class="sv-mb" fill="var(--erp)">AUTHORITY LIVES HERE</text>
+        <text x="592" y="120" text-anchor="middle" class="sv-s" fill="var(--muted)">200 &nbsp;&middot;&nbsp; 403 &nbsp;&middot;&nbsp; 404</text>
+
+        <path d="M592 128 L 592 252 L 500 252" fill="none" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ar-e)"/>
+        <text x="604" y="200" class="sv-mb" fill="var(--erp)">200 only</text>
+
+        <rect x="288" y="224" width="212" height="58" rx="4" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".5"/>
+        <text x="394" y="248" text-anchor="middle" class="sv-t" fill="currentColor">2. read D1 rows</text>
+        <text x="394" y="267" text-anchor="middle" class="sv-m" fill="var(--muted)">WHERE studio_id = ...</text>
+
+        <path d="M698 92 L 830 92 L 830 205 L 760 205" fill="none" stroke="var(--stop)" stroke-opacity=".85" marker-end="url(#ar-x)"/>
+        <text x="716" y="82" class="sv-mb" fill="var(--stop)">403 / 404 &mdash; returned unchanged</text>
+
+        <rect x="604" y="176" width="156" height="58" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".35"/>
+        <text x="682" y="205" text-anchor="middle" class="sv-t" fill="currentColor">response</text>
+        <path d="M500 253 L 682 253 L 682 240" fill="none" stroke="var(--d1)" stroke-opacity=".7" marker-end="url(#ar-d)"/>
+
+        <line x1="24" y1="330" x2="916" y2="330" stroke="currentColor" stroke-opacity=".15"/>
+        <text x="24" y="360" class="sv-mb" fill="var(--stop)">NEVER IN PARALLEL &mdash; THE GETDOC IS THE PERMISSION CHECK, NOT A DATA FETCH</text>
+        <text x="24" y="386" class="sv-s" fill="var(--muted)">StudioOS keeps no permission logic of its own. It waits for ERPNext to answer, then reuses that answer for its own rows.</text>
+        <text x="24" y="408" class="sv-s" fill="var(--muted)">A 403 on the document is the correct 403 for the notes about the document.</text>
+      </svg>
+    </div>
+    <figcaption>Four lines of helper, used by every endpoint that reads StudioOS data about an ERPNext document. Skipping it for one endpoint is a code-review conversation, not a judgement call.</figcaption>
+  </figure>
+
+<pre><span class="c">/**
+ * Control access to StudioOS data with the permissions of ERPNext.
+ *
+ * The getDoc call is the permission check. ERPNext sends a 403 or 404 response
+ * for a document that this user cannot see. That is also the correct response
+ * for the StudioOS data about the document. StudioOS thus keeps no permission
+ * logic of its own -- it only waits for the answer from ERPNext.
+ */</span>
+async function <span class="k">withDocAccess</span>&lt;T&gt;(
+  c: Context&lt;AppEnv&gt;,
+  doctype: string,
+  name: string,
+  fn: (studioId: string) =&gt; Promise&lt;T&gt;,
+): Promise&lt;T&gt; {
+  await c.get('frappe').getDoc(doctype, name);
+  return fn(c.get('studioId'));
+}</pre>
+</section>
+
+<!-- ================= 6 ================= -->
+<section>
+  <div class="sechead"><div class="secnum">RULE 06</div><div>
+    <h2>Two senders, one line between them</h2>
+  </div></div>
+
+  <div class="law">
+    <p>StudioOS sends email about StudioOS. ERPNext sends email about money.</p>
+    <span class="src">section 6</span>
+  </div>
+
+  <div class="split">
+    <div class="col cost">
+      <h4>Resend &mdash; from the StudioOS domain</h4>
+      <ul><li>sign-in links and OTP codes</li><li>studio invitations</li><li>connector-stopped alerts</li><li>product messages</li></ul>
+    </div>
+    <div class="col gain">
+      <h4>ERPNext &mdash; from the studio</h4>
+      <ul><li>invoices and receipts</li><li>payment reminders</li><li>statements</li><li>everything the client's accounts team receives</li></ul>
+    </div>
+  </div>
+
+  <p>No invoices from StudioOS in v1. Two senders for one invoice means two audit trails and a split domain reputation &mdash; and the client's accounts department gets money email from a domain they have never heard of. When StudioOS must send an invoice, it triggers ERPNext's own send.</p>
+  <p>Log every Resend call in D1: message id, template, recipient, status. The Resend dashboard cannot slice this per studio, and in week one somebody will ask whether an invitation actually went out.</p>
+</section>
+
+<!-- ================= 7 ================= -->
+<section>
+  <div class="sechead"><div class="secnum">RULE 07</div><div>
+    <h2>No ERPNext when no user is present</h2>
+  </div></div>
+  <p class="lede">This is Rule 00 restated for cron. No user, so no token, so no permissions.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 900 268" role="img" aria-label="A scheduled worker may read D1, read cache_ tables and send email, but must not call ERPNext.">
+        <rect x="24" y="92" width="200" height="72" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".35"/>
+        <text x="124" y="122" text-anchor="middle" class="sv-t" fill="currentColor">scheduled worker</text>
+        <text x="124" y="142" text-anchor="middle" class="sv-s" fill="var(--muted)">cron trigger &mdash; no session</text>
+
+        <line x1="224" y1="112" x2="456" y2="60" stroke="var(--d1)" stroke-opacity=".75" marker-end="url(#ar-d)"/>
+        <line x1="224" y1="128" x2="456" y2="128" stroke="var(--d1)" stroke-opacity=".75" marker-end="url(#ar-d)"/>
+        <line x1="224" y1="144" x2="456" y2="196" stroke="var(--d1)" stroke-opacity=".75" marker-end="url(#ar-d)"/>
+        <rect x="464" y="36" width="180" height="46" rx="4" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".45"/>
+        <text x="554" y="64" text-anchor="middle" class="sv-t" fill="currentColor">read D1</text>
+        <rect x="464" y="105" width="180" height="46" rx="4" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".45"/>
+        <text x="554" y="133" text-anchor="middle" class="sv-t" fill="currentColor">read cache_ tables</text>
+        <rect x="464" y="174" width="180" height="46" rx="4" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".45"/>
+        <text x="554" y="202" text-anchor="middle" class="sv-t" fill="currentColor">send email</text>
+
+        <line x1="644" y1="128" x2="740" y2="128" stroke="var(--stop)" stroke-opacity=".8" stroke-dasharray="5 4"/>
+        <line x1="686" y1="110" x2="712" y2="146" stroke="var(--stop)" stroke-width="2"/>
+        <line x1="712" y1="110" x2="686" y2="146" stroke="var(--stop)" stroke-width="2"/>
+        <rect x="740" y="102" width="136" height="52" rx="4" fill="none" stroke="var(--stop)" stroke-opacity=".6" stroke-dasharray="4 4"/>
+        <text x="808" y="133" text-anchor="middle" class="sv-t" fill="var(--stop)">ERPNext</text>
+
+        <text x="24" y="228" class="sv-mb" fill="var(--stop)">THE FIRST STEP BACK TO AN ADMIN KEY:</text>
+        <text x="24" y="252" class="sv-t" fill="currentColor">&ldquo;the reminder task just needs to read the invoices.&rdquo;</text>
+      </svg>
+    </div>
+    <figcaption>If you later need ERPNext access with no user, design it separately: a studio owner grants it explicitly, you use that owner's refresh token, and you record the design as a written exception to Rule 00. Never add a <code>FRAPPE_API_KEY</code>.</figcaption>
+  </figure>
+</section>
+
+<!-- ================= 8 ================= -->
+<section>
+  <div class="sechead"><div class="secnum">RULE 08</div><div>
+    <h2>One Worker, one origin</h2>
+  </div></div>
+  <p class="lede">Two origins produce cookie and CORS failures that only appear in production. Serve the SPA and the API from the same Worker.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 940 340" role="img" aria-label="Before, the SPA and API deploy to separate origins and the cookie cannot cross. After, one Worker serves assets and runs Hono, with run_worker_first routing the API and auth paths.">
+        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">THE DIFFERENCE IS ONE CONFIG LINE AND ONE FEWER ORIGIN</text>
+
+        <rect x="24" y="40" width="416" height="278" rx="6" fill="none" stroke="currentColor" stroke-opacity=".2" stroke-dasharray="4 4"/>
+        <text x="48" y="70" class="sv-lbl" fill="var(--muted)">TODAY &mdash; TWO ORIGINS</text>
+        <rect x="160" y="86" width="144" height="46" rx="4" fill="var(--panel2)" stroke="currentColor" stroke-opacity=".25"/>
+        <text x="232" y="114" text-anchor="middle" class="sv-t" fill="currentColor">browser</text>
+        <line x1="200" y1="132" x2="140" y2="182" stroke="currentColor" stroke-opacity=".5" marker-end="url(#ar)"/>
+        <line x1="264" y1="132" x2="324" y2="182" stroke="currentColor" stroke-opacity=".5" marker-end="url(#ar)"/>
+        <rect x="48" y="188" width="152" height="52" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".3"/>
+        <text x="124" y="212" text-anchor="middle" class="sv-m" fill="currentColor">pages.dev</text>
+        <text x="124" y="230" text-anchor="middle" class="sv-s" fill="var(--muted)">the SPA</text>
+        <rect x="264" y="188" width="152" height="52" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".3"/>
+        <text x="340" y="212" text-anchor="middle" class="sv-m" fill="currentColor">workers.dev</text>
+        <text x="340" y="230" text-anchor="middle" class="sv-s" fill="var(--muted)">the API</text>
+        <line x1="200" y1="214" x2="264" y2="214" stroke="var(--stop)" stroke-opacity=".8" stroke-dasharray="5 4"/>
+        <line x1="222" y1="202" x2="242" y2="226" stroke="var(--stop)" stroke-width="2"/>
+        <line x1="242" y1="202" x2="222" y2="226" stroke="var(--stop)" stroke-width="2"/>
+        <text x="48" y="278" class="sv-mb" fill="var(--stop)">COOKIE CANNOT CROSS &middot; CORS &middot; APP_UI_ORIGIN &ne; APP_ORIGIN</text>
+        <text x="48" y="300" class="sv-s" fill="var(--muted)">and it all works fine in dev.</text>
+
+        <rect x="500" y="40" width="416" height="278" rx="6" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".35"/>
+        <text x="524" y="70" class="sv-lbl" fill="var(--erp)">AFTER &mdash; ONE ORIGIN</text>
+        <rect x="636" y="86" width="144" height="46" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".25"/>
+        <text x="708" y="114" text-anchor="middle" class="sv-t" fill="currentColor">browser</text>
+        <line x1="708" y1="132" x2="708" y2="158" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ar-e)"/>
+        <rect x="524" y="158" width="368" height="46" rx="4" fill="var(--panel)" stroke="var(--erp)" stroke-opacity=".5"/>
+        <text x="708" y="186" text-anchor="middle" class="sv-t" fill="currentColor">one Worker &mdash; APP_ORIGIN</text>
+        <line x1="620" y1="204" x2="600" y2="240" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ar-e)"/>
+        <line x1="796" y1="204" x2="816" y2="240" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ar-e)"/>
+        <rect x="524" y="246" width="168" height="50" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".3"/>
+        <text x="608" y="268" text-anchor="middle" class="sv-m" fill="currentColor">Hono</text>
+        <text x="608" y="286" text-anchor="middle" class="sv-s" fill="var(--muted)">/api/* &nbsp;/auth/*</text>
+        <rect x="724" y="246" width="168" height="50" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".3"/>
+        <text x="808" y="268" text-anchor="middle" class="sv-m" fill="currentColor">ASSETS</text>
+        <text x="808" y="286" text-anchor="middle" class="sv-s" fill="var(--muted)">SPA fallback</text>
+        <text x="524" y="226" class="sv-mb" fill="var(--erp)">run_worker_first decides &mdash; not Sec-Fetch-Mode</text>
+      </svg>
+    </div>
+    <figcaption>Without <code>run_worker_first</code>, Cloudflare routes on the <code>Sec-Fetch-Mode</code> header. The OAuth callback is a browser navigation, so it gets <code>index.html</code> and never reaches the Worker. Needs Wrangler 4.20+.</figcaption>
+  </figure>
+
+<pre>main = "src/index.ts"
+
+[assets]
+directory = "../frontend/dist"
+not_found_handling = "single-page-application"
+binding = "ASSETS"
+<span class="k">run_worker_first</span> = ["/api/*", "/auth/*"]</pre>
+
+  <div class="law stop">
+    <p>APP_ORIGIN cannot change later. The OAuth redirect URI is derived from it and registered on every customer's ERPNext site &mdash; change it and every customer reinstalls the connector.</p>
+    <span class="src">the highest-cost mistake on this page</span>
+  </div>
+  <p>Pick the production hostname before the first customer registers. The first deploy is not the deadline. The first customer is.</p>
+
+  <h3>The tenant registry splits by reader, not by convenience</h3>
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 900 236" role="img" aria-label="On each request, KV is read before authentication for the client id and encrypted secret; D1 is read after authentication for the studio row, joined on host.">
+        <line x1="40" y1="196" x2="860" y2="196" stroke="currentColor" stroke-opacity=".35" marker-end="url(#ar)"/>
+        <text x="40" y="224" class="sv-s" fill="var(--muted)">one request, left to right</text>
+
+        <line x1="180" y1="196" x2="180" y2="176" stroke="currentColor" stroke-opacity=".35"/>
+        <line x1="470" y1="196" x2="470" y2="176" stroke="currentColor" stroke-opacity=".35"/>
+        <line x1="700" y1="196" x2="700" y2="176" stroke="currentColor" stroke-opacity=".35"/>
+
+        <rect x="72" y="48" width="216" height="76" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".35"/>
+        <text x="180" y="72" text-anchor="middle" class="sv-mb" fill="currentColor">KV &mdash; key: host</text>
+        <text x="180" y="93" text-anchor="middle" class="sv-s" fill="var(--muted)">clientId, encryptedSecret</text>
+        <text x="180" y="112" text-anchor="middle" class="sv-s" fill="var(--muted)">getTenant() in requireSession</text>
+        <line x1="180" y1="124" x2="180" y2="170" stroke="currentColor" stroke-opacity=".4" marker-end="url(#ar)"/>
+        <text x="180" y="148" text-anchor="middle" class="sv-lbl" fill="var(--muted)">BEFORE AUTH &middot; EVERY REQUEST</text>
+
+        <text x="470" y="160" text-anchor="middle" class="sv-mb" fill="currentColor">sign-in verified</text>
+
+        <rect x="592" y="48" width="216" height="76" rx="4" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".45"/>
+        <text x="700" y="72" text-anchor="middle" class="sv-mb" fill="currentColor">D1 &mdash; studio row</text>
+        <text x="700" y="93" text-anchor="middle" class="sv-s" fill="var(--muted)">id, name, erpnext_host, owner,</text>
+        <text x="700" y="112" text-anchor="middle" class="sv-s" fill="var(--muted)">connector status, plan</text>
+        <line x1="700" y1="124" x2="700" y2="170" stroke="var(--d1)" stroke-opacity=".6" marker-end="url(#ar-d)"/>
+        <text x="700" y="148" text-anchor="middle" class="sv-lbl" fill="var(--d1)">AFTER AUTH &middot; JOINS ORGANIZATION</text>
+
+        <path d="M288 86 L 592 86" fill="none" stroke="currentColor" stroke-opacity=".3" stroke-dasharray="4 4"/>
+        <text x="440" y="78" text-anchor="middle" class="sv-mb" fill="currentColor">joined on host</text>
+        <text x="24" y="22" class="sv-lbl" fill="var(--muted)">WHO READS IT, AND WHEN &mdash; THAT IS WHY IT SPLITS</text>
+      </svg>
+    </div>
+    <figcaption>KV is fast at the edge and only changes at install, so eventual consistency is right there. D1 holds what you join and query after the person is known. <code>lib/tenants.ts</code> does not change.</figcaption>
+  </figure>
+</section>
+
+<!-- ================= 9 ================= -->
+<section>
+  <div class="sechead"><div class="secnum">SEQUENCE</div><div>
+    <h2>The order is a gate, not a preference</h2>
+  </div></div>
+  <p class="lede">Do not start a step before the previous one is finished.</p>
+  <ol class="steps">
+    <li><div><b>Agree to this document.</b><span>If you disagree, change the document. Do not write different code.</span></div></li>
+    <li><div><b>One Worker, one origin.</b><span>Static assets plus <code>run_worker_first</code>. Set APP_ORIGIN to the production hostname. Wrangler 3 &rarr; 4.</span></div></li>
+    <li><div><b>D1 and better-auth.</b><span>better-auth tables plus <code>studio</code>. Wire the existing oauth4webapi callback to a better-auth session. Move ERPNext tokens into <code>account</code>. Success is measured one way: sign-in behaves exactly as before.</span></div></li>
+    <li><div><b>Prove the seam with one feature.</b><span>Project notes &mdash; the three columns from Rule 03 and <code>withDocAccess</code> from Rule 05. One feature that establishes two patterns beats five features with five patterns.</span></div></li>
+    <li><div><b>Resend, for invitations and OTP only.</b><span>Plus the email log.</span></div></li>
+    <li><div><b>Deploy, and rewrite DEPLOY.md.</b><span>It still documents the API key that Phase 6c removed.</span></div></li>
+  </ol>
+  <p>The six Phase 10f data sets come after all of this, using Rule 01. They are the result of the seam, not part of building it.</p>
+</section>
+
+<!-- ================= 10 ================= -->
+<section>
+  <div class="sechead"><div class="secnum">CHECKLIST</div><div>
+    <h2>Three questions per field, table and endpoint</h2>
+  </div></div>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 900 396" role="img" aria-label="Three questions: does the data survive deleting StudioOS, does reading it reveal an ERPNext document, and does it need a credential with no user present.">
+        <rect x="24" y="30" width="330" height="64" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".35"/>
+        <text x="44" y="54" class="sv-lbl" fill="var(--muted)">QUESTION 1 &mdash; ANSWERS MOST DECISIONS</text>
+        <text x="44" y="79" class="sv-t" fill="currentColor">Does this survive deleting StudioOS?</text>
+        <path d="M354 50 L 470 50" fill="none" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ar-e)"/>
+        <text x="382" y="42" class="sv-mb" fill="var(--erp)">yes</text>
+        <rect x="478" y="30" width="130" height="40" rx="4" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".5"/>
+        <text x="543" y="55" text-anchor="middle" class="sv-t" fill="currentColor">ERPNext</text>
+        <path d="M354 76 L 470 76" fill="none" stroke="var(--d1)" stroke-opacity=".8" marker-end="url(#ar-d)"/>
+        <text x="382" y="96" class="sv-mb" fill="var(--d1)">no</text>
+        <rect x="478" y="82" width="130" height="40" rx="4" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".5"/>
+        <text x="543" y="107" text-anchor="middle" class="sv-t" fill="currentColor">D1</text>
+
+        <rect x="24" y="160" width="330" height="64" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".35"/>
+        <text x="44" y="184" class="sv-lbl" fill="var(--muted)">QUESTION 2 &mdash; FAILS SILENTLY</text>
+        <text x="44" y="209" class="sv-t" fill="currentColor">Does reading it reveal an ERPNext doc?</text>
+        <path d="M354 192 L 470 192" fill="none" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ar-e)"/>
+        <text x="382" y="184" class="sv-mb" fill="var(--erp)">yes</text>
+        <rect x="478" y="172" width="242" height="40" rx="4" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".5"/>
+        <text x="599" y="197" text-anchor="middle" class="sv-m" fill="currentColor">wrap it in withDocAccess</text>
+
+        <rect x="24" y="290" width="330" height="64" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".35"/>
+        <text x="44" y="314" class="sv-lbl" fill="var(--muted)">QUESTION 3 &mdash; FAILS SILENTLY</text>
+        <text x="44" y="339" class="sv-t" fill="currentColor">Does it need a credential with no user?</text>
+        <path d="M354 322 L 470 322" fill="none" stroke="var(--stop)" stroke-opacity=".85" marker-end="url(#ar-x)"/>
+        <text x="382" y="314" class="sv-mb" fill="var(--stop)">yes</text>
+        <rect x="478" y="302" width="242" height="40" rx="4" fill="var(--stop-soft)" stroke="var(--stop)" stroke-opacity=".55"/>
+        <text x="599" y="327" text-anchor="middle" class="sv-t" fill="var(--stop)">stop. the design is wrong.</text>
+
+        <text x="746" y="197" class="sv-s" fill="var(--muted)">Questions 2 and 3</text>
+        <text x="746" y="217" class="sv-s" fill="var(--muted)">catch the damage that</text>
+        <text x="746" y="237" class="sv-s" fill="var(--muted)">arrives with no error.</text>
+      </svg>
+    </div>
+    <figcaption>Question 1 decides most things on its own. The other two exist because their failures never raise an exception.</figcaption>
+  </figure>
+</section>
+
+<!-- ================= open ================= -->
+<section>
+  <div class="sechead"><div class="secnum">STILL OPEN</div><div>
+    <h2>Decisions this document does not make</h2>
+  </div></div>
+  <p class="lede">v1 has to answer these. Do not guess them now.</p>
+  <div class="open">
+    <div><b>Roles.</b><span>better-auth's <code>organization</code> plugin has roles; ERPNext has different ones. Build no StudioOS role model until a requirement appears that ERPNext cannot serve. Phase 6d.</span></div>
+    <div><b>Renamed documents orphan D1 rows.</b><span>Rule 03. Accepted in v1.</span></div>
+    <div><b>ERPNext access with no user.</b><span>Rule 07. Design it when you actually need it, as a recorded exception.</span></div>
+    <div><b>ERPNext webhooks for live updates.</b><span>Not in v1. Requests and caches are enough at this volume.</span></div>
+  </div>
+</section>
+
+<footer>
+  <span>docs/SEAM.md &middot; visual map</span>
+  <span>replaces the open question in Phase 10f of PLAN-v2.md &middot; does not replace SPEC.md</span>
+</footer>
+
+</div>
