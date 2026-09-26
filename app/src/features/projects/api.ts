@@ -27,7 +27,7 @@ export function useProject(name: string) {
  *
  * Note ERPNext will silently ignore an attempt to set "Completed" -- that
  * status is derived from checklist and payment state on the server, not chosen
- * by hand. See the PUT handler in backend/src/routes/projects.ts.
+ * by hand. See the PUT handler in worker/src/routes/projects.ts.
  */
 export function useUpdateProjectStatus() {
   const qc = useQueryClient();

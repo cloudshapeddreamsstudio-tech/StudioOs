@@ -3,7 +3,7 @@ import { z } from 'zod';
 /**
  * The project form's rules.
  *
- * Deliberately mirrors `backend/src/schemas/project.ts`. The server still
+ * Deliberately mirrors `worker/src/schemas/project.ts`. The server still
  * validates everything — this is not a substitute for that, and must never
  * become one. What it buys is the difference between "the field goes red as
  * you leave it" and "you press Save, wait for a round trip, and get told".
@@ -65,6 +65,6 @@ export type ProjectFormOutput = z.output<typeof projectFormSchema>;
  * "Completed" is absent on purpose. It is derived from the checklist and from
  * whether everyone has been paid — offering it here would let someone declare
  * a project finished while the client still owes money, and the server drops
- * it anyway. See the PUT handler in backend/src/routes/projects.ts.
+ * it anyway. See the PUT handler in worker/src/routes/projects.ts.
  */
 export const SELECTABLE_STATUSES = ['Open', 'Cancelled'] as const;

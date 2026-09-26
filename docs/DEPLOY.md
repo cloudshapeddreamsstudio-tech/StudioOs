@@ -139,7 +139,7 @@ yesterday's date — that is correct, not a bug.
 ## 7. Deploy the front end
 
 ```bash
-cd ../frontend
+cd ../app
 bun run build
 npx wrangler pages deploy dist --project-name studioos
 ```

@@ -292,7 +292,7 @@ footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--rule);font:40
     <table>
       <thead><tr><th>Data set</th><th>Why</th><th>Lands</th></tr></thead>
       <tbody>
-        <tr><td><b>Expenses</b></td><td class="muted">no light native home exists</td><td><span class="tag open">OPEN</span> <code>Expense Claim</code> ships in HRMS, not stock ERPNext</td></tr>
+        <tr><td><b>Expenses</b></td><td class="muted">no light native home exists</td><td><span class="tag e">ERPNEXT</span> a <code>StudioOS Project Expense</code> DocType, provisioned &middot; <code>Expense Claim</code> ships in HRMS, not stock</td></tr>
         <tr><td><b>Transactions</b></td><td class="muted">money, with an audit trail</td><td><span class="tag e">ERPNEXT</span> <code>Journal Entry</code>, proven on the stock <code>Cash - ABBR</code> account</td></tr>
         <tr><td><b>Subscriptions</b></td><td class="muted">native costs the owner more</td><td><span class="tag open">OPEN</span> the studio owner's decision, not this document's</td></tr>
         <tr><td><b>Studio rental</b></td><td class="muted">money, and hours</td><td><span class="tag both">SPLIT</span> <code>Timesheet</code> + <code>time_logs</code> in ERPNext &middot; <b>booking calendar in D1</b></td></tr>
@@ -439,7 +439,51 @@ CREATE INDEX idx_project_note_doc
   <p>Not <code>project_name</code>, not <code>customer</code>, not <code>status</code>, not <code>grand_total</code> &mdash; not even to render a list page fast. Two sources means one of them is wrong, and the client is the one who tells you. Keep the reference; read the values. Rule 04 is the only exception.</p>
 
   <h3>The reference points one way</h3>
-  <p>D1 refers to ERPNext. ERPNext never refers to D1. <b>No custom fields on ERPNext doctypes in v1.</b> A <code>custom_studioos_id</code> on Project means you now maintain a Frappe app: migrations, version skew, an install step on every customer site. ERPNext must not know StudioOS exists.</p>
+  <p>D1 refers to ERPNext. ERPNext never refers to D1 &mdash; stated precisely: <b>ERPNext must not depend on StudioOS.</b> That is one rule with three tiers, not a blanket ban.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 920 300" role="img" aria-label="Three tiers: using a stock doctype is permitted; adding a custom field to a stock doctype couples both ways and is forbidden; a StudioOS-owned doctype references Project without Project referencing back, and is permitted under six conditions.">
+        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">WHAT STUDIOOS MAY DO INSIDE A STUDIO&rsquo;S ERPNEXT</text>
+
+        <rect x="24" y="40" width="280" height="226" rx="6" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".4"/>
+        <text x="48" y="70" class="sv-lbl" fill="var(--erp)">TIER 1 &mdash; PERMITTED</text>
+        <text x="48" y="96" class="sv-t" fill="currentColor">Use a doctype ERPNext ships</text>
+        <rect x="48" y="118" width="232" height="44" rx="4" fill="var(--panel)" stroke="var(--erp)" stroke-opacity=".45"/>
+        <text x="164" y="145" text-anchor="middle" class="sv-m" fill="currentColor">Project &middot; Timesheet &middot; Journal Entry</text>
+        <text x="48" y="196" class="sv-s" fill="var(--muted)">First choice for every data set.</text>
+        <text x="48" y="218" class="sv-s" fill="var(--muted)">Nothing to provision, nothing to</text>
+        <text x="48" y="238" class="sv-s" fill="var(--muted)">explain to the owner.</text>
+
+        <rect x="320" y="40" width="280" height="226" rx="6" fill="var(--stop-soft)" stroke="var(--stop)" stroke-opacity=".45"/>
+        <text x="344" y="70" class="sv-lbl" fill="var(--stop)">TIER 2 &mdash; FORBIDDEN IN V1</text>
+        <text x="344" y="96" class="sv-t" fill="currentColor">Add a field to a shipped doctype</text>
+        <rect x="344" y="118" width="232" height="44" rx="4" fill="var(--panel)" stroke="var(--stop)" stroke-opacity=".5"/>
+        <text x="460" y="139" text-anchor="middle" class="sv-m" fill="currentColor">Project.custom_studioos_id</text>
+        <text x="460" y="156" text-anchor="middle" class="sv-s" fill="var(--stop)">Project&rsquo;s own shape now carries us</text>
+        <path d="M400 180 L 400 196" stroke="var(--stop)" stroke-opacity=".8" marker-end="url(#ar-x)"/>
+        <path d="M520 196 L 520 180" stroke="var(--stop)" stroke-opacity=".8" marker-end="url(#ar-x)"/>
+        <text x="460" y="216" text-anchor="middle" class="sv-mb" fill="var(--stop)">COUPLED BOTH WAYS</text>
+        <text x="344" y="240" class="sv-s" fill="var(--muted)">You now maintain a Frappe app:</text>
+        <text x="344" y="258" class="sv-s" fill="var(--muted)">migrations, version skew, per-site installs.</text>
+
+        <rect x="616" y="40" width="280" height="226" rx="6" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".4"/>
+        <text x="640" y="70" class="sv-lbl" fill="var(--erp)">TIER 3 &mdash; PERMITTED, 6 CONDITIONS</text>
+        <text x="640" y="96" class="sv-t" fill="currentColor">A doctype StudioOS owns</text>
+        <rect x="640" y="118" width="232" height="44" rx="4" fill="var(--panel)" stroke="var(--erp)" stroke-opacity=".45"/>
+        <text x="756" y="145" text-anchor="middle" class="sv-m" fill="currentColor">StudioOS Project Expense</text>
+        <path d="M756 162 L 756 190" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ar-e)"/>
+        <text x="769" y="181" class="sv-s" fill="var(--erp)">refers to</text>
+        <rect x="672" y="190" width="168" height="34" rx="4" fill="var(--panel)" stroke="currentColor" stroke-opacity=".25"/>
+        <text x="756" y="212" text-anchor="middle" class="sv-m" fill="currentColor">Project</text>
+        <text x="640" y="248" class="sv-mb" fill="var(--erp)">STILL ONE-WAY</text>
+        <text x="640" y="266" class="sv-s" fill="var(--muted)">Delete StudioOS: Project is unchanged.</text>
+      </svg>
+    </div>
+    <figcaption>Tier 2 is banned because it puts a StudioOS concern inside the shape of a doctype ERPNext owns. Tier 3 creates a separate island that points at <code>Project</code> while <code>Project</code> points at nothing &mdash; the same one-way reference this rule has always demanded. The six conditions are in ADR-0001: survives-deletion data only, provisioned idempotently at connect time on the owner&rsquo;s own session, name-prefixed, permissions set at creation, and an export path written down before the first row.</figcaption>
+  </figure>
+
+  <p>The argument that settled it is the one from Rule 00. Every D1 table is a place where someone forgets <code>withDocAccess</code> and nothing complains. Every row in a doctype on the studio&rsquo;s own site is checked by ERPNext against the signed-in person&rsquo;s token, with no code from us. Tier 3 shrinks the surface where the silent failure lives; D1 grows it.</p>
   <p class="muted"><i>Known v1 limitation:</i> renaming a Frappe document orphans the D1 row. Accept it, record it, do not fix it now. A later version reconciles names with a webhook.</p>
 </section>
 

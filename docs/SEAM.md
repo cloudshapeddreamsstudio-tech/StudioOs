@@ -122,9 +122,9 @@ one.
 
 | Data set | Answer | Location |
 |---|---|---|
-| Expenses | no light native home exists | **Open.** `Expense Claim` is not part of stock ERPNext — it ships in HRMS. Blocked on the custom-DocType decision |
+| Expenses | no light native home exists | ERPNext — a `StudioOS Project Expense` DocType that StudioOS provisions. `Expense Claim` ships in HRMS, not stock ERPNext. See [ADR-0001](./adr/0001-studioos-provisions-its-own-doctypes.md) |
 | Transactions | money, with an audit record | ERPNext — `Journal Entry`, proven on a bench with the stock `Cash - ABBR` account |
-| Subscriptions | native costs the owner more than it gives | **Open.** Decision belongs to the studio owner, not to this document |
+| Subscriptions | native costs the owner more than it gives | **Open.** Both homes are now available. The studio owner decides, because the choice changes what the data means |
 | Studio rental | money, and hours | ERPNext — `Timesheet` + `time_logs`, proven. **D1 holds the booking calendar** |
 | Crew | Phase 10f decided this | ERPNext — a Draft `Purchase Order` for each member. **D1 holds the rates and the availability** |
 | Brand | goes with StudioOS | D1 |
@@ -248,11 +248,35 @@ Section 4 gives the only exception.
 
 ### The reference goes in one direction only
 
-D1 refers to ERPNext. ERPNext does not refer to D1. **Do not add custom fields to
-ERPNext doctypes in version 1.** If you add `custom_studioos_id` to the Project
-doctype, you must then maintain a Frappe application. You must manage
+D1 refers to ERPNext. ERPNext does not refer to D1. **ERPNext must not depend on
+StudioOS.**
+
+The first version of this section said "ERPNext must not know about StudioOS".
+That sentence stopped two different acts, and only one of them is a problem. The
+rule is now given as three tiers. See
+[ADR-0001](./adr/0001-studioos-provisions-its-own-doctypes.md).
+
+| Tier | The act | The rule |
+|---|---|---|
+| 1 | Use a DocType that ERPNext ships | **Permitted.** This is the first choice for each data set. |
+| 2 | Add a custom field to a DocType that ERPNext ships | **Forbidden in version 1.** |
+| 3 | Create a DocType that StudioOS owns, on the studio's site | **Permitted, with six conditions.** |
+
+**Tier 2 is forbidden because it couples both ways.** If you add
+`custom_studioos_id` to the `Project` doctype, the shape of `Project` now carries
+a StudioOS concern. You must then maintain a Frappe application. You must manage
 migrations, different versions, and an installation step on the site of each
-customer. ERPNext must not know about StudioOS.
+customer.
+
+**Tier 3 is permitted because the reference still goes one way.** A
+`StudioOS Project Expense` document refers to `Project`. `Project` refers to
+nothing in StudioOS. Delete StudioOS and `Project` is unchanged.
+
+The six conditions are in ADR-0001 and all six are necessary. In short: only for
+data that stays if you delete StudioOS; created at connect time on the owner's
+own session and never from a stored credential; idempotent; named with a
+`StudioOS` prefix; permissions set at creation; and an export procedure written
+down before the first row is written.
 
 *Known limitation in version 1:* a user can change the name of a Frappe
 document. The D1 row is then not valid. Accept this limitation in version 1.
@@ -378,7 +402,7 @@ configuration is correct:
 main = "src/index.ts"
 
 [assets]
-directory = "../frontend/dist"
+directory = "../app/dist"
 not_found_handling = "single-page-application"
 binding = "ASSETS"
 run_worker_first = ["/api/*", "/auth/*"]
@@ -499,8 +523,10 @@ Claim". `Expense Claim` **does not exist on stock ERPNext**; it ships in HRMS,
 a separate app, and a studio on a managed Frappe Cloud plan does not have it.
 The only native homes left are `Purchase Invoice`, which requires a Supplier,
 and `Journal Entry`, which is submittable and hits the general ledger. Phase
-10f concluded a custom DocType, which the next amendment has to settle first.
-Status: **open**, blocked on Amendment 2.
+10f concluded a custom DocType. Amendment 2 settled that question on 2026-09-26.
+Status: **resolved** — a `StudioOS Project Expense` DocType, provisioned under
+the six conditions in ADR-0001. This is the first and only DocType to build
+until it has run for one month.
 
 **Subscriptions — was premature.** The table chose ERPNext `Subscription`.
 Phase 10f established that native is the *worse* answer here: a `Subscription`
@@ -529,7 +555,7 @@ proven on the actual system. The seam rule did not fail here. The application
 of it skipped the evidence. Do the same check before you trust any table in
 this document.
 
-### Amendment 2 — what StudioOS may create in ERPNext (OPEN)
+### Amendment 2 — what StudioOS may create in ERPNext (DECIDED 2026-09-26)
 
 Section 3 says "ERPNext must not know about StudioOS" and forbids custom fields
 on stock doctypes in v1. That rule stands and is not in question.
@@ -547,24 +573,24 @@ doctype the studio owns. This document never distinguished them, so an agent
 reading Section 3 concludes both are banned — and that conclusion silently
 blocks the only remaining home for project expenses and overheads.
 
-The three tiers, for whichever way this is settled:
+**Decided: tier 3 is permitted, with six conditions.** Section 3 above now
+carries the three tiers. The full record, the options that were rejected, and
+the costs are in
+[ADR-0001](./adr/0001-studioos-provisions-its-own-doctypes.md).
 
-1. **Stock doctypes** — use freely. Unchanged.
-2. **Custom fields on stock doctypes** — forbidden in v1. Unchanged. Adding one
-   means maintaining a Frappe app: migrations, version skew, an install step per
-   customer.
-3. **StudioOS-provisioned custom DocTypes** — **undecided.** If permitted, the
-   conditions that make it safe rather than convenient: created idempotently at
-   connect time, on the signing-in owner's session, name-prefixed so it is
-   obviously StudioOS's, and exportable so a studio that leaves keeps readable
-   data.
+The reason that decided it is the one in Section 0. Each table in D1 needs
+`withDocAccess` on every read, and that control fails with no error message when
+a contributor forgets it. Each row in a DocType on the studio's own site is
+checked by ERPNext, against the token of the person who signed in, with no code
+from StudioOS. Tier 3 makes the surface for the silent failure smaller. D1 makes
+it larger.
 
-The honest argument against tier 3 is not permissions — those were proven — it
-is portability and familiarity. A custom DocType is a stranger inside the
-owner's own ERPNext, and if the studio stops using StudioOS the data sits in a
-shape only StudioOS understands. Native is portable. That is a real cost and it
-belongs in the decision.
+The argument against tier 3 was portability. That argument does not hold when
+you compare the two stores honestly. A DocType on the studio's site is in the
+owner's DocType list, is exportable by the owner, and is in the owner's backup.
+A D1 table is none of those things and stops when StudioOS stops. The true
+concern is that a custom DocType is unfamiliar, and a clear name solves that.
 
-**Owner: Malhar. Blocks: project expenses, overheads, and therefore Phase 10g.**
-Until it is settled, neither dataset gets built, and nothing gets routed around
-it in code.
+**Overheads stay open.** This amendment makes the option available. The studio
+owner still decides whether an overhead is a note or is bookkeeping, because
+that choice changes what the data means.

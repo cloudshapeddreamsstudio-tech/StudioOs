@@ -1,0 +1,68 @@
+{
+  // StudioOS Worker. One Worker serves the API today, and will serve the SPA
+  // too once M1 lands -- see docs/adr/0002-repository-structure.md.
+  "name": "studioos-worker",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-15",
+
+  // The `qrcode` package (Scan-to-Pay on invoices) reaches for Node built-ins.
+  // Only its SVG renderer is used -- see src/lib/payQr.ts for why not PNG.
+  "compatibility_flags": ["nodejs_compat"],
+
+  // There is no database binding, deliberately.
+  //
+  // Removed in Phase 6a (docs/PLAN-v2.md):
+  //   d1_databases   the seven ledger tables
+  //   r2_buckets     the off-box backup destination
+  //   triggers       the nightly backup cron
+  //
+  // D1 returns at M4 to hold better-auth's tables and StudioOS's own front-office
+  // data. It does not return to hold studio records -- see docs/SEAM.md rule 1.
+
+  "vars": {
+    // Non-secret configuration only. Secrets go in with `wrangler secret put`,
+    // never here.
+    //
+    // There is no ERPNext credential at all. Since Phase 6c every request runs
+    // on the signed-in user's own token, and the site it goes to comes from the
+    // tenant registry, not from FRAPPE_URL.
+    "FRAPPE_URL": "https://cloudshapeddreamsstudio.m.erpnext.com",
+    "COMPANY": "Cloud Shaped Dreams Studio",
+
+    // Where StudioOS itself answers.
+    //
+    // This value is configurable and is meant to be changed. What is NOT
+    // reversible is the copy of it that leaves this repository: the OAuth
+    // redirect URI is built from APP_ORIGIN and is registered on each customer's
+    // ERPNext site. Change it after a customer has connected and that customer
+    // must install the connector again.
+    //
+    // So: change it freely until the first real customer connects. Choose the
+    // production hostname before that day, not before the first deploy.
+    // See docs/SEAM.md section 8, and the open question in docs/PLAN-v2.md D3.
+    "APP_ORIGIN": "http://localhost:8787",
+
+    // Where the SPA lives. M1 makes this the same host as APP_ORIGIN and then
+    // deletes this variable. Until then, development needs the two to differ,
+    // because Vite serves the SPA on its own port.
+    "APP_UI_ORIGIN": "http://localhost:5173"
+  },
+
+  "observability": { "enabled": true },
+
+  // The tenant registry: which studio's ERPNext, and the credentials StudioOS
+  // was registered with there. The one piece of state kept outside ERPNext,
+  // because it has to be readable *before* we can talk to that site at all.
+  //
+  // `wrangler dev` uses local storage and ignores the id, so development works
+  // now. Creating the real namespace is part of deployment:
+  //   wrangler kv namespace create TENANTS
+  //   wrangler kv namespace create TENANTS --preview
+  // A deploy with the placeholder still in place fails, which is intended.
+  "kv_namespaces": [
+    {
+      "binding": "TENANTS",
+      "id": "REPLACE_WITH_ID_FROM_WRANGLER_KV_NAMESPACE_CREATE"
+    }
+  ]
+}

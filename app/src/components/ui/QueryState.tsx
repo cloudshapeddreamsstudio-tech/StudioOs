@@ -68,7 +68,7 @@ export function QueryState({
           Couldn&apos;t load: {error.message}
           <br />
           <span className="text-xs text-gray-400">
-            Is the API Worker running? Try <code>bun run dev</code> in <code>backend/</code>.
+            Is the API Worker running? Try <code>bun run dev</code> in <code>worker/</code>.
           </span>
         </td>
       </tr>

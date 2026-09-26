@@ -1,11 +1,11 @@
 @echo off
-REM Serves the Frappe bench on :8000 for local StudioOS development.
+REM Serves the local Frappe bench on :8000, for developing against a bench
+REM instead of a live ERPNext site.
 REM
-REM Node is installed via nvm, which is sourced from .bashrc, so this must be an
+REM Node is installed by nvm, which is sourced from .bashrc, so this must be an
 REM INTERACTIVE shell (bash -ic). A login shell (bash -lc) has no node on PATH
 REM and bench fails with a confusing error.
 REM
-REM This script used to live in a Claude session's temp directory, which got
-REM cleaned up and broke `preview_start` with "The system cannot find the path
-REM specified." It lives in the repo now so it survives.
-wsl -e bash -ic "cd ~/frappe-bench && bench serve --port 8000"
+REM Set BENCH_PATH if your bench is not at ~/frappe-bench.
+if "%BENCH_PATH%"=="" set BENCH_PATH=~/frappe-bench
+wsl -e bash -ic "cd %BENCH_PATH% && bench serve --port 8000"

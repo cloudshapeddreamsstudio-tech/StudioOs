@@ -12,7 +12,7 @@ import { useDarkMode } from '@/lib/useDarkMode';
  *
  * A signed-in visitor is redirected straight to `/dashboard` rather than
  * shown a pitch for a product they already use -- see the guard below and
- * the matching fix in `backend/src/routes/auth.ts`'s OAuth callback, which
+ * the matching fix in `worker/src/routes/auth.ts`'s OAuth callback, which
  * used to land a fresh sign-in on `/projects` instead of `/dashboard`, a
  * split the owner confirmed was a bug, not two intentional landing points.
  *

@@ -40,12 +40,12 @@ at the application level, not just at rest.
 
 | Path | What it is |
 |---|---|
-| `frontend/` | React 19 + Vite + TypeScript + Tailwind v4 SPA |
-| `backend/` | Hono + TypeScript on Cloudflare Workers |
+| `app/` | React 19 + Vite + TypeScript + Tailwind v4 SPA |
+| `worker/` | Hono + TypeScript on Cloudflare Workers |
 | `docs/` | `SEAM.md` (the constitution), `SPEC.md`, `PLAN-v2.md` (phases 6+), `archive/` |
 | `AGENTS.md` | **Read this first.** The router: where things sit, which docs to trust, what not to do |
 
-Each side has its own `package.json` and is deployed independently.
+Each side has its own `package.json`, joined by a Bun workspace at the root.
 
 ## Stack
 
@@ -54,7 +54,7 @@ TanStack Query, React Hook Form + Zod, react-chartjs-2, date-fns.
 
 **Backend** — Hono, TypeScript, Cloudflare Workers, oauth4webapi, Zod.
 
-> Drizzle and the D1 migrations are still in `backend/` but nothing is bound to
+> Drizzle and the D1 migrations are still in `worker/` but nothing is bound to
 > them. They belong to six routes — brand, crew, expenses, studio rental,
 > subscriptions, transactions — that are **not mounted**, pending the Phase 10f
 > question of where that data lives in ERPNext. Dormant, not live.
@@ -82,11 +82,10 @@ this backend contains no permission code. Both humans and agents start there.
 Both sides, from two terminals:
 
 ```bash
-cd backend && bun install && bun run dev
-```
+bun install          # once, from the root
 
-```bash
-cd frontend && bun install && bun run dev
+bun run dev:api      # terminal one, the Worker on :8787
+bun run dev:app      # terminal two, the SPA on :5173
 ```
 
 The frontend dev server proxies both `/api/*` and `/auth/*` to the backend on
@@ -94,7 +93,8 @@ The frontend dev server proxies both `/api/*` and `/auth/*` to the backend on
 a tenant registered against a local bench — see `docs/PLAN-v2.md` phase 6b,
 including the Frappe-specific traps worth reading before debugging one.
 
-`bun test` in `backend/` runs the suite: **165 tests, all passing.**
+`bun run check` from the root typechecks both sides and runs the suite:
+**165 tests, all passing.**
 
 ## Status
 

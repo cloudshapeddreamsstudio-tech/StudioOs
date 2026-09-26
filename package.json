@@ -1,0 +1,18 @@
+{
+  "name": "studioos",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "app",
+    "worker"
+  ],
+  "scripts": {
+    "dev:api": "cd worker && bun run dev",
+    "dev:app": "cd app && bun run dev",
+    "build": "cd app && bun run build",
+    "test": "cd worker && bun test",
+    "typecheck": "cd worker && bun run typecheck && cd ../app && bun run typecheck",
+    "check": "bun run typecheck && bun run test"
+  }
+}
