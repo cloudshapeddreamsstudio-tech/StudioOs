@@ -80,6 +80,12 @@ docs/                  see "Which documents to trust"
 scripts/               Windows and WSL helpers - see scripts/README.md
 ```
 
+**One file must not be deleted: `worker/seed.sql`.** It is the only copy in this
+repository of the studio's rental sessions, theatre ledger, crew roster,
+expenses, subscriptions and invoice branding. ERPNext holds none of it. The
+script that made it reads a different repository that is not on every machine,
+so you cannot always make the file again. The file itself says this at the top.
+
 `worker/` and `app/` are named for what Cloudflare deploys. They were
 `backend/` and `frontend/`, which described a two-server architecture that this
 application does not have. See
@@ -95,8 +101,8 @@ Five route files exist and are not mounted, on purpose: `brand`,
 D1, and D1 is not bound yet. They are finished work that waits for its phase.
 **Do not mount one without doing its phase.**
 
-Those files, and `db/client.ts`, `db/schema.ts` and `lib/backup.ts`, are in the
-`exclude` list in `worker/tsconfig.json`. They are not type-checked. That list
+Those files, and `db/client.ts` and `db/schema.ts`, are in the `exclude` list in
+`worker/tsconfig.json`. They are not type-checked. That list
 is debt with a date on it: code that is not checked decays quietly. The list is
 deleted at M4. **Do not add to it.**
 
@@ -157,6 +163,13 @@ it.
 Two processes. The SPA sends `/api` and `/auth` to the Worker, so the browser
 stays on one origin. Production will do the same after M1.
 
+**Bun is the toolchain. It is not the runtime.** Bun installs, tests, and starts
+the development server. The Worker itself always runs in `workerd`, which is the
+Cloudflare Workers runtime, on your machine and in production. So write code for
+`workerd`: there is no `node:fs`, and a Node API works only when
+`nodejs_compat` allows it. The `worker/scripts/` files are the one exception.
+They run in Bun, on a real file system, and never inside the Worker.
+
 ```bash
 bun install          # once, from the repository root
 
@@ -168,10 +181,14 @@ On Windows, `scripts/dev-worker.cmd` and `scripts/dev-app.cmd` do the same
 thing. Read `scripts/README.md` first if you use WSL. Where you keep the
 repository changes which method is correct.
 
-- **Never run `bunx wrangler`.** Wrangler refuses to run as the Bun runtime and
-  gives a confusing error. `bun run dev` is correct, because the package script
-  starts Wrangler's own node binary. To call Wrangler directly, use
-  `npx wrangler`.
+- **Bun is the only tool you need.** Bun installs the packages, runs the
+  scripts, runs the tests, and starts Wrangler. There is no `npm` and no `npx`
+  in this repository. The version is pinned in `package.json` and in
+  `.bun-version`.
+- **Older notes say "never `bunx wrangler`". That is no longer true.** Wrangler
+  refused the Bun runtime in the past. It does not refuse it now, and
+  `bunx wrangler dev` was tested against this Worker. If you find that sentence
+  in a document, the document is old.
 - Copy `worker/.dev.vars.example` to `worker/.dev.vars`. Generate the three keys
   that the example file describes. `.dev.vars` is in two ignore files, on
   purpose.
@@ -298,7 +315,7 @@ Still open. Do not guess these, and do not let an agent settle one quietly:
 | Question | Owner | Blocks |
 |---|---|---|
 | Overheads: a native `Subscription`, or a DocType that StudioOS provisions? | Shubham | Phase 10g |
-| The production hostname, which fixes `APP_ORIGIN` for each connected customer | Malhar | M1 |
+| The production subdomain under `cloudshapeddreamsstudio.com` | Malhar | nothing today. `APP_ORIGIN` is free to change until the first customer connects. See `docs/PLAN-v2.md` D3 |
 
 ---
 

@@ -14,5 +14,9 @@
     "test": "cd worker && bun test",
     "typecheck": "cd worker && bun run typecheck && cd ../app && bun run typecheck",
     "check": "bun run typecheck && bun run test"
+  },
+  "packageManager": "bun@1.4.2",
+  "engines": {
+    "bun": ">=1.4.2"
   }
 }

@@ -39,6 +39,9 @@
    *  - `invoices` reads brand settings through `readBrand`, so the print route
    *    is D1-backed even though invoices themselves are pure ERPNext.
    *
+   * `lib/backup.ts` was on this list and is now deleted: Phase 6a removed the
+   * R2 bucket and the cron that called it, so the file had no caller.
+   *
    * Everything else that is unmounted -- payables, clients, tasks, dashboard,
    * vendors, equipment, inventory, insights, lookups, customers -- is pure
    * ERPNext and stays type-checked, so it cannot rot while it waits. So do the
@@ -48,7 +51,6 @@
   "exclude": [
     "src/db/client.ts",
     "src/db/schema.ts",
-    "src/lib/backup.ts",
     "src/routes/brand.ts",
     "src/routes/projectExpenses.ts",
     "src/routes/studioRental.ts",
