@@ -121,7 +121,7 @@ feature on one side, use the same word on the other side.
 | `docs/SEAM.md` | **Authoritative** | Where data lives and who grants access. Read the Amendments at the end. |
 | `docs/seam-map.html` | **Authoritative** | The same document as diagrams. Open it when the words are dense. |
 | `docs/adr/` | **Authoritative** | One decision for each record, with its evidence and its cost. |
-| `docs/HANDOFF.md` | **Authoritative** | The work ahead, in order, and the decisions inside each piece. Start here if you are new. |
+| `docs/HANDOFF.md` | **Authoritative** | The work ahead, in order, and the decisions inside each piece. Start here if you are new. `docs/handoff.html` is the same document with diagrams. |
 | `docs/SPEC.md` | **Authoritative** | The goal, the non-goals, and two sections of verified live findings. |
 | `docs/PLAN-v2.md` | **The plan of record** | Phases 6 to 11. It is long. Search it by phase number. |
 | `docs/DEPLOY.md` | **STALE. Do not follow it.** | Nothing. It describes the architecture before Phase 6c. It is rewritten at M6. |

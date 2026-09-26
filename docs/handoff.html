@@ -1,0 +1,380 @@
+<title>StudioOS Handoff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --paper:#F2F3F0; --panel:#FCFCFB; --panel2:#E9EBE6;
+  --ink:#15181A; --muted:#5A6560;
+  --rule:rgba(20,24,26,.15); --rule-soft:rgba(20,24,26,.07);
+  --erp:#2C5F4F; --erp-soft:rgba(44,95,79,.10);
+  --d1:#A9560B; --d1-soft:rgba(169,86,11,.10);
+  --stop:#A32017; --stop-soft:rgba(163,32,23,.09);
+  --serif:"IBM Plex Serif",Georgia,serif;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --paper:#101311; --panel:#181C1A; --panel2:#1F2422;
+  --ink:#E7EAE5; --muted:#95A19A;
+  --rule:rgba(231,234,229,.17); --rule-soft:rgba(231,234,229,.07);
+  --erp:#77C6AA; --erp-soft:rgba(119,198,170,.12);
+  --d1:#E0A055; --d1-soft:rgba(224,160,85,.12);
+  --stop:#F2867A; --stop-soft:rgba(242,134,122,.12);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#101311; --panel:#181C1A; --panel2:#1F2422;
+  --ink:#E7EAE5; --muted:#95A19A;
+  --rule:rgba(231,234,229,.17); --rule-soft:rgba(231,234,229,.07);
+  --erp:#77C6AA; --erp-soft:rgba(119,198,170,.12);
+  --d1:#E0A055; --d1-soft:rgba(224,160,85,.12);
+  --stop:#F2867A; --stop-soft:rgba(242,134,122,.12);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding:0 24px 88px}
+header.hero{padding:56px 0 32px;border-bottom:1px solid var(--rule)}
+.kicker{font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+h1{font:600 clamp(34px,6.5vw,60px)/1.03 var(--serif);margin:14px 0 0;letter-spacing:-.02em}
+.thesis{font:400 clamp(16px,2.3vw,20px)/1.5 var(--serif);max-width:34em;margin:18px 0 0}
+.thesis em{font-style:normal;color:var(--d1)}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+.chip{font:500 11px var(--mono);letter-spacing:.06em;padding:5px 10px;border:1px solid var(--rule);border-radius:2px;color:var(--muted)}
+
+h2{font:600 clamp(22px,3.4vw,30px)/1.15 var(--serif);margin:0;letter-spacing:-.015em}
+h3{font:600 15px/1.35 var(--sans);margin:0}
+p{margin:12px 0 0;max-width:66ch}
+.muted{color:var(--muted)}
+code{font:400 .89em var(--mono);background:var(--panel2);padding:1px 5px;border-radius:2px}
+section{padding-top:52px}
+.sectitle{display:flex;gap:16px;align-items:baseline;border-top:1px solid var(--rule-soft);padding-top:16px;margin-bottom:8px}
+.sectitle .n{font:500 11px var(--mono);letter-spacing:.14em;color:var(--muted);padding-top:5px;white-space:nowrap}
+
+/* work items */
+.item{margin-top:28px;background:var(--panel);border:1px solid var(--rule);border-radius:3px;overflow:hidden}
+.item > .top{display:flex;gap:14px;align-items:flex-start;padding:18px 22px;border-bottom:1px solid var(--rule-soft)}
+.badge{font:500 12px var(--mono);letter-spacing:.08em;padding:4px 9px;border-radius:2px;background:var(--erp-soft);color:var(--erp);white-space:nowrap;margin-top:1px}
+.badge.par{background:var(--d1-soft);color:var(--d1)}
+.top h3{font:600 17px/1.3 var(--serif)}
+.top .goal{margin-top:4px;font-size:13.5px;color:var(--muted);max-width:60ch}
+.body{padding:4px 22px 20px;display:grid;gap:0}
+.row{display:grid;grid-template-columns:132px minmax(0,1fr);gap:18px;padding:14px 0;border-bottom:1px solid var(--rule-soft)}
+.row:last-child{border-bottom:0}
+.row .k{font:500 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding-top:3px}
+.row .v{font-size:14px}
+.row .v p{margin:0 0 8px;max-width:62ch}
+.row .v p:last-child{margin-bottom:0}
+.row.ask .k{color:var(--stop)}
+.row.ask .v{color:var(--ink)}
+.row.decide .k{color:var(--d1)}
+ol.steps{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;max-width:62ch}
+ol.steps li::marker{color:var(--muted);font-family:var(--mono);font-size:.85em}
+pre{margin:10px 0 0;padding:14px 16px;background:var(--panel2);border-radius:3px;overflow-x:auto;font:400 12px/1.6 var(--mono)}
+
+figure{margin:32px 0 0}
+.figbox{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:18px;overflow-x:auto}
+figure svg{display:block;width:100%;min-width:600px;height:auto;color:var(--ink)}
+figcaption{margin-top:12px;font:400 13px/1.5 var(--sans);color:var(--muted);max-width:70ch}
+.sv-lbl{font:500 10.5px var(--mono);letter-spacing:.1em}
+.sv-h{font:600 15px var(--serif)}
+.sv-t{font:400 13px var(--sans)}
+.sv-s{font:400 11.5px var(--sans)}
+.sv-m{font:400 11.5px var(--mono)}
+.sv-mb{font:500 11.5px var(--mono)}
+
+.q{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;margin-top:24px}
+.q > div{background:var(--panel);border:1px solid var(--rule);border-left:3px solid var(--erp);border-radius:2px;padding:16px 18px}
+.q > div:nth-child(2){border-left-color:var(--d1)}
+.q > div:nth-child(3){border-left-color:var(--stop)}
+.q .n{font:500 10.5px var(--mono);letter-spacing:.12em;color:var(--muted)}
+.q h3{margin-top:8px;font-size:14.5px}
+.q p{margin-top:8px;font-size:13.5px;color:var(--muted)}
+
+ul.habits{margin:20px 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:0;max-width:74ch}
+ul.habits li{padding:14px 0;border-top:1px solid var(--rule-soft);font-size:14.5px}
+ul.habits li b{font-weight:600}
+footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--rule);font:400 12.5px var(--mono);color:var(--muted);display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
+@media (max-width:620px){.row{grid-template-columns:1fr;gap:6px}.sectitle{flex-direction:column;gap:4px}}
+</style>
+
+<svg style="position:absolute;width:0;height:0" aria-hidden="true"><defs>
+<marker id="a" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="currentColor"/></marker>
+<marker id="ae" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--erp)"/></marker>
+<marker id="ad" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--d1)"/></marker>
+<marker id="ax" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--stop)"/></marker>
+</defs></svg>
+
+<div class="wrap">
+
+<header class="hero">
+  <div class="kicker">StudioOS &nbsp;/&nbsp; handoff &nbsp;/&nbsp; for Sandesh</div>
+  <h1>The Work Ahead</h1>
+  <p class="thesis">Four pieces, in this order. The order is not a preference &mdash; each one removes a problem that would make the next one <em>harder to debug</em>. Inside each piece, the decisions marked for you are the part the agent cannot do.</p>
+  <div class="meta">
+    <span class="chip">read AGENTS.md first</span>
+    <span class="chip">docs/SEAM.md is the constitution</span>
+    <span class="chip">Simplified Technical English</span>
+    <span class="chip">straight to main for now</span>
+  </div>
+</header>
+
+<section>
+  <div class="sectitle"><div class="n">THE SEQUENCE</div><div><h2>Three in order, one in parallel</h2></div></div>
+  <p>H1 to H3 each depend on the one before. H4 touches no Worker code, so it can start any day.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 920 226" role="img" aria-label="H1 one origin, then H2 better-auth, then H3 Google sign-in, in a chain; H4 frontend conventions runs in parallel below and touches no worker code.">
+        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">THE ORDER, AND WHY EACH ARROW EXISTS</text>
+
+        <rect x="24" y="44" width="196" height="62" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".45"/>
+        <text x="44" y="68" class="sv-mb" fill="var(--erp)">H1</text>
+        <text x="44" y="90" class="sv-t" fill="currentColor">one Worker, one origin</text>
+
+        <path d="M220 75 L 296 75" fill="none" stroke="currentColor" stroke-opacity=".5" marker-end="url(#a)"/>
+        <text x="228" y="66" class="sv-s" fill="var(--muted)">so the cookie</text>
+        <text x="228" y="100" class="sv-s" fill="var(--muted)">has one origin</text>
+
+        <rect x="304" y="44" width="196" height="62" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".45"/>
+        <text x="324" y="68" class="sv-mb" fill="var(--erp)">H2</text>
+        <text x="324" y="90" class="sv-t" fill="currentColor">better-auth on D1</text>
+
+        <path d="M500 75 L 576 75" fill="none" stroke="currentColor" stroke-opacity=".5" marker-end="url(#a)"/>
+        <text x="508" y="66" class="sv-s" fill="var(--muted)">so a provider</text>
+        <text x="508" y="100" class="sv-s" fill="var(--muted)">has tables</text>
+
+        <rect x="584" y="44" width="196" height="62" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".45"/>
+        <text x="604" y="68" class="sv-mb" fill="var(--erp)">H3</text>
+        <text x="604" y="90" class="sv-t" fill="currentColor">sign in with Google</text>
+
+        <line x1="24" y1="140" x2="896" y2="140" stroke="currentColor" stroke-opacity=".12"/>
+
+        <rect x="24" y="158" width="756" height="52" rx="5" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".45" stroke-dasharray="5 4"/>
+        <text x="44" y="180" class="sv-mb" fill="var(--d1)">H4</text>
+        <text x="44" y="200" class="sv-t" fill="currentColor">front end conventions and the Figma pipeline</text>
+        <text x="560" y="190" class="sv-s" fill="var(--muted)">no Worker code &mdash; no dependency</text>
+      </svg>
+    </div>
+    <figcaption>H2 adds a session cookie. A cookie across two origins needs <code>SameSite=None</code>, <code>Secure</code> and credentialed CORS, and those fail in production without failing in development. Do H1 first and the authentication work becomes boring, which is exactly what you want from authentication work.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="sectitle"><div class="n">H1</div><div><h2>One Worker, one origin</h2></div></div>
+
+  <div class="item">
+    <div class="top">
+      <span class="badge">H1</span>
+      <div>
+        <h3>One Worker serves the SPA and runs the API</h3>
+        <div class="goal"><code>APP_UI_ORIGIN</code> stops existing, because it is the same as <code>APP_ORIGIN</code>.</div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row"><div class="k">Why here</div><div class="v">
+        <p>Two origins are two websites as far as a browser is concerned. H2 adds a cookie, and a cookie that has to cross origins is the classic bug that only appears in production. Remove the second origin before you add the cookie, not after.</p>
+      </div></div>
+      <div class="row"><div class="k">The work</div><div class="v">
+        <ol class="steps">
+          <li>Wrangler 3 to 4. Version 4.20 or higher is required by the next step.</li>
+          <li>Add the assets block and <code>run_worker_first</code>.</li>
+          <li>Point <code>APP_ORIGIN</code> at the address the Worker answers on.</li>
+          <li>Delete <code>APP_UI_ORIGIN</code> and the branch in <code>routes/auth.ts</code> that chooses between the two.</li>
+        </ol>
+<pre>"assets": {
+  "directory": "../app/dist",
+  "not_found_handling": "single-page-application",
+  "binding": "ASSETS",
+  "run_worker_first": ["/api/*", "/auth/*"]
+}</pre>
+      </div></div>
+      <div class="row"><div class="k">The trap</div><div class="v">
+        <p>Without <code>run_worker_first</code>, Cloudflare routes on the <code>Sec-Fetch-Mode</code> header. The OAuth callback is a browser navigation, not an XHR, so it gets <code>index.html</code> and never reaches the Worker. Sign-in then fails with nothing in the Worker log, because the Worker never ran.</p>
+      </div></div>
+      <div class="row decide"><div class="k">You decide</div><div class="v">
+        <p>Where <code>wrangler.jsonc</code> lives afterwards. It points at <code>../app/dist</code> and at <code>worker/src</code>, so the repository root is the natural home, and ADR-0002 expects it there.</p>
+      </div></div>
+      <div class="row"><div class="k">Done when</div><div class="v">
+        <p><code>bun run build</code>, then <code>bunx wrangler dev</code> serves the SPA and answers <code>/api/health</code> from one port. Sign-in still works.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectitle"><div class="n">H2</div><div><h2>better-auth, on D1</h2></div></div>
+
+  <div class="item">
+    <div class="top">
+      <span class="badge">H2</span>
+      <div>
+        <h3>better-auth owns the session, D1 owns the tokens</h3>
+        <div class="goal">Sign-in behaves exactly as it does today. That is the test of success.</div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row"><div class="k">Why here</div><div class="v">
+        <p>Every D1 table needs a <code>user</code> row as a foreign key, and a stateless cookie cannot be one. That reason alone is sufficient.</p>
+        <p>The real prize is different: you cannot cancel a sealed cookie. Today a session stays valid until it expires and nothing can stop it. After this change, &ldquo;sign out everywhere&rdquo; works and &ldquo;remove this person from the studio&rdquo; works. Keep that in front of you &mdash; it tells you when the work is correct.</p>
+      </div></div>
+      <div class="row"><div class="k">The work</div><div class="v">
+        <ol class="steps">
+          <li>Bind D1. Create better-auth's tables and a <code>studio</code> table.</li>
+          <li><b>Do not touch the OAuth flow.</b> <code>routes/auth.ts</code> is 334 lines of correct Frappe code. SEAM section 2 gives three reasons not to move it into a better-auth plugin.</li>
+          <li>Change one step only: at the end of <code>/auth/callback</code>, find or create the better-auth user, then create a session. better-auth owns the cookie from then on.</li>
+          <li>Write the ERPNext access and refresh tokens to the <code>account</code> table, keyed by user and studio. Never a token in a cookie.</li>
+          <li>Delete the <code>exclude</code> list from <code>worker/tsconfig.json</code>. D1 exists again, so those files get type-checked again.</li>
+        </ol>
+      </div></div>
+      <div class="row decide"><div class="k">You decide</div><div class="v">
+        <p>The shape of the <code>studio</code> table and how it joins better-auth's <code>organization</code> table. <code>host</code> is the key. Read SEAM section 8 first: KV holds the client credentials because <code>requireSession</code> reads them before the user is known, and D1 holds the rest.</p>
+      </div></div>
+      <div class="row ask"><div class="k">Stop and ask</div><div class="v">
+        <p>If you find yourself writing a permission check inside StudioOS, stop. This backend has no permission code and that is the design, not an omission.</p>
+      </div></div>
+      <div class="row"><div class="k">Done when</div><div class="v">
+        <p>Someone signs in with ERPNext and sees exactly what they saw before. Then you delete their session row in D1 and their next request fails. The second test is the one that matters.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectitle"><div class="n">H3</div><div><h2>Sign in with Google</h2></div></div>
+
+  <p>This is the piece with a real design problem inside it. Solve the problem on paper before you build the button.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 920 280" role="img" aria-label="Signing in with ERPNext yields a token and therefore data. Signing in with Google yields an account but no token, so the app is empty until the person connects their studio's ERPNext.">
+        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">TWO DOORS. ONLY ONE OF THEM CARRIES A TOKEN.</text>
+
+        <rect x="24" y="44" width="200" height="52" rx="5" fill="var(--panel2)" stroke="currentColor" stroke-opacity=".25"/>
+        <text x="124" y="75" text-anchor="middle" class="sv-t" fill="currentColor">Sign in with ERPNext</text>
+        <path d="M224 70 L 316 70" fill="none" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ae)"/>
+        <rect x="324" y="44" width="212" height="52" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".5"/>
+        <text x="430" y="68" text-anchor="middle" class="sv-t" fill="currentColor">account + ERPNext token</text>
+        <text x="430" y="86" text-anchor="middle" class="sv-s" fill="var(--muted)">identity and authority</text>
+        <path d="M536 70 L 628 70" fill="none" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ae)"/>
+        <rect x="636" y="44" width="200" height="52" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".5"/>
+        <text x="736" y="75" text-anchor="middle" class="sv-t" fill="currentColor">the app, with data</text>
+
+        <rect x="24" y="152" width="200" height="52" rx="5" fill="var(--panel2)" stroke="currentColor" stroke-opacity=".25"/>
+        <text x="124" y="183" text-anchor="middle" class="sv-t" fill="currentColor">Sign in with Google</text>
+        <path d="M224 178 L 316 178" fill="none" stroke="var(--d1)" stroke-opacity=".8" marker-end="url(#ad)"/>
+        <rect x="324" y="152" width="212" height="52" rx="5" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".5"/>
+        <text x="430" y="176" text-anchor="middle" class="sv-t" fill="currentColor">account, no token</text>
+        <text x="430" y="194" text-anchor="middle" class="sv-s" fill="var(--muted)">identity only</text>
+        <path d="M536 178 L 628 178" fill="none" stroke="var(--stop)" stroke-opacity=".85" marker-end="url(#ax)"/>
+        <rect x="636" y="152" width="200" height="52" rx="5" fill="var(--stop-soft)" stroke="var(--stop)" stroke-opacity=".5"/>
+        <text x="736" y="176" text-anchor="middle" class="sv-t" fill="currentColor">the app, empty</text>
+        <text x="736" y="194" text-anchor="middle" class="sv-s" fill="var(--stop)">correct, and not acceptable</text>
+
+        <path d="M736 204 C 736 236 560 236 470 236" fill="none" stroke="var(--d1)" stroke-opacity=".8" marker-end="url(#ad)"/>
+        <rect x="248" y="218" width="218" height="38" rx="5" fill="var(--panel)" stroke="var(--d1)" stroke-opacity=".5"/>
+        <text x="357" y="242" text-anchor="middle" class="sv-mb" fill="var(--d1)">CONNECT YOUR STUDIO</text>
+        <text x="484" y="272" class="sv-s" fill="var(--muted)">design this step before you build the button</text>
+      </svg>
+    </div>
+    <figcaption>SEAM section 2 already says a person with no ERPNext token sees the interface and no data, and calls that correct. It is correct as an edge case. Put a Google button on the sign-in page and it stops being an edge case and becomes the usual first visit. Google sign-in reaches an <i>account</i>; only connecting a studio reaches the <i>data</i>.</figcaption>
+  </figure>
+
+  <div class="item">
+    <div class="top">
+      <span class="badge">H3</span>
+      <div>
+        <h3>The security question inside it</h3>
+        <div class="goal">One person, two sign-in methods. One account or two?</div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row ask"><div class="k">The rule</div><div class="v">
+        <p>If you join two accounts, join them <b>only</b> on an email address the provider states it has verified. Google verifies addresses. Joining on an unverified address means someone registers with another person's email and inherits that person's studio access. This attack has a name &mdash; account linking by unverified email &mdash; and no code review catches it.</p>
+        <p>Write your answer in an ADR before you write the code.</p>
+      </div></div>
+      <div class="row decide"><div class="k">You decide</div><div class="v">
+        <p>How the two buttons sit together on the page, and what a person sees after Google sign-in and before a studio is connected.</p>
+      </div></div>
+      <div class="row ask"><div class="k">Stop and ask</div><div class="v">
+        <p>Ask Malhar before you join two accounts by any rule other than a verified email address.</p>
+      </div></div>
+      <div class="row"><div class="k">Done when</div><div class="v">
+        <p>A new person signs in with Google, gets a clear next step, and connects their ERPNext. Then the same person signs in with ERPNext directly and lands on the same account, not a second one.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectitle"><div class="n">H4</div><div><h2>Front end conventions, and Figma</h2></div></div>
+
+  <div class="item">
+    <div class="top">
+      <span class="badge par">H4 &middot; PARALLEL</span>
+      <div>
+        <h3>Shubham hands you a Figma file. It becomes code without a negotiation each time.</h3>
+        <div class="goal">This is your area. The recommendation below is a starting point, not an instruction.</div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="row"><div class="k">What exists</div><div class="v">
+        <p>React 19, Vite, TypeScript, Tailwind v4, React Router 7, TanStack Query, React Hook Form with Zod, Chart.js, date-fns. Features are already sliced by folder in <code>app/src/features/</code>. The gap is not the libraries. The gap is that none of it is written down, so every new page is a fresh set of small decisions.</p>
+      </div></div>
+      <div class="row decide"><div class="k">Recommended</div><div class="v">
+        <p><b>shadcn/ui for components.</b> The code is copied into the repo rather than installed, so you own it and can change it. It is Tailwind-native, and an agent knows it well &mdash; which matters more here than it usually would.</p>
+        <p><b>Figma variables become Tailwind theme tokens.</b> Tailwind v4 declares a theme in CSS with <code>@theme</code>. A colour or spacing value from Figma becomes one token in one file, and components name the token rather than the value. Shubham changes a colour, you change one line.</p>
+        <p><b>Write it down in <code>app/AGENTS.md</code>.</b> Folder structure, token names, which component for which job, and what a feature folder may import. That file is the front end's half of the rules.</p>
+      </div></div>
+      <div class="row ask"><div class="k">Stop and ask</div><div class="v">
+        <p>Before adding a library with its own design opinion &mdash; Material UI, Chakra, Mantine. Making those agree with a Figma file costs more than they save.</p>
+      </div></div>
+      <div class="row"><div class="k">Done when</div><div class="v">
+        <p>You build one screen from Figma, write down what you did as the convention, then build a second screen and the convention does not change.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectitle"><div class="n">ALWAYS</div><div><h2>The three questions</h2></div></div>
+  <p>Ask these of every new field, table, endpoint and migration. Question 1 answers most decisions on its own. Questions 2 and 3 exist because their failures produce no error message.</p>
+  <div class="q">
+    <div>
+      <div class="n">QUESTION 1</div>
+      <h3>Does this survive deleting StudioOS?</h3>
+      <p>Yes: it goes in ERPNext. No: it goes in D1.</p>
+    </div>
+    <div>
+      <div class="n">QUESTION 2 &middot; SILENT</div>
+      <h3>Does reading it reveal an ERPNext document?</h3>
+      <p>Yes: wrap the read in <code>withDocAccess</code>, and let ERPNext's 403 be your 403.</p>
+    </div>
+    <div>
+      <div class="n">QUESTION 3 &middot; SILENT</div>
+      <h3>Does it need a credential with no user?</h3>
+      <p>Yes: stop. The design is wrong. No service account, no API key, no token &ldquo;just for the cron&rdquo;.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sectitle"><div class="n">METHOD</div><div><h2>Working with the agent</h2></div></div>
+  <p>The agent writes faster than you. Your job is the part it cannot do: deciding whether the thing being built should exist in that shape.</p>
+  <ul class="habits">
+    <li><b>Ask it which question it touched.</b> Before accepting a diff: <i>&ldquo;which of the three questions does this touch, and what did you decide?&rdquo;</i> If it cannot answer, the change is not ready.</li>
+    <li><b>Give it the file, not the answer.</b> &ldquo;Read SEAM section 5, then write the endpoint&rdquo; beats &ldquo;add a permission check&rdquo; &mdash; the second one teaches it the wrong lesson about this codebase.</li>
+    <li><b>When you disagree with a document, the document is sometimes wrong.</b> That has happened here already. Change the document first, in writing, with a reason. Never route around it in code.</li>
+    <li><b>Write down what you decided not to do.</b> Nobody can reconstruct that later, and in three months you are nobody.</li>
+    <li><b>Working code you cannot explain is a liability with a delay fuse.</b> If the agent produces something that passes and you cannot say why, that is the moment to slow down, not to merge.</li>
+  </ul>
+</section>
+
+<footer>
+  <span>docs/HANDOFF.md &middot; visual companion</span>
+  <span>AGENTS.md is the router &middot; docs/SEAM.md is the constitution</span>
+</footer>
+
+</div>
