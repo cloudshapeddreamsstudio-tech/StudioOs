@@ -42,7 +42,8 @@ at the application level, not just at rest.
 |---|---|
 | `frontend/` | React 19 + Vite + TypeScript + Tailwind v4 SPA |
 | `backend/` | Hono + TypeScript on Cloudflare Workers |
-| `docs/` | `SPEC.md`, `PLAN.md` (phases 0–5), `PLAN-v2.md` (everything after) |
+| `docs/` | `SEAM.md` (the constitution), `SPEC.md`, `PLAN-v2.md` (phases 6+), `archive/` |
+| `AGENTS.md` | **Read this first.** The router: where things sit, which docs to trust, what not to do |
 
 Each side has its own `package.json` and is deployed independently.
 
@@ -68,6 +69,13 @@ an Express bridge, and six flat JSON files acting as a database. It worked, but:
 - a nav change meant editing 90 files
 
 See `docs/SPEC.md` for the spec and `docs/PLAN-v2.md` for the phase plan.
+
+## Contributing
+
+Start with [`AGENTS.md`](./AGENTS.md), then [`docs/SEAM.md`](./docs/SEAM.md) —
+or [`docs/seam-map.html`](./docs/seam-map.html) if you would rather see it than
+read it. Between them they answer where a given piece of data belongs and why
+this backend contains no permission code. Both humans and agents start there.
 
 ## Running it
 

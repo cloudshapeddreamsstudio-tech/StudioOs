@@ -2,7 +2,7 @@
 
 **Status:** draft, 2026-08-17
 **Covers:** everything after Phase 5. Phases 0–5 and their verification records
-stay in [`PLAN.md`](./PLAN.md) — that file is the evidence trail and is not
+stay in [`archive/PLAN-phases-0-5.md`](./archive/PLAN-phases-0-5.md) — that file is the evidence trail and is not
 rewritten.
 
 Same rules as before. Tracer-bullet phases: each ends with something that

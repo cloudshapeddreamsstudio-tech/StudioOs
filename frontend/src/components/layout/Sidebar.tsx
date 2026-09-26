@@ -8,7 +8,7 @@ import { NavLink } from 'react-router-dom';
  * which made a nav change a 90-file edit and meant pages silently drifted out
  * of sync with each other. Here it is a single component and the nav is data.
  *
- * Items are added as their pages land -- see docs/PLAN.md for the order.
+ * Items are added as their pages land -- see docs/PLAN-v2.md for the order.
  */
 
 interface NavItem {

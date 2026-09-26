@@ -115,13 +115,18 @@ front office. D1 holds it.
 These are the six data sets from Phase 10f. The rule gives the answer for each
 one.
 
+> **Amended 2026-09-26.** Three rows of this table were wrong or premature when
+> first written. They are corrected below and the reasoning is in
+> [Amendment 1](#amendment-1--the-phase-10f-table-corrected-2026-09-26).
+> Read the amendment before you act on this table.
+
 | Data set | Answer | Location |
 |---|---|---|
-| Expenses | money, with an audit record | ERPNext — Purchase Invoice or Expense Claim |
-| Transactions | money, with an audit record | ERPNext — Journal Entry or Payment Entry |
-| Subscriptions | money, at regular intervals | ERPNext — Subscription and the invoice that it makes |
-| Studio rental | money | ERPNext — Item and Sales Invoice. **D1 holds the booking calendar** |
-| Crew | Phase 10f decided this | ERPNext — a Draft Purchase Order for each member. **D1 holds the rates and the availability** |
+| Expenses | no light native home exists | **Open.** `Expense Claim` is not part of stock ERPNext — it ships in HRMS. Blocked on the custom-DocType decision |
+| Transactions | money, with an audit record | ERPNext — `Journal Entry`, proven on a bench with the stock `Cash - ABBR` account |
+| Subscriptions | native costs the owner more than it gives | **Open.** Decision belongs to the studio owner, not to this document |
+| Studio rental | money, and hours | ERPNext — `Timesheet` + `time_logs`, proven. **D1 holds the booking calendar** |
+| Crew | Phase 10f decided this | ERPNext — a Draft `Purchase Order` for each member. **D1 holds the rates and the availability** |
 | Brand | goes with StudioOS | D1 |
 
 Two of these data sets divide across the seam. This is correct. ERPNext holds
@@ -473,3 +478,93 @@ answers now.
   you need it.
 - **Webhooks from ERPNext for immediate updates.** Not in version 1. Requests
   and caches are sufficient for this quantity of data.
+
+---
+
+## Amendments
+
+This document is the constitution of the repository, so it is amended in the
+open rather than edited quietly. Each amendment says what changed, why, and
+what evidence moved it. The sections above are the current law; this section is
+the record of how they got that way.
+
+### Amendment 1 — the Phase 10f table, corrected (2026-09-26)
+
+Section 1's answer table was written from the seam rule alone, without
+reconciling it against the live findings already recorded in
+`PLAN-v2.md` §10f. Three rows disagreed with proven fact.
+
+**Expenses — was wrong.** The table offered "Purchase Invoice or Expense
+Claim". `Expense Claim` **does not exist on stock ERPNext**; it ships in HRMS,
+a separate app, and a studio on a managed Frappe Cloud plan does not have it.
+The only native homes left are `Purchase Invoice`, which requires a Supplier,
+and `Journal Entry`, which is submittable and hits the general ledger. Phase
+10f concluded a custom DocType, which the next amendment has to settle first.
+Status: **open**, blocked on Amendment 2.
+
+**Subscriptions — was premature.** The table chose ERPNext `Subscription`.
+Phase 10f established that native is the *worse* answer here: a `Subscription`
+needs a Subscription Plan, which needs an Item and a Supplier, so tracking one
+electricity bill becomes four records of setup performed by a non-technical
+studio owner. It also cannot hold what the existing ledger holds — a ₹0
+placeholder, which is a useful note and an impossible invoice. Phase 10f
+deliberately sent this back to the owner rather than deciding it. This document
+had no standing to close it. Status: **open**, owner's decision.
+
+**Studio rental — was under-specified.** The table said "Item and Sales
+Invoice". The proven mapping is `Timesheet` with `time_logs`, verified on a
+bench: it saves and submits with **no `Employee`**, which was the load-bearing
+question for a studio whose crew are all Suppliers; it keeps `hours` exact and
+`billing_hours` rounded, where the old JSON ledger kept only the rounded figure
+and lost the truth; and `Timesheet.sales_invoice` already exists natively, so
+ERPNext invoices from it without help. The rounding rule is
+`Math.round(hours)`, ties up — never `Math.ceil`.
+
+Transactions, Crew and Brand were already correct. Crew is implemented and was
+verified live on 2026-08-24.
+
+**What this incident teaches, and why it is recorded rather than tidied away:**
+a rule that is correct in the abstract still has to be checked against what was
+proven on the actual system. The seam rule did not fail here. The application
+of it skipped the evidence. Do the same check before you trust any table in
+this document.
+
+### Amendment 2 — what StudioOS may create in ERPNext (OPEN)
+
+Section 3 says "ERPNext must not know about StudioOS" and forbids custom fields
+on stock doctypes in v1. That rule stands and is not in question.
+
+It is silent on a different act, and the silence is being read as a ban.
+Phase 10f proved, end to end and then tore down, that **a studio's own System
+Manager can create a whole custom DocType over the API at runtime** — no
+developer mode, no bench access, no app install, and therefore possible on
+Frappe Cloud's managed plan where installing a custom app is not. StudioOS
+could provision what it needs at connect time, on the owner's own session,
+inside the owner's own database, under the owner's own permissions.
+
+Adding a field to a doctype ERPNext ships is not the same act as creating a new
+doctype the studio owns. This document never distinguished them, so an agent
+reading Section 3 concludes both are banned — and that conclusion silently
+blocks the only remaining home for project expenses and overheads.
+
+The three tiers, for whichever way this is settled:
+
+1. **Stock doctypes** — use freely. Unchanged.
+2. **Custom fields on stock doctypes** — forbidden in v1. Unchanged. Adding one
+   means maintaining a Frappe app: migrations, version skew, an install step per
+   customer.
+3. **StudioOS-provisioned custom DocTypes** — **undecided.** If permitted, the
+   conditions that make it safe rather than convenient: created idempotently at
+   connect time, on the signing-in owner's session, name-prefixed so it is
+   obviously StudioOS's, and exportable so a studio that leaves keeps readable
+   data.
+
+The honest argument against tier 3 is not permissions — those were proven — it
+is portability and familiarity. A custom DocType is a stranger inside the
+owner's own ERPNext, and if the studio stops using StudioOS the data sits in a
+shape only StudioOS understands. Native is portable. That is a real cost and it
+belongs in the decision.
+
+**Owner: Malhar. Blocks: project expenses, overheads, and therefore Phase 10g.**
+Until it is settled, neither dataset gets built, and nothing gets routed around
+it in code.

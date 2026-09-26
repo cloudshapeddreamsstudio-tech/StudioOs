@@ -103,6 +103,9 @@ td b{font-weight:600}
 .tag.e{background:var(--erp-soft);color:var(--erp)}
 .tag.d{background:var(--d1-soft);color:var(--d1)}
 .tag.both{background:var(--panel2);color:var(--muted)}
+.tag.open{background:var(--stop-soft);color:var(--stop)}
+.law.amend{border-left-color:var(--d1);background:var(--d1-soft)}
+.law.amend p{font-size:15px;line-height:1.55;max-width:62ch;font-family:var(--sans)}
 
 /* ---- code ---- */
 pre{margin:20px 0 0;padding:16px 18px;background:var(--panel);border:1px solid var(--rule);border-radius:3px;overflow-x:auto;font:400 12.5px/1.65 var(--mono);color:var(--ink)}
@@ -283,22 +286,27 @@ footer{margin-top:64px;padding-top:20px;border-top:1px solid var(--rule);font:40
   </figure>
 
   <h3>The six open data sets from Phase 10f</h3>
-  <p>The rule answers all of them. Two split across the seam, and that is correct: ERPNext takes the money, StudioOS takes the schedule and the presentation.</p>
+  <p>The rule answers four of them outright. Two are still open, and that is the honest state &mdash; see the amendment below the table.</p>
 
   <div class="tablewrap">
     <table>
       <thead><tr><th>Data set</th><th>Why</th><th>Lands</th></tr></thead>
       <tbody>
-        <tr><td><b>Expenses</b></td><td class="muted">money, with an audit trail</td><td><span class="tag e">ERPNEXT</span> Purchase Invoice or Expense Claim</td></tr>
-        <tr><td><b>Transactions</b></td><td class="muted">money, with an audit trail</td><td><span class="tag e">ERPNEXT</span> Journal Entry or Payment Entry</td></tr>
-        <tr><td><b>Subscriptions</b></td><td class="muted">money, at intervals</td><td><span class="tag e">ERPNEXT</span> Subscription + the invoice it makes</td></tr>
-        <tr><td><b>Studio rental</b></td><td class="muted">money, plus a calendar</td><td><span class="tag both">SPLIT</span> Item + Sales Invoice in ERPNext &middot; <b>booking calendar in D1</b></td></tr>
-        <tr><td><b>Crew</b></td><td class="muted">decided in Phase 10f</td><td><span class="tag both">SPLIT</span> a draft Purchase Order each in ERPNext &middot; <b>rates and availability in D1</b></td></tr>
+        <tr><td><b>Expenses</b></td><td class="muted">no light native home exists</td><td><span class="tag open">OPEN</span> <code>Expense Claim</code> ships in HRMS, not stock ERPNext</td></tr>
+        <tr><td><b>Transactions</b></td><td class="muted">money, with an audit trail</td><td><span class="tag e">ERPNEXT</span> <code>Journal Entry</code>, proven on the stock <code>Cash - ABBR</code> account</td></tr>
+        <tr><td><b>Subscriptions</b></td><td class="muted">native costs the owner more</td><td><span class="tag open">OPEN</span> the studio owner's decision, not this document's</td></tr>
+        <tr><td><b>Studio rental</b></td><td class="muted">money, and hours</td><td><span class="tag both">SPLIT</span> <code>Timesheet</code> + <code>time_logs</code> in ERPNext &middot; <b>booking calendar in D1</b></td></tr>
+        <tr><td><b>Crew</b></td><td class="muted">decided in Phase 10f, verified live</td><td><span class="tag both">SPLIT</span> a draft <code>Purchase Order</code> each in ERPNext &middot; <b>rates and availability in D1</b></td></tr>
         <tr><td><b>Brand</b></td><td class="muted">goes with StudioOS</td><td><span class="tag d">D1</span></td></tr>
       </tbody>
     </table>
   </div>
   <p class="muted">A rental booking with no invoice is a row in D1. When the invoice exists, ERPNext holds the money and D1 keeps only the reference.</p>
+
+  <div class="law amend">
+    <p><b>Amended 2026-09-26.</b> Three rows of this table were wrong when first written, because the seam rule was applied without checking it against what Phase 10f had already proven on a live bench. <code>Expense Claim</code> does not exist on stock ERPNext. <code>Subscription</code> turns one electricity bill into four records of owner setup and cannot hold a &#8377;0 placeholder, so it went back to the owner rather than being decided here. Studio rental's real mapping is <code>Timesheet</code>, which saves with no <code>Employee</code> and keeps exact hours alongside rounded billing hours.</p>
+    <span class="src">a correct rule, applied without the evidence &middot; see SEAM.md amendments</span>
+  </div>
 </section>
 
 <!-- ================= 2 ================= -->
@@ -775,7 +783,7 @@ binding = "ASSETS"
 </section>
 
 <footer>
-  <span>docs/SEAM.md &middot; visual map</span>
+  <span>docs/SEAM.md &middot; visual map &middot; amended 2026-09-26</span>
   <span>replaces the open question in Phase 10f of PLAN-v2.md &middot; does not replace SPEC.md</span>
 </footer>
 

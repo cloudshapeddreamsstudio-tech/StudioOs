@@ -1,5 +1,34 @@
 # StudioOS — deployment runbook
 
+> ## ⚠️ THIS RUNBOOK IS STALE. DO NOT FOLLOW IT.
+>
+> It documents the architecture as it stood **before Phase 6c**, and following
+> it would rebuild the thing that phase deliberately removed. Specifically, it
+> tells you to:
+>
+> - create and seed a D1 database — there is no D1 binding today
+> - create an R2 bucket and a nightly backup cron — both removed in Phase 6a
+> - set `FRAPPE_API_KEY` and `FRAPPE_API_SECRET` — **this is the admin key.**
+>   Phase 6c removed it so that StudioOS holds no credential able to read a
+>   studio's books. Putting it back is the single worst change you can make to
+>   this codebase. See `SEAM.md` section 0.
+> - expect `/api/health` to return `frappeConfigured` and `dbBound` — it
+>   returns `registryBound` and `appOrigin`
+> - treat Cloudflare Access as "the whole authentication story" with "no user
+>   table" — sign-in is now per-studio ERPNext OAuth2 with PKCE
+>
+> **What to do instead:** nothing yet. A correct runbook cannot be written until
+> the one-Worker-one-origin change lands (`SEAM.md` section 8), because that
+> change removes most of the routing decisions this file agonises over. It is
+> step 6 of SEAM's sequence of work, and it gets rewritten from scratch, not
+> patched.
+>
+> Kept rather than deleted because the Cloudflare Access and rollback sections
+> still describe real mechanics, and because the ledger import in step 4 records
+> the row counts and money totals of data that exists nowhere else.
+
+---
+
 Every command here is meant to be run in order, from a terminal, by a human
 with access to the studio's Cloudflare account. Nothing in this file has been
 executed — the account boundary is where automation stops.
