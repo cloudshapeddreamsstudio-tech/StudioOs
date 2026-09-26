@@ -78,101 +78,75 @@ answers `/api/health` from one port. Sign-in still works.
 
 ---
 
-## H2 — better-auth, on D1
+## H2 — Sessions that can be cancelled
 
-**The goal.** better-auth owns the session. The ERPNext tokens move out of the
-cookie and into the `account` table. Sign-in behaves exactly as it does today.
+**The goal.** A session is a row in D1, not a sealed cookie. The ERPNext tokens
+move out of the cookie into a table. Sign-in behaves exactly as it does today.
 
-**Why it is here.** Two reasons, and the second one is the real one.
+**Why it is here.** Two things are necessary, and they do not depend on which
+library you use.
 
-The first reason is that every D1 table needs a `user` row as a foreign key. A
-stateless cookie cannot be a foreign key.
+A sealed cookie cannot be cancelled. It stays valid until it expires and nothing
+stops it. So "sign out from all devices" does not work, and "remove this person
+from the studio" does not work. That is the prize. Keep it in front of you,
+because it tells you when the work is correct.
 
-The second reason is that you cannot cancel a sealed cookie. Today a session
-cookie stays valid until it expires and nothing stops it. After this change,
-"sign out from all devices" works, and "remove this person from the studio"
-works. That is the prize. Keep it in front of you, because it tells you when
-the work is correct.
+A `user` row must also exist, because each D1 table that StudioOS adds uses a
+user as a foreign key, and a cookie cannot be a foreign key.
 
-**The work.**
+**The decision inside this work is yours.** Does a library write those rows, or
+do we? The Google sign-in button was one of the stronger reasons to use
+better-auth, and that button is no longer in the work. So the question is open.
 
-1. Add the D1 binding. Create the better-auth tables and a `studio` table.
-2. Do **not** change the OAuth flow. `worker/src/routes/auth.ts` is 334 lines
-   of correct Frappe code. Read section 2 of `docs/SEAM.md` for the three
-   reasons not to move it into a better-auth plugin.
-3. Change one step only. At the end of `/auth/callback`, find or create the
-   better-auth user, then create a better-auth session. better-auth then owns
-   the cookie.
-4. Write the ERPNext access token and refresh token to the `account` table. Use
-   the user and the studio together as the key. Never put a token in a cookie.
-5. Delete the `exclude` list from `worker/tsconfig.json`. D1 exists again, so
-   the files that use it must be type-checked again.
+Read **[ADR-0003](./adr/0003-how-sessions-are-stored.md)**. It is given to you
+unfinished, on purpose. It holds the question, the options, the evidence that is
+correct today, and the rules that do not change. Complete it, set the status to
+Accepted, and then write the code.
 
-**What you decide.** The shape of the `studio` table, and how it joins to
-better-auth's `organization` table. `host` is the key. Read section 8 of
-`docs/SEAM.md` first: KV holds the client credentials because `requireSession`
-reads them before the user is known, and D1 holds the rest.
+**Do this part first, before you decide.** Put every read and write of a session
+behind one folder, `kernel/auth`. No route touches a session table directly. A
+route asks `kernel/auth` who the person is and gets the user, the studio and the
+ERPNext token. Then both options look the same from the outside, and to change
+your mind later is one folder of work.
 
-**Stop and ask.** If you find yourself adding a permission check in StudioOS,
-stop. This backend has no permission code and that is the design.
+**What does not change, either way.**
+
+- `worker/src/routes/auth.ts` does not move and is not rewritten. Read section 2
+  of `docs/SEAM.md` for the three reasons.
+- A library does not sign the person in. ERPNext OAuth stays as it is. A library
+  would store users, sessions and tokens. You are choosing a store, not an
+  authentication system.
+- The ERPNext tokens never go in the cookie. The cookie holds one session
+  identifier and nothing else.
+- StudioOS gets no permission code. A session says who the person is. It never
+  says what they may see.
+
+**What else to do here.**
+
+1. Bind D1. Add the tables your decision needs, and a `studio` table.
+2. Change one step in the flow. At the end of `/auth/callback`, find or create
+   the user, then create the session.
+3. Write the ERPNext access token and refresh token to a table, with the user
+   and the studio as the key.
+4. Delete the `exclude` list from `worker/tsconfig.json`. D1 exists again, so
+   those files must be type-checked again.
+
+**Stop and ask.** If you find yourself writing a permission check inside
+StudioOS, stop. This backend has no permission code and that is the design.
 
 **Done when.** A person signs in with ERPNext and sees exactly what they saw
 before. Then you delete their session row in D1, and their next request fails.
-That second test is the one that matters.
+The second test is the one that matters.
 
 ---
 
-## H3 — Sign in with Google
-
-**The goal.** A person signs in with Google and reaches the application.
-
-**Why it is here.** It needs H2. better-auth provides the Google provider, and
-better-auth needs its tables first.
-
-**The problem to solve before you write code.** A person who signs in with
-Google has no ERPNext token. Section 2 of `docs/SEAM.md` says such a person sees
-the interface and no data. That result is correct and it is not an error.
-
-But read it again with a Google button on the sign-in page. That person is no
-longer a rare case. They are the usual first visitor. An empty application is
-now the usual first experience.
-
-So Google sign-in is not a second way to reach the data. It is a way to reach an
-account. The data needs a second step: **connect your studio's ERPNext.** Design
-that step before you build the button, or you will build a sign-in that leads to
-an empty screen.
-
-**The question you must answer, and it is a security question.** One person can
-sign in with Google today and with ERPNext tomorrow. Is that one account or two?
-
-If you join them, join them only on an email address that the provider says it
-verified. Google verifies email addresses. If you join accounts on an
-unverified email address, a person who makes an account with another person's
-email address takes control of that person's studio access. This is a known
-attack and it has a name: account linking by unverified email.
-
-Write your answer in an ADR before you write the code. It is the kind of
-decision a code review does not catch.
-
-**What you decide.** How the two buttons appear together, and what the person
-sees after Google sign-in and before their studio is connected.
-
-**Stop and ask.** Ask Malhar before you join two accounts by any rule other than
-a verified email address.
-
-**Done when.** A new person signs in with Google, sees a clear next step, and
-connects their ERPNext. Then the same person signs in with ERPNext directly and
-reaches the same account, not a second one.
-
----
-
-## H4 — The front end conventions, and the Figma pipeline
+## H3 — The front end conventions, and the Figma pipeline
 
 **The goal.** Shubham gives you a Figma file. You and your agent make it into
 code with little friction and with a result that looks the same each time.
 
 **Why it is here.** It touches no Worker code, so you can do it at the same time
-as H1, H2 and H3. It is the one piece of work here that does not wait.
+as H1 and H2. It is the one piece of work here that does not wait.
 
 **What exists today.** The application already uses React 19, Vite, TypeScript,
 Tailwind CSS v4, React Router 7, TanStack Query, React Hook Form with Zod,

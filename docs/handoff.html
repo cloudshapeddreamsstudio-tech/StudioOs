@@ -112,7 +112,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--rule);font:40
 <header class="hero">
   <div class="kicker">StudioOS &nbsp;/&nbsp; handoff &nbsp;/&nbsp; for Sandesh</div>
   <h1>The Work Ahead</h1>
-  <p class="thesis">Four pieces, in this order. The order is not a preference &mdash; each one removes a problem that would make the next one <em>harder to debug</em>. Inside each piece, the decisions marked for you are the part the agent cannot do.</p>
+  <p class="thesis">Three pieces. Two in order, one in parallel. Inside each piece, the rows marked <em>you decide</em> are the part the agent cannot do &mdash; and H2 now contains a real open decision, not a task.</p>
   <div class="meta">
     <span class="chip">read AGENTS.md first</span>
     <span class="chip">docs/SEAM.md is the constitution</span>
@@ -122,43 +122,35 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--rule);font:40
 </header>
 
 <section>
-  <div class="sectitle"><div class="n">THE SEQUENCE</div><div><h2>Three in order, one in parallel</h2></div></div>
-  <p>H1 to H3 each depend on the one before. H4 touches no Worker code, so it can start any day.</p>
+  <div class="sectitle"><div class="n">THE SEQUENCE</div><div><h2>Two in order, one in parallel</h2></div></div>
+  <p>H2 depends on H1. H3 touches no Worker code, so it can start any day.</p>
 
   <figure>
     <div class="figbox">
-      <svg viewBox="0 0 920 226" role="img" aria-label="H1 one origin, then H2 better-auth, then H3 Google sign-in, in a chain; H4 frontend conventions runs in parallel below and touches no worker code.">
-        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">THE ORDER, AND WHY EACH ARROW EXISTS</text>
+      <svg viewBox="0 0 920 210" role="img" aria-label="H1 one origin comes before H2 revocable sessions, because a session cookie across two origins fails only in production. H3 frontend conventions runs in parallel and touches no worker code.">
+        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">THE ORDER, AND WHY THE ARROW EXISTS</text>
 
-        <rect x="24" y="44" width="196" height="62" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".45"/>
-        <text x="44" y="68" class="sv-mb" fill="var(--erp)">H1</text>
-        <text x="44" y="90" class="sv-t" fill="currentColor">one Worker, one origin</text>
+        <rect x="24" y="44" width="250" height="62" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".45"/>
+        <text x="48" y="68" class="sv-mb" fill="var(--erp)">H1</text>
+        <text x="48" y="90" class="sv-t" fill="currentColor">one Worker, one origin</text>
 
-        <path d="M220 75 L 296 75" fill="none" stroke="currentColor" stroke-opacity=".5" marker-end="url(#a)"/>
-        <text x="228" y="66" class="sv-s" fill="var(--muted)">so the cookie</text>
-        <text x="228" y="100" class="sv-s" fill="var(--muted)">has one origin</text>
+        <path d="M274 75 L 396 75" fill="none" stroke="currentColor" stroke-opacity=".5" marker-end="url(#a)"/>
+        <text x="286" y="66" class="sv-s" fill="var(--muted)">so the session cookie</text>
+        <text x="286" y="100" class="sv-s" fill="var(--muted)">has only one origin to work on</text>
 
-        <rect x="304" y="44" width="196" height="62" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".45"/>
-        <text x="324" y="68" class="sv-mb" fill="var(--erp)">H2</text>
-        <text x="324" y="90" class="sv-t" fill="currentColor">better-auth on D1</text>
+        <rect x="404" y="44" width="250" height="62" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".45"/>
+        <text x="428" y="68" class="sv-mb" fill="var(--erp)">H2</text>
+        <text x="428" y="90" class="sv-t" fill="currentColor">sessions you can cancel</text>
 
-        <path d="M500 75 L 576 75" fill="none" stroke="currentColor" stroke-opacity=".5" marker-end="url(#a)"/>
-        <text x="508" y="66" class="sv-s" fill="var(--muted)">so a provider</text>
-        <text x="508" y="100" class="sv-s" fill="var(--muted)">has tables</text>
+        <line x1="24" y1="132" x2="896" y2="132" stroke="currentColor" stroke-opacity=".12"/>
 
-        <rect x="584" y="44" width="196" height="62" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".45"/>
-        <text x="604" y="68" class="sv-mb" fill="var(--erp)">H3</text>
-        <text x="604" y="90" class="sv-t" fill="currentColor">sign in with Google</text>
-
-        <line x1="24" y1="140" x2="896" y2="140" stroke="currentColor" stroke-opacity=".12"/>
-
-        <rect x="24" y="158" width="756" height="52" rx="5" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".45" stroke-dasharray="5 4"/>
-        <text x="44" y="180" class="sv-mb" fill="var(--d1)">H4</text>
-        <text x="44" y="200" class="sv-t" fill="currentColor">front end conventions and the Figma pipeline</text>
-        <text x="560" y="190" class="sv-s" fill="var(--muted)">no Worker code &mdash; no dependency</text>
+        <rect x="24" y="148" width="756" height="48" rx="5" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".45" stroke-dasharray="5 4"/>
+        <text x="48" y="170" class="sv-mb" fill="var(--d1)">H3</text>
+        <text x="48" y="188" class="sv-t" fill="currentColor">front end conventions and the Figma pipeline</text>
+        <text x="560" y="180" class="sv-s" fill="var(--muted)">no Worker code &mdash; no dependency</text>
       </svg>
     </div>
-    <figcaption>H2 adds a session cookie. A cookie across two origins needs <code>SameSite=None</code>, <code>Secure</code> and credentialed CORS, and those fail in production without failing in development. Do H1 first and the authentication work becomes boring, which is exactly what you want from authentication work.</figcaption>
+    <figcaption>H2 adds a session cookie. A cookie across two origins needs <code>SameSite=None</code>, <code>Secure</code> and credentialed CORS, and those fail in production without failing in development. Do H1 first and the session work becomes boring, which is exactly what you want from session work.</figcaption>
   </figure>
 </section>
 
@@ -205,35 +197,76 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--rule);font:40
 </section>
 
 <section>
-  <div class="sectitle"><div class="n">H2</div><div><h2>better-auth, on D1</h2></div></div>
+  <div class="sectitle"><div class="n">H2</div><div><h2>Sessions that can be cancelled</h2></div></div>
+
+  <p>This one contains an open decision, not a task. Google sign-in was one of the stronger reasons to bring in better-auth, and that button is out. So the question is live again, and it is yours.</p>
+
+  <figure>
+    <div class="figbox">
+      <svg viewBox="0 0 920 300" role="img" aria-label="The ERPNext OAuth flow is frozen and D1 is fixed; only the middle layer, kernel slash auth, is the thing being chosen, so isolating it makes the decision reversible.">
+        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">ONLY THE MIDDLE BOX IS THE DECISION</text>
+
+        <rect x="24" y="44" width="250" height="74" rx="5" fill="var(--panel2)" stroke="currentColor" stroke-opacity=".3"/>
+        <text x="149" y="70" text-anchor="middle" class="sv-mb" fill="currentColor">routes/auth.ts</text>
+        <text x="149" y="90" text-anchor="middle" class="sv-s" fill="var(--muted)">ERPNext OAuth, PKCE, state</text>
+        <text x="149" y="108" text-anchor="middle" class="sv-mb" fill="var(--stop)">FROZEN &mdash; 334 LINES</text>
+
+        <path d="M274 81 L 340 81" fill="none" stroke="currentColor" stroke-opacity=".5" marker-end="url(#a)"/>
+
+        <rect x="348" y="36" width="250" height="90" rx="5" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".55" stroke-dasharray="5 4"/>
+        <text x="473" y="62" text-anchor="middle" class="sv-mb" fill="var(--d1)">kernel/auth</text>
+        <text x="473" y="82" text-anchor="middle" class="sv-s" fill="var(--muted)">who is this person?</text>
+        <text x="473" y="100" text-anchor="middle" class="sv-s" fill="var(--muted)">user &middot; studio &middot; ERPNext token</text>
+        <text x="473" y="118" text-anchor="middle" class="sv-mb" fill="var(--d1)">THE CHOICE LIVES HERE</text>
+
+        <path d="M598 81 L 664 81" fill="none" stroke="currentColor" stroke-opacity=".5" marker-end="url(#a)"/>
+
+        <rect x="672" y="44" width="224" height="74" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".45"/>
+        <text x="784" y="70" text-anchor="middle" class="sv-mb" fill="currentColor">D1</text>
+        <text x="784" y="90" text-anchor="middle" class="sv-s" fill="var(--muted)">user &middot; session &middot; tokens</text>
+        <text x="784" y="108" text-anchor="middle" class="sv-mb" fill="var(--erp)">FIXED &mdash; ROWS, NOT A COOKIE</text>
+
+        <line x1="24" y1="152" x2="896" y2="152" stroke="currentColor" stroke-opacity=".12"/>
+
+        <rect x="200" y="176" width="240" height="96" rx="5" fill="var(--panel)" stroke="currentColor" stroke-opacity=".3"/>
+        <text x="320" y="200" text-anchor="middle" class="sv-mb" fill="currentColor">OPTION A &mdash; better-auth</text>
+        <text x="320" y="222" text-anchor="middle" class="sv-s" fill="var(--muted)">tested sessions, org/invite tables</text>
+        <text x="320" y="240" text-anchor="middle" class="sv-s" fill="var(--muted)">it owns the schema, you check</text>
+        <text x="320" y="258" text-anchor="middle" class="sv-s" fill="var(--muted)">each plugin against D1</text>
+
+        <rect x="480" y="176" width="240" height="96" rx="5" fill="var(--panel)" stroke="currentColor" stroke-opacity=".3"/>
+        <text x="600" y="200" text-anchor="middle" class="sv-mb" fill="currentColor">OPTION B &mdash; ~200 lines here</text>
+        <text x="600" y="222" text-anchor="middle" class="sv-s" fill="var(--muted)">no dependency, no borrowed schema</text>
+        <text x="600" y="240" text-anchor="middle" class="sv-s" fill="var(--muted)">you own every line, and session</text>
+        <text x="600" y="258" text-anchor="middle" class="sv-s" fill="var(--muted)">bugs are security bugs</text>
+      </svg>
+    </div>
+    <figcaption>Isolate <code>kernel/auth</code> first, before you decide. No route touches a session table directly; it asks <code>kernel/auth</code> who the person is. Then A and B are the same shape from outside, and changing your mind later is one folder of work instead of a rewrite. <b>A decision that is cheap to change does not have to be right the first time</b> &mdash; that is the transferable part, and it has nothing to do with authentication.</figcaption>
+  </figure>
 
   <div class="item">
     <div class="top">
       <span class="badge">H2</span>
       <div>
-        <h3>better-auth owns the session, D1 owns the tokens</h3>
+        <h3>A session becomes a row you can delete</h3>
         <div class="goal">Sign-in behaves exactly as it does today. That is the test of success.</div>
       </div>
     </div>
     <div class="body">
-      <div class="row"><div class="k">Why here</div><div class="v">
-        <p>Every D1 table needs a <code>user</code> row as a foreign key, and a stateless cookie cannot be one. That reason alone is sufficient.</p>
-        <p>The real prize is different: you cannot cancel a sealed cookie. Today a session stays valid until it expires and nothing can stop it. After this change, &ldquo;sign out everywhere&rdquo; works and &ldquo;remove this person from the studio&rdquo; works. Keep that in front of you &mdash; it tells you when the work is correct.</p>
-      </div></div>
-      <div class="row"><div class="k">The work</div><div class="v">
-        <ol class="steps">
-          <li>Bind D1. Create better-auth's tables and a <code>studio</code> table.</li>
-          <li><b>Do not touch the OAuth flow.</b> <code>routes/auth.ts</code> is 334 lines of correct Frappe code. SEAM section 2 gives three reasons not to move it into a better-auth plugin.</li>
-          <li>Change one step only: at the end of <code>/auth/callback</code>, find or create the better-auth user, then create a session. better-auth owns the cookie from then on.</li>
-          <li>Write the ERPNext access and refresh tokens to the <code>account</code> table, keyed by user and studio. Never a token in a cookie.</li>
-          <li>Delete the <code>exclude</code> list from <code>worker/tsconfig.json</code>. D1 exists again, so those files get type-checked again.</li>
-        </ol>
+      <div class="row"><div class="k">Why at all</div><div class="v">
+        <p>A sealed cookie cannot be cancelled &mdash; it stays valid until it expires and nothing stops it. So &ldquo;sign out everywhere&rdquo; does not work, and neither does &ldquo;remove this person from the studio&rdquo;. That is the prize; keep it in front of you and it tells you when the work is correct.</p>
+        <p>A <code>user</code> row is the second reason: every D1 table StudioOS adds needs one as a foreign key, and a cookie cannot be one.</p>
       </div></div>
       <div class="row decide"><div class="k">You decide</div><div class="v">
-        <p>The shape of the <code>studio</code> table and how it joins better-auth's <code>organization</code> table. <code>host</code> is the key. Read SEAM section 8 first: KV holds the client credentials because <code>requireSession</code> reads them before the user is known, and D1 holds the rest.</p>
+        <p>Library or hand-rolled. <b>ADR-0003 is in the repo, unfinished, on purpose.</b> It holds the question, both options, the evidence that is current today, and the rules that do not change. Complete it, set it to Accepted, then write the code.</p>
       </div></div>
-      <div class="row ask"><div class="k">Stop and ask</div><div class="v">
-        <p>If you find yourself writing a permission check inside StudioOS, stop. This backend has no permission code and that is the design, not an omission.</p>
+      <div class="row"><div class="k">Current facts</div><div class="v">
+        <p>better-auth added first-class Cloudflare D1 support in 1.5, February 2026 &mdash; no adapter to write. Its core tables are <code>user</code>, <code>session</code>, <code>account</code>, <code>verification</code>, and its CLI generates a Drizzle schema, which matches what this repo already uses.</p>
+        <p>The nuance worth carrying: D1 has no interactive transactions, so better-auth uses <code>batch()</code>. The core library is fine with that. <b>Individual plugins are not automatically fine</b> &mdash; the <code>scim</code> plugin refuses to start at all on D1 because it demands native transactions. Check the <code>organization</code> plugin against D1 before you plan Phase 8 around it.</p>
+      </div></div>
+      <div class="row ask"><div class="k">Never, either way</div><div class="v">
+        <p>Do not move or rewrite <code>routes/auth.ts</code>. A library does not sign anyone in here &mdash; ERPNext OAuth stays exactly as it is, and the library would only store users, sessions and tokens. You are choosing a store, not an authentication system.</p>
+        <p>Tokens never go in the cookie. The cookie holds one session id and nothing else. And StudioOS still gets no permission code: a session says who someone is, never what they may see.</p>
       </div></div>
       <div class="row"><div class="k">Done when</div><div class="v">
         <p>Someone signs in with ERPNext and sees exactly what they saw before. Then you delete their session row in D1 and their next request fails. The second test is the one that matters.</p>
@@ -243,77 +276,11 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--rule);font:40
 </section>
 
 <section>
-  <div class="sectitle"><div class="n">H3</div><div><h2>Sign in with Google</h2></div></div>
-
-  <p>This is the piece with a real design problem inside it. Solve the problem on paper before you build the button.</p>
-
-  <figure>
-    <div class="figbox">
-      <svg viewBox="0 0 920 280" role="img" aria-label="Signing in with ERPNext yields a token and therefore data. Signing in with Google yields an account but no token, so the app is empty until the person connects their studio's ERPNext.">
-        <text x="24" y="20" class="sv-lbl" fill="var(--muted)">TWO DOORS. ONLY ONE OF THEM CARRIES A TOKEN.</text>
-
-        <rect x="24" y="44" width="200" height="52" rx="5" fill="var(--panel2)" stroke="currentColor" stroke-opacity=".25"/>
-        <text x="124" y="75" text-anchor="middle" class="sv-t" fill="currentColor">Sign in with ERPNext</text>
-        <path d="M224 70 L 316 70" fill="none" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ae)"/>
-        <rect x="324" y="44" width="212" height="52" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".5"/>
-        <text x="430" y="68" text-anchor="middle" class="sv-t" fill="currentColor">account + ERPNext token</text>
-        <text x="430" y="86" text-anchor="middle" class="sv-s" fill="var(--muted)">identity and authority</text>
-        <path d="M536 70 L 628 70" fill="none" stroke="var(--erp)" stroke-opacity=".8" marker-end="url(#ae)"/>
-        <rect x="636" y="44" width="200" height="52" rx="5" fill="var(--erp-soft)" stroke="var(--erp)" stroke-opacity=".5"/>
-        <text x="736" y="75" text-anchor="middle" class="sv-t" fill="currentColor">the app, with data</text>
-
-        <rect x="24" y="152" width="200" height="52" rx="5" fill="var(--panel2)" stroke="currentColor" stroke-opacity=".25"/>
-        <text x="124" y="183" text-anchor="middle" class="sv-t" fill="currentColor">Sign in with Google</text>
-        <path d="M224 178 L 316 178" fill="none" stroke="var(--d1)" stroke-opacity=".8" marker-end="url(#ad)"/>
-        <rect x="324" y="152" width="212" height="52" rx="5" fill="var(--d1-soft)" stroke="var(--d1)" stroke-opacity=".5"/>
-        <text x="430" y="176" text-anchor="middle" class="sv-t" fill="currentColor">account, no token</text>
-        <text x="430" y="194" text-anchor="middle" class="sv-s" fill="var(--muted)">identity only</text>
-        <path d="M536 178 L 628 178" fill="none" stroke="var(--stop)" stroke-opacity=".85" marker-end="url(#ax)"/>
-        <rect x="636" y="152" width="200" height="52" rx="5" fill="var(--stop-soft)" stroke="var(--stop)" stroke-opacity=".5"/>
-        <text x="736" y="176" text-anchor="middle" class="sv-t" fill="currentColor">the app, empty</text>
-        <text x="736" y="194" text-anchor="middle" class="sv-s" fill="var(--stop)">correct, and not acceptable</text>
-
-        <path d="M736 204 C 736 236 560 236 470 236" fill="none" stroke="var(--d1)" stroke-opacity=".8" marker-end="url(#ad)"/>
-        <rect x="248" y="218" width="218" height="38" rx="5" fill="var(--panel)" stroke="var(--d1)" stroke-opacity=".5"/>
-        <text x="357" y="242" text-anchor="middle" class="sv-mb" fill="var(--d1)">CONNECT YOUR STUDIO</text>
-        <text x="484" y="272" class="sv-s" fill="var(--muted)">design this step before you build the button</text>
-      </svg>
-    </div>
-    <figcaption>SEAM section 2 already says a person with no ERPNext token sees the interface and no data, and calls that correct. It is correct as an edge case. Put a Google button on the sign-in page and it stops being an edge case and becomes the usual first visit. Google sign-in reaches an <i>account</i>; only connecting a studio reaches the <i>data</i>.</figcaption>
-  </figure>
+  <div class="sectitle"><div class="n">H3</div><div><h2>Front end conventions, and Figma</h2></div></div>
 
   <div class="item">
     <div class="top">
-      <span class="badge">H3</span>
-      <div>
-        <h3>The security question inside it</h3>
-        <div class="goal">One person, two sign-in methods. One account or two?</div>
-      </div>
-    </div>
-    <div class="body">
-      <div class="row ask"><div class="k">The rule</div><div class="v">
-        <p>If you join two accounts, join them <b>only</b> on an email address the provider states it has verified. Google verifies addresses. Joining on an unverified address means someone registers with another person's email and inherits that person's studio access. This attack has a name &mdash; account linking by unverified email &mdash; and no code review catches it.</p>
-        <p>Write your answer in an ADR before you write the code.</p>
-      </div></div>
-      <div class="row decide"><div class="k">You decide</div><div class="v">
-        <p>How the two buttons sit together on the page, and what a person sees after Google sign-in and before a studio is connected.</p>
-      </div></div>
-      <div class="row ask"><div class="k">Stop and ask</div><div class="v">
-        <p>Ask Malhar before you join two accounts by any rule other than a verified email address.</p>
-      </div></div>
-      <div class="row"><div class="k">Done when</div><div class="v">
-        <p>A new person signs in with Google, gets a clear next step, and connects their ERPNext. Then the same person signs in with ERPNext directly and lands on the same account, not a second one.</p>
-      </div></div>
-    </div>
-  </div>
-</section>
-
-<section>
-  <div class="sectitle"><div class="n">H4</div><div><h2>Front end conventions, and Figma</h2></div></div>
-
-  <div class="item">
-    <div class="top">
-      <span class="badge par">H4 &middot; PARALLEL</span>
+      <span class="badge par">H3 &middot; PARALLEL</span>
       <div>
         <h3>Shubham hands you a Figma file. It becomes code without a negotiation each time.</h3>
         <div class="goal">This is your area. The recommendation below is a starting point, not an instruction.</div>

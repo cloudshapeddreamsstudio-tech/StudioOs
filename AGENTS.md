@@ -328,13 +328,12 @@ each piece.
 | Work | What it does |
 |---|---|
 | H1 | One Worker and one origin. Static assets, `run_worker_first`, Wrangler 4. |
-| H2 | better-auth on D1. The ERPNext tokens move into the `account` table. |
-| H3 | Sign in with Google, and the studio connection step it needs. |
-| H4 | The front end conventions and the Figma pipeline. Runs beside H1 to H3. |
+| H2 | Sessions that can be cancelled, on D1. The store is chosen in [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md). |
+| H3 | The front end conventions and the Figma pipeline. Runs beside H1 and H2. |
 | then | The modules in ADR-0002, continuous integration, project notes, deployment. |
 
-H1 to H3 are in order. Do not start one before the previous one is finished. H4
-touches no Worker code, so it can run at any time.
+H1 comes before H2. Do not start H2 first. H3 touches no Worker code, so it can
+run at any time.
 
 ---
 
