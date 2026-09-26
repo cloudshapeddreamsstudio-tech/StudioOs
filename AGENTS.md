@@ -121,6 +121,7 @@ feature on one side, use the same word on the other side.
 | `docs/SEAM.md` | **Authoritative** | Where data lives and who grants access. Read the Amendments at the end. |
 | `docs/seam-map.html` | **Authoritative** | The same document as diagrams. Open it when the words are dense. |
 | `docs/adr/` | **Authoritative** | One decision for each record, with its evidence and its cost. |
+| `docs/HANDOFF.md` | **Authoritative** | The work ahead, in order, and the decisions inside each piece. Start here if you are new. |
 | `docs/SPEC.md` | **Authoritative** | The goal, the non-goals, and two sections of verified live findings. |
 | `docs/PLAN-v2.md` | **The plan of record** | Phases 6 to 11. It is long. Search it by phase number. |
 | `docs/DEPLOY.md` | **STALE. Do not follow it.** | Nothing. It describes the architecture before Phase 6c. It is rewritten at M6. |
@@ -319,18 +320,21 @@ Still open. Do not guess these, and do not let an agent settle one quietly:
 
 ---
 
-## The milestones
+## The work ahead
 
-| Milestone | What it does |
+`docs/HANDOFF.md` holds the current plan, in order, with the decisions inside
+each piece.
+
+| Work | What it does |
 |---|---|
-| M1 | One Worker and one origin. Static assets, `run_worker_first`, Wrangler 4. |
-| M2 | The module structure in ADR-0002. No change to behaviour. |
-| M3 | Continuous integration, the boundary checks, the pull request template. |
-| M4 | D1 and better-auth. The `exclude` list is deleted. |
-| M5 | Project notes. One small feature that proves the seam. |
-| M6 | Deploy, and write `DEPLOY.md` again. |
+| H1 | One Worker and one origin. Static assets, `run_worker_first`, Wrangler 4. |
+| H2 | better-auth on D1. The ERPNext tokens move into the `account` table. |
+| H3 | Sign in with Google, and the studio connection step it needs. |
+| H4 | The front end conventions and the Figma pipeline. Runs beside H1 to H3. |
+| then | The modules in ADR-0002, continuous integration, project notes, deployment. |
 
-Do them in this order. Do not start one before the previous one is finished.
+H1 to H3 are in order. Do not start one before the previous one is finished. H4
+touches no Worker code, so it can run at any time.
 
 ---
 

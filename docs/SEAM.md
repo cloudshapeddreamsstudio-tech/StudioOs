@@ -115,11 +115,6 @@ front office. D1 holds it.
 These are the six data sets from Phase 10f. The rule gives the answer for each
 one.
 
-> **Amended 2026-09-26.** Three rows of this table were wrong or premature when
-> first written. They are corrected below and the reasoning is in
-> [Amendment 1](#amendment-1--the-phase-10f-table-corrected-2026-09-26).
-> Read the amendment before you act on this table.
-
 | Data set | Answer | Location |
 |---|---|---|
 | Expenses | no light native home exists | ERPNext — a `StudioOS Project Expense` DocType that StudioOS provisions. `Expense Claim` ships in HRMS, not stock ERPNext. See [ADR-0001](./adr/0001-studioos-provisions-its-own-doctypes.md) |
