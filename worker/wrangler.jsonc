@@ -48,6 +48,23 @@
     "APP_UI_ORIGIN": "http://localhost:5173"
   },
 
+  // The SPA. One Worker serves the built files and the API, so the browser has
+  // one origin and the session cookie never crosses one. See docs/HANDOFF.md H1.
+  //
+  // `run_worker_first` is not optional. It fixes which paths are the Worker's
+  // and which are the SPA's, instead of leaving it to Cloudflare's
+  // Sec-Fetch-Mode heuristic. SEAM.md section 8 warns that the heuristic can
+  // answer the OAuth callback (a navigation) with index.html, so the Worker
+  // never runs. Under wrangler 4.144 locally, removing the line broke the other
+  // half instead: /projects got the Worker's 404, not the SPA.
+  // scripts/check-one-origin.ts checks both directions.
+  "assets": {
+    "directory": "../app/dist",
+    "not_found_handling": "single-page-application",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*", "/auth/*"]
+  },
+
   "observability": { "enabled": true },
 
   // The tenant registry: which studio's ERPNext, and the credentials StudioOS
