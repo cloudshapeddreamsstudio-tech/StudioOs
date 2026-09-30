@@ -66,9 +66,14 @@ navigation, not an XHR request. Cloudflare then sends `index.html`, and the
 callback never arrives at the Worker. Sign-in then fails with no error in the
 Worker log, because the Worker never ran.
 
-**What you decide.** Where `wrangler.jsonc` lives after this change. It points
-at `../app/dist` and at `worker/src`, so the repository root is the natural
-place. ADR-0002 expects it there.
+**What you decide.** Where `wrangler.jsonc` lives after this change.
+**Decided 2026-09-30: it stays in `worker/`.** ADR-0002 shows it there, and
+`../app/dist` resolves from there. A move to the root changes each script and
+each document that names the path, and gives nothing in return. An earlier
+version of this paragraph said the root. That was a fault in this document.
+
+**Decided 2026-09-30: there is no Vite development server.** It is a second
+origin. The SPA is rebuilt with `bun run start` after each change.
 
 **Stop and ask.** Nothing here needs a decision from Malhar. It is reversible
 and nothing is deployed yet.

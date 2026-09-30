@@ -1,6 +1,6 @@
 {
-  // StudioOS Worker. One Worker serves the API today, and will serve the SPA
-  // too once M1 lands -- see docs/adr/0002-repository-structure.md.
+  // StudioOS Worker. One Worker serves the API and the built SPA, on one
+  // origin -- see the `assets` block below and docs/HANDOFF.md H1.
   "name": "studioos-worker",
   "main": "src/index.ts",
   "compatibility_date": "2025-01-15",
@@ -40,12 +40,7 @@
     // So: change it freely until the first real customer connects. Choose the
     // production hostname before that day, not before the first deploy.
     // See docs/SEAM.md section 8, and the open question in docs/PLAN-v2.md D3.
-    "APP_ORIGIN": "http://localhost:8787",
-
-    // Where the SPA lives. M1 makes this the same host as APP_ORIGIN and then
-    // deletes this variable. Until then, development needs the two to differ,
-    // because Vite serves the SPA on its own port.
-    "APP_UI_ORIGIN": "http://localhost:5173"
+    "APP_ORIGIN": "http://localhost:8787"
   },
 
   // The SPA. One Worker serves the built files and the API, so the browser has

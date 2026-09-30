@@ -10,7 +10,6 @@
   "scripts": {
     "start": "bun run build && cd worker && bun run dev",
     "dev:api": "cd worker && bun run dev",
-    "dev:app": "cd app && bun run dev",
     "build": "cd app && bun run build",
     "test": "cd worker && bun test",
     "typecheck": "cd worker && bun run typecheck && cd ../app && bun run typecheck",

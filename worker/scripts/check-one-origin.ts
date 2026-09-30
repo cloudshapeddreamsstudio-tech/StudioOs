@@ -55,6 +55,14 @@ const checks: Check[] = [
       return r.status === 401 ? null : `status ${r.status}`;
     },
   },
+  {
+    name: 'GET /auth/start with no site redirects to a relative /sign-in on this origin',
+    run: async () => {
+      const r = await fetch(`${origin}/auth/start`, { headers: nav, redirect: 'manual' });
+      const to = r.headers.get('location') ?? '';
+      return r.status === 302 && to.startsWith('/sign-in?') ? null : `status ${r.status}, location "${to}"`;
+    },
+  },
 ];
 
 let failed = 0;

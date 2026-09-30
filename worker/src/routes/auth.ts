@@ -128,7 +128,8 @@ app.get('/start', async (c) => {
     const q = new URLSearchParams({ error });
     if (hint) q.set('hint', hint);
     if (site) q.set('site', site);
-    return c.redirect(`${c.env.APP_UI_ORIGIN.replace(/\/$/, '')}/sign-in?${q}`, 302);
+    // Relative: the SPA and this Worker are one origin (docs/HANDOFF.md H1).
+    return c.redirect(`/sign-in?${q}`, 302);
   };
 
   const site = c.req.query('site');
@@ -264,7 +265,7 @@ app.get('/callback', async (c) => {
     append: true,
   });
 
-  return c.redirect(`${c.env.APP_UI_ORIGIN.replace(/\/$/, '')}/dashboard`, 302);
+  return c.redirect('/dashboard', 302);
 });
 
 /** Who the access token belongs to, according to the site that issued it. */

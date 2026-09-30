@@ -5,12 +5,11 @@ nobody must remember which directory or which runtime.
 
 | Script | What it starts |
 |---|---|
-| `dev-worker.cmd` | the Worker (API and sign-in) on `:8787` |
-| `dev-app.cmd` | the SPA on `:5173`, which sends `/api` and `/auth` to `:8787` |
+| `dev-worker.cmd` | builds the SPA, then the Worker on `:8787`, which serves both |
 | `bench-serve.cmd` | a local Frappe bench on `:8000`, through WSL |
 
-Start the Worker before the SPA. The SPA sends `/api` and `/auth` to the Worker,
-so a SPA with no Worker behind it looks like a broken sign-in button.
+There is no separate SPA server. The Worker serves the built SPA and the API on
+one origin, so run `dev-worker.cmd` again after a change to the SPA.
 
 ## Windows and WSL
 
@@ -25,8 +24,7 @@ Where you keep the repository is important. Two setups work:
   from a WSL shell:
 
   ```bash
-  bun run dev:api     # terminal one
-  bun run dev:app     # terminal two
+  bun run start
   ```
 
 Do not keep the repository on the Windows file system and run `bun` against it
@@ -38,7 +36,6 @@ think that something is broken.
 Do not use this folder. Use the root scripts:
 
 ```bash
-bun run dev:api
-bun run dev:app
+bun run start
 bun run check       # typecheck both sides, then the tests
 ```
