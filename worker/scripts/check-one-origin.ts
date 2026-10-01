@@ -1,8 +1,7 @@
 /**
  * End-to-end check for H1: one Worker, one origin.
  *
- *   bun run build            # the SPA must exist in app/dist
- *   bun run dev:api          # terminal one
+ *   bun run start            # terminal one: builds the SPA, starts the Worker
  *   bun run worker/scripts/check-one-origin.ts [origin]
  *
  * Runs in Bun, against a running Worker. It is not part of `bun test`, because

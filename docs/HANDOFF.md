@@ -29,6 +29,15 @@ make the next item more difficult.
 
 ## H1 — One Worker and one origin
 
+> **Done 2026-10-01.** One Worker serves `app/dist` and runs the API.
+> `APP_UI_ORIGIN` is deleted. `worker/scripts/check-one-origin.ts` tests the
+> routing from both directions and is the thing to run before you trust it.
+>
+> **One piece is left: [H1b](./tasks/h1b-dev-loop.md).** The Vite development
+> server was deleted with the second origin, so each change to the SPA now needs
+> a build. Do H1b before H3, or the Figma work is slow.
+
+
 **The goal.** One Cloudflare Worker serves the SPA files and also runs the API.
 `APP_UI_ORIGIN` no longer exists, because it is the same as `APP_ORIGIN`.
 

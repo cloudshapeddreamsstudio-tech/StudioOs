@@ -10,6 +10,25 @@ before. Both need the same map, so there is one map.
 
 **If you read one section, read [The three questions](#the-three-questions).**
 
+### If you are an agent, starting a session
+
+Read this file. Then read, in this order, only what your task needs:
+
+1. `docs/tasks/<the card you were given>.md` — if you were given one. It names
+   what to read next.
+2. `docs/SEAM.md` section 10 — the three questions. Answer them for your change.
+3. `docs/HANDOFF.md` — the current direction, if no card was given.
+
+Then work. Do not read the whole `docs/` folder. `docs/PLAN-v2.md` is 1200 lines
+of history and you almost never need it.
+
+Two rules that apply to each session:
+
+- **When a document and a running machine disagree, the machine is correct.**
+  Fix the document in the same change, and say what you observed. This has
+  already happened one time in this repository, and the document was wrong.
+- **State what you decided not to do.** A reader cannot find that later.
+
 ---
 
 ## What StudioOS is
@@ -122,6 +141,7 @@ feature on one side, use the same word on the other side.
 | `docs/seam-map.html` | **Authoritative** | The same document as diagrams. Open it when the words are dense. |
 | `docs/adr/` | **Authoritative** | One decision for each record, with its evidence and its cost. |
 | `docs/HANDOFF.md` | **Authoritative** | The work ahead, in order, and the decisions inside each piece. Start here if you are new. `docs/handoff.html` is the same document with diagrams. |
+| `docs/tasks/` | **Authoritative** | One card for one job, written to be given to an agent. See `docs/tasks/README.md`. |
 | `docs/SPEC.md` | **Authoritative** | The goal, the non-goals, and two sections of verified live findings. |
 | `docs/PLAN-v2.md` | **The plan of record** | Phases 6 to 11. It is long. Search it by phase number. |
 | `docs/DEPLOY.md` | **STALE. Do not follow it.** | Nothing. It describes the architecture before Phase 6c. It is rewritten at M6. |
@@ -237,6 +257,10 @@ one.
   under six conditions. Read
   [ADR-0001](./docs/adr/0001-studioos-provisions-its-own-doctypes.md) before you
   create one.
+- **Correct a document in the same change that proves it wrong.** Do not work
+  around a document that does not match the machine, and do not leave the fault
+  for the next person. `worker/scripts/check-one-origin.ts` exists because of
+  one of these, and `docs/SEAM.md` section 8 was corrected from it.
 - **`APP_ORIGIN` is configurable, and the copies of it are not.** The OAuth
   redirect URI is built from it and is registered on the ERPNext site of each
   customer. Change it freely until the first customer connects. After that day,
@@ -333,7 +357,8 @@ each piece.
 
 | Work | What it does |
 |---|---|
-| H1 | One Worker and one origin. Static assets, `run_worker_first`, Wrangler 4. |
+| ~~H1~~ | ~~One Worker and one origin.~~ **Done 2026-10-01.** |
+| H1b | A fast development loop, still on one origin. [Card](./docs/tasks/h1b-dev-loop.md). Do this before H3. |
 | H2 | Sessions that can be cancelled, on D1. The store is chosen in [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md). |
 | H3 | The front end conventions and the Figma pipeline. Runs beside H1 and H2. |
 | then | The modules in ADR-0002, continuous integration, project notes, deployment. |
