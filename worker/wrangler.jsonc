@@ -53,8 +53,12 @@
   // never runs. Under wrangler 4.144 locally, removing the line broke the other
   // half instead: /projects got the Worker's 404, not the SPA.
   // scripts/check-one-origin.ts checks both directions.
+  //
+  // `directory` is read only by `wrangler dev` here (`bun run dev:api`). The
+  // Vite plugin fills it in itself with its client output, which is this
+  // folder. See docs/adr/0004-the-development-loop.md.
   "assets": {
-    "directory": "../app/dist",
+    "directory": "../app/dist/client",
     "not_found_handling": "single-page-application",
     "binding": "ASSETS",
     "run_worker_first": ["/api/*", "/auth/*"]

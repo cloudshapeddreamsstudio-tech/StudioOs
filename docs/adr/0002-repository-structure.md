@@ -167,7 +167,7 @@ changes at the same time.
 
 | Milestone | What it does |
 |---|---|
-| M1 | One Worker and one origin. Static assets, `run_worker_first`, Wrangler 4. `wrangler.jsonc` moves to the repository root. |
+| M1 | One Worker and one origin. Static assets, `run_worker_first`, Wrangler 4. `wrangler.jsonc` moves to the repository root. **Changed by [ADR-0004](./0004-the-development-loop.md): it stays in `worker/`.** |
 | M2 | This structure. No change to behaviour. |
 | M3 | Continuous integration and the three checks above. |
 | M4 | D1 and better-auth. `kernel/d1/` appears. The `exclude` list is deleted. |

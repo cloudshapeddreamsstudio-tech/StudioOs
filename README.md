@@ -78,20 +78,21 @@ this backend contains no permission code. Both humans and agents start there.
 
 ## Running it
 
-One process, one origin:
+One process, one origin, on port 8787:
 
 ```bash
 bun install          # once, from the root
-bun run start        # build the SPA, then start the Worker on :8787
+bun run dev          # daily work: hot reload, the Worker runs inside Vite
+bun run start        # what production does: vite build, then vite preview
 ```
 
-The Worker serves the built SPA and runs `/api/*` and `/auth/*` on the same
-port, which is what production does. Rebuild after an SPA change. Sign-in needs
+Both serve the SPA and run `/api/*` and `/auth/*` on the same port. Run one at
+a time. See [ADR-0004](./docs/adr/0004-the-development-loop.md). Sign-in needs
 a tenant registered against a local bench — see `docs/PLAN-v2.md` phase 6b,
 including the Frappe-specific traps worth reading before debugging one.
 
-`bun run check` from the root typechecks both sides and runs the suite:
-**165 tests, all passing.**
+`bun run check` from the root typechecks both sides and runs the suite. All
+tests must pass.
 
 ## Status
 

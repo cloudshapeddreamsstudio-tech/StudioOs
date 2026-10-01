@@ -1,6 +1,6 @@
 # H1b — a fast development loop, still on one origin
 
-**State:** Open
+**State:** Done 2026-10-01. See [ADR-0004](../adr/0004-the-development-loop.md).
 **Owner:** Sandesh
 **Size:** small. One day, and most of it is the decision, not the code.
 **Comes before:** H3, the Figma work. Do it first or H3 is slow for weeks.
