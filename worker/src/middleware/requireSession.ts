@@ -2,14 +2,8 @@ import type { MiddlewareHandler } from 'hono';
 import * as oauth from 'oauth4webapi';
 import { frappeForToken } from '../lib/frappe';
 import { getTenant, allowsInsecureTransport } from '../lib/tenants';
-import {
-  openSession,
-  sealSession,
-  sessionCookie,
-  accessTokenExpired,
-  SESSION_COOKIE,
-  type Session,
-} from '../lib/session';
+import { accessTokenExpired, type Session } from '../lib/session';
+import { readSession, updateTokens } from '../kernel/auth';
 import type { AppEnv } from '../types';
 
 /**
@@ -25,12 +19,8 @@ import type { AppEnv } from '../types';
  * studio's books, because StudioOS holds no credential that does.
  */
 export const requireSession: MiddlewareHandler<AppEnv> = async (c, next) => {
-  const sealed = readCookie(c.req.header('cookie'), SESSION_COOKIE);
-
-  let session: Session;
-  try {
-    session = await openSession(sealed, c.env.SESSION_KEY);
-  } catch {
+  let session = await readSession(c);
+  if (!session) {
     return c.json({ error: 'Not signed in.', signInRequired: true }, 401);
   }
 
@@ -51,9 +41,7 @@ export const requireSession: MiddlewareHandler<AppEnv> = async (c, next) => {
       return c.json({ error: 'Your session expired. Sign in again.', signInRequired: true }, 401);
     }
     session = renewed;
-    c.header('Set-Cookie', sessionCookie(await sealSession(session, c.env.SESSION_KEY), c.env.APP_ORIGIN.startsWith('https://')), {
-      append: true,
-    });
+    await updateTokens(c, session);
   }
 
   c.set('session', session);
@@ -106,13 +94,4 @@ async function refresh(
     // or the studio disconnected us. Either way the answer is "sign in again".
     return null;
   }
-}
-
-function readCookie(header: string | undefined, name: string): string | undefined {
-  if (!header) return undefined;
-  for (const part of header.split(';')) {
-    const [k, ...rest] = part.trim().split('=');
-    if (k === name) return rest.join('=') || undefined;
-  }
-  return undefined;
 }
