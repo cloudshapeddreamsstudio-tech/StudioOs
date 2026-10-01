@@ -96,7 +96,9 @@ worker/                the Worker: Hono on Cloudflare Workers
   src/db/              the parked ledger schema and client - not used today
   migrations/          the D1 migrations that are applied
   migrations-parked/   the old ledger migrations - never applied
-  tests/               bun test, pure logic, no network
+  tests/               bun test. Pure logic, no network. One exception:
+                       sessionStore.d1.test.ts runs kernel/auth on a local,
+                       in-memory D1 (wrangler getPlatformProxy)
 docs/                  see "Which documents to trust"
   adr/                 architecture decision records
 scripts/               Windows and WSL helpers - see scripts/README.md
@@ -219,7 +221,9 @@ two settings in `app/vite.config.ts` that must not go: `configPath` and
 To check the routing between the SPA and the Worker, run
 `bun run worker/scripts/check-one-origin.ts` against `bun run dev` and against
 `bun run start`. The two must agree. To check that a session can be cancelled,
-read the top of `worker/scripts/check-session-cancel.ts`.
+read the top of `worker/scripts/check-session-cancel.ts`. To check that sign-out
+everywhere reaches a second browser, read the top of
+`worker/scripts/check-sign-out-everywhere.ts`.
 
 If sign-in fails with `no such table: studio`, you did not run
 `bun run db:migrate`.

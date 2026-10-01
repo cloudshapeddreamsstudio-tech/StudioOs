@@ -1,6 +1,6 @@
 # H2b — sign out everywhere, and remove a person from a studio
 
-**State:** Open
+**State:** Done 2026-10-01.
 **Owner:** Sandesh
 **Size:** small. Half a day.
 **Comes after:** H2, which is merged.

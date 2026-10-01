@@ -105,8 +105,14 @@ answers `/api/health` from one port. Sign-in still works.
 >
 > Tested on a local Worker only. Real D1 is tested at deployment.
 >
-> **One piece is left: [H2b](./tasks/h2b-sign-out-everywhere.md).** To end every
-> session of one person is now possible and has no endpoint.
+> **H2b — done 2026-10-01.** `POST /auth/logout-all` ends every session of the
+> signed-in person on that studio, in each browser, and revokes each of their
+> ERPNext tokens. Proved with two browsers:
+> `worker/scripts/check-sign-out-everywhere.ts`. The operator function
+> `endAllSessionsOf(env, host, erpUser)` is in `kernel/auth`, tested, and has
+> **no route**: Phase 6d decides who may call it. Revocation at ERPNext now gives
+> up after 5 seconds, on both sign-out paths, so a site that hangs cannot hang a
+> sign-out.
 
 
 **The goal.** A session is a row in D1, not a sealed cookie. The ERPNext tokens
