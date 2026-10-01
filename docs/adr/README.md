@@ -50,7 +50,7 @@ them exactly.
 |---|---|---|
 | [0001](./0001-studioos-provisions-its-own-doctypes.md) | StudioOS provisions its own DocTypes | Accepted |
 | [0002](./0002-repository-structure.md) | The repository structure | Accepted |
-| [0003](./0003-how-sessions-are-stored.md) | How sessions are stored | **Proposed — Sandesh decides** |
+| [0003](./0003-how-sessions-are-stored.md) | How sessions are stored | Accepted |
 
 ## What an ADR does not do
 

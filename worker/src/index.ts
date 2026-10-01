@@ -44,10 +44,10 @@ import type { AppEnv, Env } from './types';
  * Still unmounted, and why:
  *
  *  - `brand`, `projectExpenses`, `studioRental`, `subscriptions`,
- *    `transactions` — all read D1, and the binding is gone because ERPNext is
- *    the only database. Phase 10f decides where that data actually belongs
- *    before any of them come back. They are excluded from type-checking in
- *    tsconfig.json for the same reason.
+ *    `transactions` — all read the old ledger tables, which D1 does not have:
+ *    their migrations are parked in worker/migrations-parked/. SEAM section 1
+ *    decides where each data set belongs before any of them come back. They
+ *    are type-checked, so they cannot rot while they wait.
  *
  *  - `projectCrew` is mounted: Phase 10f decided the crew/vendor roster maps
  *    onto a Draft `Purchase Order` per member (native ERPNext, no D1), so it

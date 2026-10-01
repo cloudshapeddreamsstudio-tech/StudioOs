@@ -1,15 +1,9 @@
 # 0003. How sessions are stored
 
-- **Status:** Proposed
-- **Date:** 2026-09-26
-- **Owner:** **Sandesh.** This decision is yours. Complete this document, change
-  the status to Accepted, and then write the code.
-- **Changes:** `docs/SEAM.md` section 2, if you choose differently from what it
-  assumes.
-
-> This ADR is given to you unfinished, on purpose. The question is real, the
-> evidence below is correct as of 2026-09-26, and the decision is not made. Read
-> it, add what you learn, write the decision and the reason, then build.
+- **Status:** Accepted
+- **Date:** 2026-09-26 (proposed), 2026-10-01 (accepted)
+- **Owner:** Sandesh
+- **Changes:** `docs/SEAM.md` section 2. See Amendment 3 in that document.
 
 ## The question
 
@@ -127,16 +121,85 @@ useful thing in this document and it is not about authentication.
 
 ## The decision
 
-*Write it here. One sentence, then the conditions.*
+Use option B. StudioOS writes its own small session store in D1, behind
+`kernel/auth`.
+
+The conditions:
+
+1. **All session code is in `worker/src/kernel/auth`.** No route and no module
+   reads or writes a session table. A route calls `kernel/auth` and gets the
+   user, the studio and the ERPNext token.
+2. **The cookie holds one random session identifier.** The Worker makes it
+   from 32 bytes of `crypto.getRandomValues`. The cookie is `HttpOnly`,
+   `SameSite=Lax`, and `Secure` on an `https` origin.
+3. **D1 stores the SHA-256 hash of the identifier, not the identifier.** A copy
+   of the database then gives no session that operates.
+4. **The ERPNext tokens are encrypted before they go in D1.** The Worker uses
+   the same AES-GCM function that encrypts the client secrets in KV.
+5. **Each session has a fixed expiry time of 14 days.** This is the same value
+   as the sealed cookie. `kernel/auth` refuses a session after its expiry time.
+6. **To cancel a session is to delete its row.** The next request with that
+   cookie gets a 401.
+7. **A `user` row is one ERPNext user on one studio.** The key is the studio
+   and the ERPNext user id. One person on two studios is two `user` rows.
+   Phase 8 decides if StudioOS links them.
+8. **The ERPNext tokens belong to one session, not to one user.** ERPNext
+   gives a new token at each sign-in. So one browser that signs out revokes
+   only its own token, and a different browser of the same person continues.
+   `docs/HANDOFF.md` says "the user and the studio as the key". The session
+   gives both, through its user row.
 
 ## Why
 
-*Write the reason. Put the strongest reason first.*
+**The strongest reason: better-auth gives us storage, and storage is the small
+part.** better-auth does not sign the person in. ERPNext OAuth stays as it is.
+So better-auth would write four tables for us. Those tables are approximately
+200 lines of code here.
+
+**The parts of better-auth that we want are in Phase 8.** These are the
+`organization`, `member` and `invitation` tables, and sign-in with email. Phase
+8 is not started. Condition 1 keeps the cost to change this decision at one
+folder. So we can choose better-auth at Phase 8, with the facts of Phase 8.
+
+**We keep the shape of the `user` and `studio` tables.** SEAM section 8 joins
+the `studio` table to the tenant registry by `host`. With option B, no library
+decides the direction of that join.
+
+**We add no dependency.** Each D1 plugin of better-auth must be checked
+separately, as the evidence above says. With option B, there is nothing to
+check.
 
 ## What this costs
 
-*Write the costs, clearly enough that a reader can disagree with you.*
+**We own each line of security code.** A mistake in the session store is a
+security mistake. The tests in `worker/tests/` must prove the four items in
+option B: the random source, the cookie flags, the expiry time, and deletion
+that takes effect on the next request.
+
+**Phase 8 has more work.** If Phase 8 chooses better-auth, the `user` and
+`session` rows move to its tables. If Phase 8 does not choose it, we build the
+`organization`, `member` and `invitation` tables ourselves.
+
+**One person on two studios is two users until Phase 8.** A person who signs in
+to two studios sees two separate StudioOS identities.
+
+**D1 now holds ERPNext tokens.** Before this decision, StudioOS stored no token
+of any person. The tokens are encrypted, and the key is a Worker secret, not a
+D1 value. A copy of D1 alone gives no token. A copy of D1 and the secret gives
+the tokens of each person with a session that has not expired.
+
+**A refresh race stays.** Two requests at the same time can both refresh the
+ERPNext token. If Frappe rotates the refresh token, the second refresh fails
+and the person must sign in again. The sealed cookie has the same race. This
+decision does not make it worse.
 
 ## How we know if this was wrong
 
-*Write the signal that tells you to write a new ADR.*
+Write a new ADR when one of these occurs:
+
+- The session code in `kernel/auth` becomes larger than approximately 400
+  lines, because we add a feature that a library already gives.
+- Phase 8 needs sign-in with email or an invitation. Then compare option A
+  again, with the D1 plugin checks for `organization`.
+- A security review finds a fault in the session store that better-auth
+  prevents.

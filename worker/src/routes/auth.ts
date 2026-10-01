@@ -13,14 +13,10 @@ import {
   authStateCookie,
   clearAuthStateCookie,
   AUTH_STATE_COOKIE,
-  sealSession,
-  openSession,
-  sessionCookie,
-  clearSessionCookie,
-  SESSION_COOKIE,
   type AuthState,
   type Session,
 } from '../lib/session';
+import { createSession, readSession, endSession } from '../kernel/auth';
 import type { AppEnv } from '../types';
 
 /**
@@ -261,9 +257,7 @@ app.get('/callback', async (c) => {
     refreshToken: tokens.refresh_token,
     accessExpiresAt: Math.floor(Date.now() / 1000) + (tokens.expires_in ?? 3600),
   };
-  c.header('Set-Cookie', sessionCookie(await sealSession(session, c.env.SESSION_KEY), secure), {
-    append: true,
-  });
+  await createSession(c, session);
 
   return c.redirect('/dashboard', 302);
 });
@@ -280,15 +274,9 @@ async function whoami(origin: string, accessToken: string): Promise<string | nul
 
 /** Who am I, for the frontend. 401 when not signed in. */
 app.get('/me', async (c) => {
-  try {
-    const session = await openSession(
-      getCookie(c.req.header('cookie'), SESSION_COOKIE),
-      c.env.SESSION_KEY,
-    );
-    return c.json({ host: session.host, user: session.user });
-  } catch {
-    return c.json({ error: 'Not signed in.' }, 401);
-  }
+  const session = await readSession(c);
+  if (!session) return c.json({ error: 'Not signed in.' }, 401);
+  return c.json({ host: session.host, user: session.user });
 });
 
 /**
@@ -297,26 +285,18 @@ app.get('/me', async (c) => {
  * "signed out" would be true only in this browser.
  */
 app.post('/logout', async (c) => {
-  const secure = c.env.APP_ORIGIN.startsWith('https://');
-  c.header('Set-Cookie', clearSessionCookie(secure), { append: true });
-
-  try {
-    const session = await openSession(
-      getCookie(c.req.header('cookie'), SESSION_COOKIE),
-      c.env.SESSION_KEY,
-    );
-    const tenant = await getTenant(c.env, session.host);
-    if (tenant) {
-      // Best effort. A failed revocation must not leave the user unable to
-      // sign out of StudioOS itself.
-      await fetch(`${tenant.origin}/api/method/frappe.integrations.oauth2.revoke_token`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ token: session.accessToken }),
-      }).catch(() => undefined);
-    }
-  } catch {
-    // Not signed in, or an unreadable cookie. Clearing it is still correct.
+  // Null when not signed in, or the cookie is unreadable. Ending it is still
+  // correct.
+  const session = await endSession(c);
+  const tenant = session ? await getTenant(c.env, session.host) : null;
+  if (session && tenant) {
+    // Best effort. A failed revocation must not leave the user unable to
+    // sign out of StudioOS itself.
+    await fetch(`${tenant.origin}/api/method/frappe.integrations.oauth2.revoke_token`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ token: session.accessToken }),
+    }).catch(() => undefined);
   }
 
   return c.json({ signedOut: true });

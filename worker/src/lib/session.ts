@@ -114,10 +114,9 @@ export function clearAuthStateCookie(secure: boolean): string {
 /**
  * The signed-in session.
  *
- * Stateless on purpose: it holds the studio, who the person is, and their
- * ERPNext tokens, all sealed into one cookie. There is no session store to run,
- * and -- more to the point -- no database of ours holding other people's access
- * tokens.
+ * It holds the studio, who the person is, and their ERPNext tokens. It lives
+ * in D1, not in the cookie: the cookie holds only a random identifier. Read and
+ * write it through `kernel/auth`, never directly. See ADR-0003.
  *
  * `accessToken` is what every ERPNext call is made with, which is the whole
  * point: requests run as that user, so ERPNext applies that user's permissions
@@ -136,55 +135,11 @@ export interface Session {
 export const SESSION_COOKIE = 'studioos_session';
 
 /**
- * How long the cookie itself survives. Deliberately longer than the access
- * token, which is refreshed silently; this is the "how long before you must
- * sign in again" figure.
+ * How long a session lives: the cookie's Max-Age and the D1 row's expiry.
+ * Deliberately longer than the access token, which is refreshed silently; this
+ * is the "how long before you must sign in again" figure.
  */
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
-
-export class SessionError extends Error {}
-
-export async function sealSession(session: Session, keyBase64: string): Promise<string> {
-  return encryptString(JSON.stringify(session), keyBase64);
-}
-
-/**
- * Fails closed, exactly like the auth state. A tampered cookie must never
- * yield a usable session -- it carries an ERPNext access token, so a forged one
- * would be a forged identity.
- */
-export async function openSession(
-  sealed: string | undefined,
-  keyBase64: string,
-): Promise<Session> {
-  if (!sealed) throw new SessionError('Not signed in.');
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(await decryptString(sealed, keyBase64));
-  } catch {
-    throw new SessionError('Session could not be read. Sign in again.');
-  }
-
-  if (!isSession(parsed)) throw new SessionError('Session is malformed. Sign in again.');
-  return parsed;
-}
-
-function isSession(value: unknown): value is Session {
-  if (typeof value !== 'object' || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.host === 'string' &&
-    v.host.length > 0 &&
-    typeof v.user === 'string' &&
-    v.user.length > 0 &&
-    typeof v.accessToken === 'string' &&
-    v.accessToken.length > 0 &&
-    typeof v.accessExpiresAt === 'number' &&
-    Number.isFinite(v.accessExpiresAt) &&
-    (v.refreshToken === undefined || typeof v.refreshToken === 'string')
-  );
-}
 
 /** True when the access token is spent, or close enough that a call would race it. */
 export function accessTokenExpired(
@@ -195,9 +150,9 @@ export function accessTokenExpired(
   return session.accessExpiresAt - skewSeconds <= nowSeconds;
 }
 
-export function sessionCookie(sealed: string, secure: boolean): string {
+export function sessionCookie(sessionId: string, secure: boolean): string {
   const parts = [
-    `${SESSION_COOKIE}=${sealed}`,
+    `${SESSION_COOKIE}=${sessionId}`,
     'Path=/',
     'HttpOnly',
     'SameSite=Lax',

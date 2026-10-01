@@ -15,7 +15,8 @@ Browser ──► one Worker, one origin (Hono, Cloudflare Workers)
               │    /api/* and /auth/* run the Worker first
               ├──► the signed-in studio's ERPNext REST API
               │      projects, clients, invoices, tasks, inventory …
-              └──► Cloudflare KV   (the tenant registry, and nothing else)
+              ├──► Cloudflare KV   (the tenant registry)
+              └──► Cloudflare D1   (StudioOS's own data: today, sessions)
 ```
 
 **ERPNext is the only database.** StudioOS never talks to it directly, only over
@@ -29,9 +30,13 @@ account: if ERPNext will not show a document to that user, StudioOS cannot
 show it either, which is also why StudioOS contains no permission logic of its
 own.
 
-Sessions are a sealed, stateless cookie. The one piece of state kept outside
-ERPNext is the **tenant registry** on Cloudflare KV — which studio's site, and
-the client credentials StudioOS was registered with there — because it has to be
+A session is a row in **D1**, and the cookie holds only a random identifier.
+To delete the row signs that browser out on its next request. D1 stores the
+identifier's hash, never the identifier, and the ERPNext tokens encrypted. See
+[ADR-0003](./docs/adr/0003-how-sessions-are-stored.md).
+
+The **tenant registry** is on Cloudflare KV — which studio's site, and the
+client credentials StudioOS was registered with there — because it has to be
 readable *before* we can talk to that site at all. Client secrets are encrypted
 at the application level, not just at rest.
 
@@ -53,10 +58,10 @@ TanStack Query, React Hook Form + Zod, react-chartjs-2, date-fns.
 
 **Backend** — Hono, TypeScript, Cloudflare Workers, oauth4webapi, Zod.
 
-> Drizzle and the D1 migrations are still in `worker/` but nothing is bound to
-> them. They belong to six routes — brand, crew, expenses, studio rental,
-> subscriptions, transactions — that are **not mounted**, pending the Phase 10f
-> question of where that data lives in ERPNext. Dormant, not live.
+> D1 holds the session tables in `worker/migrations/`. The old ledger tables,
+> and the Drizzle schema for them, are parked in `worker/migrations-parked/` and
+> are not applied. Their five routes are **not mounted**: `docs/SEAM.md`
+> section 1 decides where each data set lives first.
 
 ## Why this exists
 
@@ -82,6 +87,7 @@ One process, one origin:
 
 ```bash
 bun install          # once, from the root
+bun run db:migrate   # once, and after each new migration: local D1 tables
 bun run start        # build the SPA, then start the Worker on :8787
 ```
 

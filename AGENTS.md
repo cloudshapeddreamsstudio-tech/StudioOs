@@ -92,7 +92,10 @@ worker/                the Worker: Hono on Cloudflare Workers
   src/lib/             pure logic, the ERPNext client, session, tenants
   src/middleware/      requireSession, errorHandler
   src/schemas/         zod input validation
-  src/db/              the D1 schema and client - not bound today
+  src/kernel/auth/     sessions: the only code that reads or writes them
+  src/db/              the parked ledger schema and client - not used today
+  migrations/          the D1 migrations that are applied
+  migrations-parked/   the old ledger migrations - never applied
   tests/               bun test, pure logic, no network
 docs/                  see "Which documents to trust"
   adr/                 architecture decision records
@@ -117,13 +120,13 @@ says what is **not** mounted and why. Read it before you search the folder.
 
 Five route files exist and are not mounted, on purpose: `brand`,
 `projectExpenses`, `studioRental`, `subscriptions` and `transactions`. They read
-D1, and D1 is not bound yet. They are finished work that waits for its phase.
-**Do not mount one without doing its phase.**
+the old ledger tables. D1 is bound, but those tables do not exist in it: their
+migrations are in `worker/migrations-parked/` and are not applied. A parked
+route that is mounted fails on its first query. They are finished work that
+waits for its phase. **Do not mount one without doing its phase.**
 
-Those files, and `db/client.ts` and `db/schema.ts`, are in the `exclude` list in
-`worker/tsconfig.json`. They are not type-checked. That list
-is debt with a date on it: code that is not checked decays quietly. The list is
-deleted at M4. **Do not add to it.**
+They are type-checked. The `exclude` list in `worker/tsconfig.json` was
+deleted at H2, when D1 was bound again. **Do not add one back.**
 
 ### The same word on both sides
 
@@ -193,6 +196,7 @@ They run in Bun, on a real file system, and never inside the Worker.
 
 ```bash
 bun install          # once, from the repository root
+bun run db:migrate   # once, and after each new migration
 
 bun run start        # build the SPA, then start the Worker on :8787
 ```
@@ -203,10 +207,16 @@ because Wrangler reloads the Worker. There is no Vite development server: it is
 a second origin, and sign-in does not operate across two origins.
 
 To check the routing between the SPA and the Worker, run
-`bun run worker/scripts/check-one-origin.ts` while the Worker runs.
+`bun run worker/scripts/check-one-origin.ts` while the Worker runs. To check
+that a session can be cancelled, read the top of
+`worker/scripts/check-session-cancel.ts`.
 
-On Windows, `scripts/dev-worker.cmd` does the same thing as `bun run start`. Read `scripts/README.md` first if you use WSL. Where you keep the
-repository changes which method is correct.
+If sign-in fails with `no such table: studio`, you did not run
+`bun run db:migrate`.
+
+On Windows, `scripts/dev-worker.cmd` does the same thing as `bun run start`.
+Read `scripts/README.md` first if you use WSL. Where you keep the repository
+changes which method is correct.
 
 - **Bun is the only tool you need.** Bun installs the packages, runs the
   scripts, runs the tests, and starts Wrangler. There is no `npm` and no `npx`
@@ -338,6 +348,7 @@ Settled, and recorded:
 |---|---|
 | StudioOS may provision its own DocTypes, under six conditions | [ADR-0001](./docs/adr/0001-studioos-provisions-its-own-doctypes.md) |
 | The repository structure, and the module plan for M2 | [ADR-0002](./docs/adr/0002-repository-structure.md) |
+| Sessions are a small store in D1 that StudioOS writes, not better-auth | [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md) |
 | Documentation is written in Simplified Technical English | `docs/adr/README.md` |
 | Changes go straight to `main` for now. Pull request review starts when Sandesh chooses | — |
 
@@ -359,7 +370,7 @@ each piece.
 |---|---|
 | ~~H1~~ | ~~One Worker and one origin.~~ **Done 2026-10-01.** |
 | H1b | A fast development loop, still on one origin. [Card](./docs/tasks/h1b-dev-loop.md). Do this before H3. |
-| H2 | Sessions that can be cancelled, on D1. The store is chosen in [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md). |
+| H2 | Sessions that can be cancelled, on D1. The store is chosen in [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md). **Done 2026-10-01 on a local Worker. The test on real Cloudflare is open.** |
 | H3 | The front end conventions and the Figma pipeline. Runs beside H1 and H2. |
 | then | The modules in ADR-0002, continuous integration, project notes, deployment. |
 

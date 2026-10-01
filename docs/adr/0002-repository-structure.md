@@ -157,7 +157,7 @@ make two requests. Accept this. It is the cost that buys the boundary.
   M4. Moving a file into a module is not the same as mounting it.
 - `routes/auth.ts` is not rewritten. It is 334 lines of correct Frappe code and
   it moves into `kernel/auth/` without a change to its contents.
-- The `exclude` list in `worker/tsconfig.json` stays until M4. Do not add to it.
+- The `exclude` list in `worker/tsconfig.json` was deleted at H2, when D1 was bound. Do not add one back.
 
 ## The order of the work
 
