@@ -314,6 +314,7 @@ Settled, and recorded:
 |---|---|
 | StudioOS may provision its own DocTypes, under six conditions | [ADR-0001](./docs/adr/0001-studioos-provisions-its-own-doctypes.md) |
 | The repository structure, and the module plan for M2 | [ADR-0002](./docs/adr/0002-repository-structure.md) |
+| Sessions are a small store in D1 that StudioOS writes, not better-auth | [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md) |
 | Documentation is written in Simplified Technical English | `docs/adr/README.md` |
 | Changes go straight to `main` for now. Pull request review starts when Sandesh chooses | — |
 

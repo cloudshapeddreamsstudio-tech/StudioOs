@@ -589,3 +589,26 @@ concern is that a custom DocType is unfamiliar, and a clear name solves that.
 **Overheads stay open.** This amendment makes the option available. The studio
 owner still decides whether an overhead is a note or is bookkeeping, because
 that choice changes what the data means.
+
+### Amendment 3 — sessions without better-auth (DECIDED 2026-10-01)
+
+Section 2 says that better-auth stores the `user`, `session` and `account`
+rows. [ADR-0003](./adr/0003-how-sessions-are-stored.md) changes this. StudioOS
+stores those rows itself, in D1, behind `kernel/auth`.
+
+Section 2 is still correct in each other rule. The ERPNext OAuth flow does not
+change. The ERPNext tokens go in a table, not in the cookie. A session says who
+the person is. It never says what the person may see.
+
+Where section 2 names a better-auth table, read the StudioOS table:
+
+| Section 2 says | Read |
+|---|---|
+| better-auth `user` | `user` |
+| better-auth `session` | `session` |
+| better-auth `account` | `erp_token` |
+| better-auth `organization` | `studio` |
+
+The reason is in ADR-0003. In short: better-auth does not sign the person in
+here, so it gives only storage. The parts of better-auth that StudioOS wants
+are in Phase 8. Phase 8 can choose better-auth again.
