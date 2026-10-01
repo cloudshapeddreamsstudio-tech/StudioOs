@@ -24,20 +24,19 @@ import { HomePage } from './features/marketing/HomePage';
  * own full copy of the sidebar and header. Adding a nav item is now one line
  * in Sidebar.tsx instead of an edit to every page in the project.
  *
- * ## The surface as of Phase 10a
+ * ## The surface of release 1 (docs/RELEASE-1.md)
  *
- * Projects, plus everything the old app did that needs no database of ours:
- * Dashboard, Tasks, Payables, Clients, Vendors, Inventory.
+ * Dashboard (with Analytics and Fintech), Projects (list, create, edit, detail),
+ * Invoices, Tasks, Payables, Clients (list and detail), Vendors, Inventory.
  *
- * Still withdrawn, and each waiting on a named phase in docs/PLAN-v2.md:
- * Invoices (10c), analytics and fintech (10e), studio rental / transactions /
- * subscriptions (10g). Client detail is 10b. Their components stay in the
- * repo; adding one back is a line here plus mounting its API route.
+ * Not in release 1: studio rental, transactions, subscriptions, and the invoice
+ * designer. Their components stay in `features/ledgers/` and are not routed.
+ * To add one back is a line here plus mounting its API route, and it waits for
+ * release 2.
  *
- * `projects/:name` is back as of Phase 7b, with the crew roster and project
- * expenses explicitly declared unavailable rather than silently treated as
- * zero — so any figure derived from them shows a dash, not a number that
- * would be wrong in the flattering direction.
+ * Project expenses that StudioOS does not have are shown as unknown, not as
+ * zero -- so a figure derived from them shows a dash, not a number that would
+ * be wrong in the flattering direction.
  *
  * ## Home and sign-in sit outside the shell
  *
@@ -96,11 +95,10 @@ function NotFound() {
   return (
     <div className="text-center py-20">
       <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-2">
-        Not in this release
+        Page not found
       </h1>
       <p className="text-sm text-gray-400">
-        Invoices, analytics, studio rental, transactions and subscriptions are built but not yet
-        restored — see <code>docs/PLAN-v2.md</code>, Phase 10.
+        This page does not exist. Use the menu on the left to go back.
       </p>
     </div>
   );

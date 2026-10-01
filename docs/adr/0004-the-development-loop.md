@@ -104,8 +104,7 @@ as the test of what production does.
 `vite build` copies `worker/.dev.vars` into `app/dist/studioos_worker/`. The
 `dist/` folder is ignored by git. Do not commit or share that folder.
 
-`docs/DEPLOY.md` must use the output of `vite build` when it is written again
-at M6.
+`docs/DEPLOY.md` uses the output of `vite build`: `bun run deploy:ENV`.
 
 ## What does not change
 

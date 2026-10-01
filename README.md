@@ -46,7 +46,7 @@ at the application level, not just at rest.
 |---|---|
 | `app/` | React 19 + Vite + TypeScript + Tailwind v4 SPA |
 | `worker/` | Hono + TypeScript on Cloudflare Workers |
-| `docs/` | `SEAM.md` (the constitution), `SPEC.md`, `PLAN-v2.md` (phases 6+), `archive/` |
+| `docs/` | `RELEASE-1.md` (the current scope), `SEAM.md` (the constitution), `DEPLOY.md`, `FINDINGS.md`, `PLAN-v2.md` (history of phases 6 to 10), `adr/`, `tasks/`, `archive/` |
 | `AGENTS.md` | **Read this first.** The router: where things sit, which docs to trust, what not to do |
 
 Each side has its own `package.json`, joined by a Bun workspace at the root.
@@ -72,7 +72,7 @@ an Express bridge, and six flat JSON files acting as a database. It worked, but:
 - there was no auth of any kind
 - a nav change meant editing 90 files
 
-See `docs/SPEC.md` for the spec and `docs/PLAN-v2.md` for the phase plan.
+See `docs/RELEASE-1.md` for what ships now, and `docs/SEAM.md` for the rules.
 
 ## Contributing
 
@@ -102,12 +102,11 @@ tests must pass.
 
 ## Status
 
-Sign-in, sessions that can be cancelled, the Projects surface, clients,
-invoices, and the money views are done. Not started: deployment (9), and the
-pages that read the non-ERPNext data sets (10g). A second studio is not in the
-release.
+**Release 1 is built and is not yet deployed.** It is on the `release-1`
+branch. The next step is to deploy staging at `demoos.cloudshapeddreamsstudio.com`
+and test each feature by hand: `docs/tasks/r1-staging.md`. Then production at
+`studioos.cloudshapeddreamsstudio.com`.
 
-**Nothing is deployed yet.** `docs/DEPLOY.md` predates the OAuth work and still
-describes the API-key setup that Phase 6c deleted; it is rewritten in Phase 9.
+`docs/RELEASE-1.md` lists what is in release 1, and what waits for release 2.
 
 `docs/PLAN-v2.md` tracks exactly what has landed, with the verification records.

@@ -32,8 +32,11 @@
     //
     // There is no ERPNext credential at all. Since Phase 6c every request runs
     // on the signed-in user's own token, and the site it goes to comes from the
-    // tenant registry, not from FRAPPE_URL.
-    "FRAPPE_URL": "https://cloudshapeddreamsstudio.m.erpnext.com",
+    // tenant registry.
+    //
+    // COMPANY is the ERPNext Company that a new Project is created under. It
+    // must be the exact Company name on the ERPNext site that this environment
+    // talks to, or project creation fails.
     "COMPANY": "Cloud Shaped Dreams Studio",
 
     // Where StudioOS itself answers.
@@ -88,5 +91,67 @@
       "binding": "TENANTS",
       "id": "REPLACE_WITH_ID_FROM_WRANGLER_KV_NAMESPACE_CREATE"
     }
-  ]
+  ],
+
+  // ---------------------------------------------------------------------------
+  // The two deployed environments. The top of this file is local development.
+  //
+  //   staging     demoos.cloudshapeddreamsstudio.com
+  //               signs in against cloudshapeddreamsstudio.m.erpnext.com
+  //   production  studioos.cloudshapeddreamsstudio.com
+  //               signs in against csdstudio.frappe.cloud
+  //
+  // The ERPNext site is not configured here. It is a tenant in the TENANTS
+  // registry of that environment, keyed by its host. docs/DEPLOY.md step 6.
+  //
+  // Each environment is a separate Worker with its own D1, its own KV and its
+  // own secrets. Nothing is shared, so a fault in staging cannot touch
+  // production data or production sessions.
+  //
+  // Wrangler does not copy `vars`, `d1_databases` or `kv_namespaces` into an
+  // environment. Each one is declared again below, on purpose.
+  //
+  // Select one at build time: CLOUDFLARE_ENV=staging bun run build.
+  // docs/DEPLOY.md has the full procedure.
+  // ---------------------------------------------------------------------------
+  "env": {
+    "staging": {
+      "name": "studioos-staging",
+      "routes": [{ "pattern": "demoos.cloudshapeddreamsstudio.com", "custom_domain": true }],
+      "vars": {
+        "COMPANY": "Cloud Shaped Dreams Studio",
+        "APP_ORIGIN": "https://demoos.cloudshapeddreamsstudio.com"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "studioos-staging-db",
+          "database_id": "REPLACE_WITH_ID_FROM_WRANGLER_D1_CREATE_STAGING",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "kv_namespaces": [
+        { "binding": "TENANTS", "id": "REPLACE_WITH_ID_FROM_WRANGLER_KV_CREATE_STAGING" }
+      ]
+    },
+    "production": {
+      "name": "studioos-production",
+      "routes": [{ "pattern": "studioos.cloudshapeddreamsstudio.com", "custom_domain": true }],
+      "vars": {
+        "COMPANY": "REPLACE_WITH_THE_COMPANY_NAME_ON_THE_PRODUCTION_ERPNEXT_SITE",
+        "APP_ORIGIN": "https://studioos.cloudshapeddreamsstudio.com"
+      },
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "studioos-production-db",
+          "database_id": "REPLACE_WITH_ID_FROM_WRANGLER_D1_CREATE_PRODUCTION",
+          "migrations_dir": "migrations"
+        }
+      ],
+      "kv_namespaces": [
+        { "binding": "TENANTS", "id": "REPLACE_WITH_ID_FROM_WRANGLER_KV_CREATE_PRODUCTION" }
+      ]
+    }
+  }
 }

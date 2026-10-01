@@ -16,7 +16,7 @@ Legend: ✅ done · 🔨 in progress · ⬜ not started · ⏸ deliberately defe
 ## The three decisions this plan is built on
 
 **1. StudioOS is a product for many studios**, not a single-user tool for CSDS.
-Recorded in [`SPEC.md`](./SPEC.md) with the verification evidence.
+Recorded in [`FINDINGS.md`](./FINDINGS.md) with the verification evidence.
 
 **2. ERPNext is the only database.** No D1, no Postgres, no external store for
 business data.
@@ -593,7 +593,7 @@ configuration touched by hand.
 
 ### The schema-assumption audit, scoped to Projects ⬜
 
-The open risk from `SPEC.md`, and much smaller now that only Projects ships.
+The open risk from the first spec (`archive/SPEC-v1.md`), and much smaller now that only Projects ships.
 
 - ⬜ Audit every naming and field assumption in `smartAction.ts` and the parts
   of `projectFinance.ts` that survive without crew and expenses
@@ -606,51 +606,15 @@ is needed, not before.
 
 ---
 
-## Phase 9 — deployment ⬜
+## Phase 9 — deployment
 
-Staged. `DEPLOY.md` needs rewriting for the no-D1, multi-tenant shape once
-Phases 6 and 7 land.
+> **Replaced 2026-10-02 by release 1.** The steps that were here described a
+> deploy with Cloudflare Pages and two origins, which H1 removed. The procedure
+> is `docs/DEPLOY.md`. The work is `docs/tasks/r1-staging.md`, then
+> `docs/tasks/r1-production.md`. Only 9e stays: it is the work to run the app
+> after release 1.
 
-### 9a — account and first deploy ⬜
-
-Needs your Cloudflare sign-in — the boundary from Phase 5 that was never crossed.
-
-- ⬜ `wrangler login`
-- ⬜ `wrangler deploy` the Worker — no D1, no R2, no cron to create
-- ⬜ `wrangler pages deploy` the frontend
-- ⬜ Confirm `/api/health` in production
-
-Far simpler than the Phase 5 runbook: no database to create, no migrations to
-apply remotely, no seed step, no bucket.
-
-### 9b — one origin ⬜
-
-- ⬜ Custom domain: Pages on `app.studioos.com`, a Worker route for `/api/*` on
-  the same host
-
-Take the custom domain. The SPA calls `/api/*` same-origin; without one,
-`*.pages.dev` and `*.workers.dev` are separate origins and you inherit CORS, a
-build-time API base URL, and two of everything to keep in sync. Decisively:
-**the OAuth redirect URI is registered on every customer's site**, so it must be
-permanent. Changing it later means every customer reinstalling.
-
-### 9c — secrets and the registry ⬜
-
-- ⬜ `wrangler secret put SESSION_KEY` — signs and encrypts session cookies
-- ⬜ `wrangler secret put REGISTRY_KEY` — encrypts tenant client secrets at rest
-- ⬜ `wrangler secret put CONNECTOR_SHARED_SECRET` — gates self-registration
-- ⬜ `wrangler kv namespace create TENANTS` — plus a `--preview` namespace so
-  local development never writes into the production registry
-- ⬜ **No ERPNext admin credentials in production.** If `FRAPPE_API_KEY` is set
-  anywhere after Phase 6, Phase 6 is not finished
-
-### 9d — the connector, published ⬜
-
-- ⬜ `oauth_connector` pushed to GitHub
-- ⬜ Installed on the live CSDS site from GitHub, not from a local path
-- ⬜ Production redirect URI confirmed as what the connector registers
-
-### 9e — running it ⬜
+### 9e — running it, after release 1 ⬜
 
 - ⬜ Error reporting — a failed token refresh must be visible, not silent
 - ⬜ Uptime check on `/api/health`

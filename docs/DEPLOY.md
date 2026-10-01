@@ -1,205 +1,223 @@
-# StudioOS — deployment runbook
+# Deploy StudioOS
 
-> ## ⚠️ THIS RUNBOOK IS STALE. DO NOT FOLLOW IT.
->
-> It documents the architecture as it stood **before Phase 6c**, and following
-> it would rebuild the thing that phase deliberately removed. Specifically, it
-> tells you to:
->
-> - create and seed a D1 database — there is no D1 binding today
-> - create an R2 bucket and a nightly backup cron — both removed in Phase 6a
-> - set `FRAPPE_API_KEY` and `FRAPPE_API_SECRET` — **this is the admin key.**
->   Phase 6c removed it so that StudioOS holds no credential able to read a
->   studio's books. Putting it back is the single worst change you can make to
->   this codebase. See `SEAM.md` section 0.
-> - expect `/api/health` to return `frappeConfigured` and `dbBound` — it
->   returns `registryBound` and `appOrigin`
-> - treat Cloudflare Access as "the whole authentication story" with "no user
->   table" — sign-in is now per-studio ERPNext OAuth2 with PKCE
->
-> **What to do instead:** nothing yet. A correct runbook cannot be written until
-> the one-Worker-one-origin change lands (`SEAM.md` section 8), because that
-> change removes most of the routing decisions this file agonises over. It is
-> step 6 of SEAM's sequence of work, and it gets rewritten from scratch, not
-> patched.
->
-> Kept rather than deleted because the Cloudflare Access and rollback sections
-> still describe real mechanics, and because the ledger import in step 4 records
-> the row counts and money totals of data that exists nowhere else.
+This is the procedure to deploy one environment of StudioOS. Do it for
+`staging` first. Do it for `production` only after the staging sign-off in
+`docs/tasks/r1-staging.md`.
+
+> **State:** written 2026-10-02 from the configuration and a dry-run deploy. It
+> was not yet run against Cloudflare. The first person who runs it corrects it
+> in the same change. A step that does not operate is a fault in this file.
+
+Written in ASD-STE100 Simplified Technical English.
 
 ---
 
-Every command here is meant to be run in order, from a terminal, by a human
-with access to the studio's Cloudflare account. Nothing in this file has been
-executed — the account boundary is where automation stops.
+## The two environments
 
-**Prerequisites**
+| `ENV` | StudioOS address | ERPNext site | Worker | D1 database |
+|---|---|---|---|---|
+| `staging` | `demoos.cloudshapeddreamsstudio.com` | `cloudshapeddreamsstudio.m.erpnext.com` | `studioos-staging` | `studioos-staging-db` |
+| `production` | `studioos.cloudshapeddreamsstudio.com` | `csdstudio.frappe.cloud` | `studioos-production` | `studioos-production-db` |
 
-- A Cloudflare account (the free plan covers everything below at this scale).
-- Node on PATH. `npx wrangler`, never `bunx wrangler` — Wrangler refuses to run
-  under Bun's runtime.
-- The ERPNext API key/secret pair, from ERPNext: avatar → My Settings →
-  API Access → Generate Keys. **The secret is shown exactly once.**
-
-> **One decision to make before step 6.** See "Routing" below — whether you have
-> a custom domain changes how the SPA reaches the API, and it is much simpler
-> with one.
+In each command below, write `staging` or `production` where you see `ENV`.
 
 ---
 
-## 1. Sign in
+## Before you start
+
+- You can sign in to the Cloudflare account that holds the
+  `cloudshapeddreamsstudio.com` zone.
+- You are a System Manager on the ERPNext site of the environment.
+- `bun run check` passes on your branch.
+- You have a password manager open. You make three secrets for each
+  environment, and you keep them there.
 
 ```bash
-cd StudioOs/backend
-npx wrangler login
+cd worker
+bunx wrangler login
+bunx wrangler whoami
 ```
 
-Opens a browser. Verify with `npx wrangler whoami`.
+---
 
-## 2. Create the database
+## Steps that you do one time for each environment
+
+### 1. Create the D1 database
 
 ```bash
-npx wrangler d1 create studioos-db
+cd worker
+bunx wrangler d1 create studioos-ENV-db
 ```
 
-Copy the printed `database_id` into `wrangler.toml`, replacing
-`REPLACE_WITH_ID_FROM_WRANGLER_D1_CREATE`. Commit that change.
+Copy the `database_id` from the output. In `worker/wrangler.jsonc`, in the
+`env.ENV` block, replace `REPLACE_WITH_ID_FROM_WRANGLER_D1_CREATE_ENV`.
 
-## 3. Create the schema
+### 2. Create the KV namespace
 
 ```bash
-npx wrangler d1 migrations apply studioos-db --remote
+bunx wrangler kv namespace create TENANTS --env ENV
 ```
 
-## 4. Import the ledgers — the step that must not be rushed
+Copy the `id`. In the `env.ENV` block, replace
+`REPLACE_WITH_ID_FROM_WRANGLER_KV_CREATE_ENV`.
 
-These six tables are the studio's **only** copy of studio rental sessions,
-transactions, crew rosters, expenses, subscriptions and invoice branding.
-ERPNext has none of it.
+### 3. Set the company name
+
+On the ERPNext site, open the Company list. Copy the exact name of the company.
+In the `env.ENV` block, set `COMPANY` to that name. A new project is created
+under this company. A wrong name makes project creation fail.
+
+Staging is already set to `Cloud Shaped Dreams Studio`. Confirm it. Production
+has a placeholder.
+
+Commit the changes to `wrangler.jsonc`. The ids are not secrets.
+
+### 4. Apply the migrations
+
+From the repository root:
 
 ```bash
-bun run scripts/import-ledgers.ts       # writes seed.sql, touches nothing
+bun run db:migrate:ENV
 ```
 
-Read `seed.sql`. Then:
+The output shows `0000_sessions.sql` with a tick.
+
+### 5. Deploy
+
+From the repository root:
 
 ```bash
-npx wrangler d1 execute studioos-db --remote --file=./seed.sql
-bun run scripts/verify-ledgers.ts --remote
+bun run deploy:ENV
 ```
 
-`verify-ledgers` compares row counts **and money totals** against the source
-JSON and exits non-zero on any mismatch. Do not continue past a failure. As of
-the last local run the expected figures are:
+This builds the SPA and the Worker for that environment, then deploys them.
+Cloudflare attaches the custom domain. The first time, the certificate can
+take some minutes.
 
-| Table | Rows | Total |
-|---|---|---|
-| expenses | 0 | — |
-| crew_entries | 5 | ₹14,400 |
-| subscriptions | 2 | — |
-| transactions | 92 | ₹1,51,741 |
-| rental_bookings | 2 | — |
-| rental_sessions | 103 | ₹13,550 |
-| brand | 1 | — |
+The output can show this warning. It is not a fault:
 
-## 5. Secrets
+```
+Unexpected fields found in top-level field: "connect","k2"
+```
+
+Check:
 
 ```bash
-npx wrangler secret put FRAPPE_API_KEY
-npx wrangler secret put FRAPPE_API_SECRET
+curl https://<StudioOS address>/api/health
 ```
 
-These are prompted for, never written to a file. `FRAPPE_URL` and `COMPANY` are
-plain vars already in `wrangler.toml`.
+The answer is `{"ok":true,"registryBound":true,"appOrigin":"https://<StudioOS address>"}`.
 
-## 6. Create the backup bucket, then deploy the API
+### 6. Set the three secrets
+
+Make three new values. **Never use the same value in two environments.** A
+staging secret that leaks must not open production.
 
 ```bash
-npx wrangler r2 bucket create studioos-backups
-npx wrangler deploy
+bun -e "console.log(Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString('base64'))"
 ```
 
-The deploy also registers the nightly cron (19:30 UTC = 01:00 IST). Verify:
+Run that three times. Keep each value in the password manager, with the name of
+the environment. Then:
 
 ```bash
-curl https://studioos-api.<your-subdomain>.workers.dev/api/health
+cd worker
+bunx wrangler secret put SESSION_KEY --env ENV
+bunx wrangler secret put REGISTRY_KEY --env ENV
+bunx wrangler secret put CONNECTOR_SHARED_SECRET --env ENV
 ```
 
-Expect `{"ok":true,"frappeConfigured":true,"dbBound":true}`. Then force one
-backup rather than waiting a day for the cron:
+Wrangler asks for each value. Paste it. It is not written to a file.
+
+`SESSION_KEY` encrypts the ERPNext tokens in D1. Treat it like an admin key.
+Read `docs/SEAM.md` Amendment 4.
+
+### 7. Connect the ERPNext site
+
+This is done by hand. `docs/PLAN-v2.md` D2.
+
+**7a. On the ERPNext site**, as a System Manager, create an **OAuth Client**:
+
+| Field | Value |
+|---|---|
+| App Name | `StudioOS ENV` |
+| Redirect URIs | `https://<StudioOS address>/auth/callback` |
+| Default Redirect URI | `https://<StudioOS address>/auth/callback` |
+| Grant Type | `Authorization Code` |
+| Response Type | `Code` |
+| Scopes | `all` |
+
+Save it. Copy the **Client ID** and the **Client Secret**.
+
+The redirect URI must be exact. The StudioOS address of staging goes only on
+the staging ERPNext site. The StudioOS address of production goes only on the
+production ERPNext site.
+
+**7b. Register the site with StudioOS.** Put the values in a file, not on the
+command line, so that they are not kept in your shell history:
 
 ```bash
-curl -X POST https://studioos-api.<your-subdomain>.workers.dev/api/admin/backup
-npx wrangler r2 object get studioos-backups/d1/studioos-<UTC-date>.json --file=/tmp/check.json
+cat > /tmp/register.json <<'JSON'
+{ "host": "<ERPNext site>", "clientId": "<Client ID>", "clientSecret": "<Client Secret>" }
+JSON
+
+curl -X POST https://<StudioOS address>/auth/register \
+  -H "content-type: application/json" \
+  -H "x-connector-secret: <CONNECTOR_SHARED_SECRET of this environment>" \
+  --data @/tmp/register.json
+
+rm /tmp/register.json
 ```
 
-Backup keys are **UTC-dated**, matching the cron. Late evening IST writes
-yesterday's date — that is correct, not a bug.
+The answer contains `"registered":true`.
 
-## 7. Deploy the front end
+### 8. Check the routing
+
+From the repository root:
 
 ```bash
-cd ../app
-bun run build
-npx wrangler pages deploy dist --project-name studioos
+bun run worker/scripts/check-one-origin.ts https://<StudioOS address>
 ```
 
-### Routing — the decision
+All five checks show `ok`.
 
-The SPA calls `/api/*` as a same-origin relative path. That has to reach the
-Worker.
+### 9. Sign in
 
-**With a custom domain (recommended).** Add the domain to Cloudflare, point the
-Pages project at `studioos.yourdomain.com`, then add a Worker route:
+Open `https://<StudioOS address>`. Select sign in. Type the ERPNext site. Sign in
+on ERPNext. Approve the consent screen. You arrive on the dashboard.
 
-```
-studioos.yourdomain.com/api/*  →  studioos-api
-```
+---
 
-One origin, no CORS, and a single Access application protects everything.
+## A deploy after a change
 
-**Without a custom domain.** Pages is on `*.pages.dev` and the Worker on
-`*.workers.dev` — different origins. That needs CORS on the Worker, a build-time
-API base URL in the frontend, and *two* Access applications kept in sync. It
-works, but it is materially more to get wrong. Worth the price of a domain.
-
-## 8. Put Cloudflare Access in front
-
-Zero Trust → Access → Applications → Add a self-hosted application.
-
-- Domain: the app's hostname (and the API hostname too, if you skipped step 7's
-  custom domain).
-- Policy: **Allow**, rule type **Emails**, listing exactly the addresses that
-  should get in.
-- Leave session duration at the default.
-
-This is the whole authentication story. There is no login page in the app, no
-password handling, and no user table — by design. Confirm it works from a
-private window: you should be challenged before seeing anything.
-
-## 9. Prove it end to end
-
-- `/api/health` reports both flags true.
-- The Projects page lists real projects.
-- An invoice's Print view renders with the UPI QR.
-- `verify-ledgers.ts --remote` passes.
-- A private window is challenged by Access.
-
-## Rollback
-
-Every deploy is versioned:
+From the repository root:
 
 ```bash
-npx wrangler deployments list
-npx wrangler rollback [<deployment-id>]
+bun run db:migrate:ENV    # only if the change adds a migration
+bun run deploy:ENV
 ```
 
-Rollback reverts **code only**. It does not undo a D1 migration or a seed
-import — those are forward-only, which is exactly why step 4 has its own
-verification gate.
+---
 
-## After deploying
+## Roll back
 
-The old app keeps running until parity is confirmed (Phase 6). Do not switch it
-off, and do not let both write to the same ledgers at once — StudioOS writes to
-D1, the old app writes to its JSON files, and nothing reconciles them.
+```bash
+cd worker
+bunx wrangler deployments list --name studioos-ENV
+bunx wrangler rollback --name studioos-ENV
+```
+
+A rollback changes the code only. It does not undo a D1 migration. So a
+migration must work with the previous version of the code, or you cannot roll
+back.
+
+---
+
+## Do not
+
+- Do not put a secret in `wrangler.jsonc`, in a commit, or in a chat.
+- Do not share `app/dist/`. `vite build` copies `worker/.dev.vars` into it.
+- Do not register the production ERPNext site on staging, or the staging
+  ERPNext site on production.
+- Do not add `FRAPPE_API_KEY` or any ERPNext credential. Each request runs on
+  the token of the person who signed in. `docs/SEAM.md` section 0.

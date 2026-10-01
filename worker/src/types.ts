@@ -15,7 +15,6 @@ export interface Env {
    * requests reach ERPNext any more -- since Phase 6c each request goes to the
    * signed-in user's own studio, whose origin comes from the tenant registry.
    */
-  FRAPPE_URL: string;
   COMPANY: string;
 
   /** Sessions and users. Read and written only by kernel/auth. */

@@ -8,7 +8,7 @@ question: where does this data go? The rules also protect the security property
 in Section 0.
 
 This document replaces the open question in Phase 10f of `PLAN-v2.md`. It does
-not replace `SPEC.md`.
+not replace `FINDINGS.md`, which holds the facts that it stands on.
 
 **Note on the language.** This document uses ASD-STE100 Simplified Technical
 English. Sentences are short. Each word has one meaning. **Seam** is a technical
@@ -480,8 +480,11 @@ previous step.
    One small feature that establishes these two patterns is better than five
    features with five different patterns.
 5. **Add Resend** for invitations and OTP codes only. Add the email log.
-6. **Deploy.** Write `DEPLOY.md` again. `DEPLOY.md` still describes the API key
-   that Phase 6c removed.
+6. **Deploy.** `docs/DEPLOY.md` is the procedure.
+
+> **2026-10-02.** Steps 1 to 3 are done (step 3 without better-auth, Amendment
+> 3). The current work is release 1, `docs/RELEASE-1.md`. Steps 4 and 5 come
+> after release 1.
 
 Do the six data sets of Phase 10f after all these steps, and use Section 1. They
 are the result of the seam. They are not part of its construction.

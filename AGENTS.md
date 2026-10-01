@@ -17,7 +17,7 @@ Read this file. Then read, in this order, only what your task needs:
 1. `docs/tasks/<the card you were given>.md` — if you were given one. It names
    what to read next.
 2. `docs/SEAM.md` section 10 — the three questions. Answer them for your change.
-3. `docs/HANDOFF.md` — the current direction, if no card was given.
+3. `docs/RELEASE-1.md` — the current scope, if no card was given.
 
 Then work. Do not read the whole `docs/` folder. `docs/PLAN-v2.md` is 1200 lines
 of history and you almost never need it.
@@ -145,11 +145,12 @@ feature on one side, use the same word on the other side.
 | `docs/SEAM.md` | **Authoritative** | Where data lives and who grants access. Read the Amendments at the end. |
 | `docs/seam-map.html` | **Authoritative** | The same document as diagrams. Open it when the words are dense. |
 | `docs/adr/` | **Authoritative** | One decision for each record, with its evidence and its cost. |
-| `docs/HANDOFF.md` | **Authoritative** | The work ahead, in order, and the decisions inside each piece. Start here if you are new. `docs/handoff.html` is the same document with diagrams. |
+| `docs/RELEASE-1.md` | **Authoritative** | What release 1 contains, what it does not, and its gates. Start here. |
+| `docs/HANDOFF.md` | **Reference** | How H1, H1b and H2 were done, and the H3 front end work that comes after release 1. |
 | `docs/tasks/` | **Authoritative** | One card for one job, written to be given to an agent. See `docs/tasks/README.md`. |
-| `docs/SPEC.md` | **Authoritative** | The goal, the non-goals, and two sections of verified live findings. |
-| `docs/PLAN-v2.md` | **The plan of record** | Phases 6 to 11. It is long. Search it by phase number. |
-| `docs/DEPLOY.md` | **STALE. Do not follow it.** | Nothing. It describes the architecture before Phase 6c. It is rewritten at M6. |
+| `docs/FINDINGS.md` | **Authoritative** | Facts proved against a real ERPNext. The decisions stand on these. |
+| `docs/PLAN-v2.md` | **History, and the decisions table** | Phases 6 to 11, with the verification records. Its D-table holds the product decisions. It is long. Search it by phase or by D-number. |
+| `docs/DEPLOY.md` | **Authoritative** | The procedure to deploy staging or production. Written before its first run: correct it when it is wrong. |
 | `docs/archive/` | **History** | To learn why something is the way it is. Never as an instruction. |
 
 If `docs/SEAM.md` and a different document disagree, SEAM is correct and the
@@ -256,15 +257,17 @@ Both must pass before you commit.
 
 ## Environments
 
-| ERPNext site | Use |
-|---|---|
-| A shared site on Frappe Cloud | **Staging.** Test here. |
-| A different site on Frappe Cloud | **Production.** Shubham's real data. |
+| | StudioOS web app (Cloudflare) | ERPNext site (Frappe Cloud) |
+|---|---|---|
+| **Staging** | `https://demoos.cloudshapeddreamsstudio.com` | `cloudshapeddreamsstudio.m.erpnext.com` |
+| **Production** | `https://studioos.cloudshapeddreamsstudio.com` | `csdstudio.frappe.cloud` |
+| Development | `http://localhost:8787` | the staging site, or a local bench |
 
-Each site is a separate tenant in the StudioOS registry, keyed by its host. Each
-site registers its own OAuth client with the redirect URI
-`https://studioos.cloudshapeddreamsstudio.com/auth/callback`. Do not test on the
-production site.
+Each environment is a separate Worker with its own D1, KV and secrets, declared
+in `worker/wrangler.jsonc` under `env`. Each ERPNext site has its own OAuth
+Client, and its redirect URI is the `/auth/callback` of **its own** StudioOS
+address. Staging never connects to production. **Do not test on the production
+site.** `docs/DEPLOY.md` has the procedure.
 
 ---
 
@@ -404,20 +407,18 @@ work. If you build something that no person asked for, stop and ask.
 
 ## The work ahead
 
-`docs/HANDOFF.md` holds the current plan, in order, with the decisions inside
-each piece.
+**Release 1 is the only work now.** `docs/RELEASE-1.md` says what is in it.
+Work on the `release-1` branch.
 
-| Work | What it does |
+| Work | State |
 |---|---|
-| ~~H1~~ | ~~One Worker and one origin.~~ **Done 2026-10-01.** |
-| ~~H1b~~ | ~~A fast development loop, still on one origin.~~ **Done 2026-10-01**, [ADR-0004](./docs/adr/0004-the-development-loop.md). |
-| ~~H2~~ | ~~Sessions that can be cancelled, on D1.~~ **Done 2026-10-01**, [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md). Still only tested on a local Worker; real D1 is tested at deployment. |
-| H2b | Sign out everywhere, and remove a person from a studio. [Card](./docs/tasks/h2b-sign-out-everywhere.md). |
-| H3 | The front end conventions and the Figma pipeline. Runs beside H1 and H2. |
-| then | The modules in ADR-0002, continuous integration, project notes, deployment. |
+| H1, H1b, H2, H2b | Done 2026-10-01 and 2026-10-02 |
+| [r1-staging](./docs/tasks/r1-staging.md) | **Next.** Deploy staging. Sandesh tests each feature himself and signs off. |
+| [r1-production](./docs/tasks/r1-production.md) | After the staging sign-off and Malhar's approval. |
 
-H1 comes before H2. Do not start H2 first. H3 touches no Worker code, so it can
-run at any time.
+After release 1, and not before: the front end conventions and Figma (H3 in
+`docs/HANDOFF.md`), the modules of ADR-0002, continuous integration, and the
+release 2 features in `docs/RELEASE-1.md`.
 
 ---
 

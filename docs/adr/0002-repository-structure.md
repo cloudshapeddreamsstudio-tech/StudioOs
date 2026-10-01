@@ -59,7 +59,7 @@ worker/                the Worker: Hono on Cloudflare Workers
   wrangler.jsonc       the Worker configuration
   src/                 flat today, modules after M2
   tests/               bun test, pure logic, no network
-docs/                  SEAM.md, SPEC.md, PLAN-v2.md, adr/, archive/
+docs/                  RELEASE-1.md, SEAM.md, DEPLOY.md, FINDINGS.md, adr/, tasks/
 scripts/               Windows and WSL helpers
 ```
 

@@ -15,7 +15,11 @@
     "build": "cd app && bun run build",
     "test": "cd worker && bun test",
     "typecheck": "cd worker && bun run typecheck && cd ../app && bun run typecheck",
-    "check": "bun run typecheck && bun run test"
+    "check": "bun run typecheck && bun run test",
+    "deploy:staging": "CLOUDFLARE_ENV=staging bun run build && cd app && bunx wrangler deploy",
+    "deploy:production": "CLOUDFLARE_ENV=production bun run build && cd app && bunx wrangler deploy",
+    "db:migrate:staging": "cd worker && bunx wrangler d1 migrations apply studioos-staging-db --remote --env staging",
+    "db:migrate:production": "cd worker && bunx wrangler d1 migrations apply studioos-production-db --remote --env production"
   },
   "packageManager": "bun@1.4.2",
   "engines": {

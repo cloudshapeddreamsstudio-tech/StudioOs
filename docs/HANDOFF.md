@@ -12,6 +12,10 @@ See `docs/adr/README.md`.
 
 ---
 
+> **2026-10-02.** H1, H1b, H2 and H2b are done. The current work is release 1:
+> read `docs/RELEASE-1.md` and `docs/tasks/r1-staging.md`. H3 and the list
+> "After these" start after release 1.
+
 ## How to read this
 
 Each piece of work has four parts.
@@ -225,7 +229,7 @@ convention does not change.
 | Modules | The structure in ADR-0002. No change to behaviour. |
 | Continuous integration | The boundary check, the `withDocAccess` check, the migration check. |
 | Project notes | One small feature that proves the seam from end to end. |
-| Deployment | Write `docs/DEPLOY.md` again. Do not follow the file that is there now. |
+| Deployment | Done as part of release 1. See `docs/DEPLOY.md`. |
 
 ---
 
