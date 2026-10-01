@@ -94,6 +94,19 @@ answers `/api/health` from one port. Sign-in still works.
 
 ## H2 — Sessions that can be cancelled
 
+> **Done 2026-10-01, reviewed and merged.** A session is a row in D1 behind
+> `kernel/auth`. The cookie holds a random identifier. D1 holds its SHA-256 and
+> the ERPNext tokens, encrypted. To delete the row cancels the session.
+> [ADR-0003](./adr/0003-how-sessions-are-stored.md) records the decision.
+> `docs/SEAM.md` Amendment 4 records what changed about what an attacker gets,
+> because the tokens are now at rest.
+>
+> Tested on a local Worker only. Real D1 is tested at deployment.
+>
+> **One piece is left: [H2b](./tasks/h2b-sign-out-everywhere.md).** To end every
+> session of one person is now possible and has no endpoint.
+
+
 **The goal.** A session is a row in D1, not a sealed cookie. The ERPNext tokens
 move out of the cookie into a table. Sign-in behaves exactly as it does today.
 

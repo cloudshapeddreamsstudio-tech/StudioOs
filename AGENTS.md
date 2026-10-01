@@ -370,7 +370,8 @@ each piece.
 |---|---|
 | ~~H1~~ | ~~One Worker and one origin.~~ **Done 2026-10-01.** |
 | H1b | A fast development loop, still on one origin. [Card](./docs/tasks/h1b-dev-loop.md). Do this before H3. |
-| H2 | Sessions that can be cancelled, on D1. The store is chosen in [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md). **Done 2026-10-01 on a local Worker. The test on real Cloudflare is open.** |
+| ~~H2~~ | ~~Sessions that can be cancelled, on D1.~~ **Done 2026-10-01**, [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md). Reviewed and merged. Still only tested on a local Worker; real D1 is tested at deployment. |
+| H2b | Sign out everywhere, and remove a person from a studio. [Card](./docs/tasks/h2b-sign-out-everywhere.md). |
 | H3 | The front end conventions and the Figma pipeline. Runs beside H1 and H2. |
 | then | The modules in ADR-0002, continuous integration, project notes, deployment. |
 

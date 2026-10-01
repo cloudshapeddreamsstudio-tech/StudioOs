@@ -45,7 +45,14 @@ question: what does ERPNext permit for this user? There is no second permission
 model, no cache, and no synchronization to examine.
 
 **Limited damage from an attack.** If an attacker gets full control of StudioOS,
-the attacker gets no studio data. StudioOS holds no credential that reads it.
+the attacker gets no *standing* credential for any studio. StudioOS holds no
+admin key and no service account.
+
+> **Amended 2026-10-01.** This paragraph said "the attacker gets no studio
+> data". That is no longer exact. StudioOS now stores the ERPNext token of each
+> live session, encrypted, in D1. Read
+> [Amendment 4](#amendment-4--studioos-now-stores-tokens-2026-10-01) before you
+> rely on this paragraph.
 
 ### What the rule costs you
 
@@ -626,3 +633,48 @@ Where section 2 names a better-auth table, read the StudioOS table:
 The reason is in ADR-0003. In short: better-auth does not sign the person in
 here, so it gives only storage. The parts of better-auth that StudioOS wants
 are in Phase 8. Phase 8 can choose better-auth again.
+
+### Amendment 4 — StudioOS now stores tokens (2026-10-01)
+
+ADR-0003 moved the ERPNext access token and refresh token out of the cookie and
+into D1, encrypted with `SESSION_KEY`. That was necessary. A token in a cookie
+cannot be cancelled, and Section 0 needs the opposite.
+
+It also changes what an attacker gets, so Section 0 must say so.
+
+**Before.** StudioOS stored no token of any person. A token was in the browser
+of its owner. An attacker with the database got nothing. An attacker with the
+running Worker collected tokens slowly, one for each person who made a request.
+
+**Now.** An attacker with a copy of D1 **and** `SESSION_KEY` has the token of
+each person with a live session, at one time, without waiting.
+
+**What still holds, and it is most of the property:**
+
+- There is no admin key and no service account. Nothing reads a studio when no
+  person is signed in. Section 7 is unchanged.
+- Each token carries the permissions of one person. ERPNext still decides what
+  that person sees.
+- Each token expires, and each session expires after 14 days.
+- `SESSION_KEY` is a Worker secret and is not in D1. A copy of the database
+  alone gives nothing.
+
+**What this costs, stated plainly.** The blast radius of a full compromise is
+larger than it was, and it is now "every person signed in at that moment"
+instead of "every person who makes a request from now on". The difference is
+time, not kind. We accepted it to get cancellation, which Section 0 asked for.
+
+**What follows from it:**
+
+- `SESSION_KEY` is now a key that leaks studio data. Treat it like the admin key
+  that Phase 6c deleted. Rotate it and every person signs in again, which is the
+  correct behaviour and is also the reason rotation is cheap.
+- Do not widen what is stored. A token for a session is the limit. A token that
+  is not attached to a live session is the service account by a different name,
+  and Section 7 forbids it.
+- When Phase 6d or a later phase reviews security, this is the first paragraph
+  to read.
+
+The ADR records this in its costs. It is repeated here because Section 0 is
+where a reader looks, and a caveat that lives only in an ADR is a caveat nobody
+finds.
