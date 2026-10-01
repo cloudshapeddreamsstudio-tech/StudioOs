@@ -98,13 +98,13 @@ says what is **not** mounted and why. Read it before you search the folder.
 
 Five route files exist and are not mounted, on purpose: `brand`,
 `projectExpenses`, `studioRental`, `subscriptions` and `transactions`. They read
-D1, and D1 is not bound yet. They are finished work that waits for its phase.
-**Do not mount one without doing its phase.**
+the old ledger tables. D1 is bound, but those tables do not exist in it: their
+migrations are in `worker/migrations-parked/` and are not applied. A parked
+route that is mounted fails on its first query. They are finished work that
+waits for its phase. **Do not mount one without doing its phase.**
 
-Those files, and `db/client.ts` and `db/schema.ts`, are in the `exclude` list in
-`worker/tsconfig.json`. They are not type-checked. That list
-is debt with a date on it: code that is not checked decays quietly. The list is
-deleted at M4. **Do not add to it.**
+They are type-checked. The `exclude` list in `worker/tsconfig.json` was
+deleted at H2, when D1 was bound again. **Do not add one back.**
 
 ### The same word on both sides
 

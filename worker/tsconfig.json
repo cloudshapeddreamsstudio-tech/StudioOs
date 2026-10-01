@@ -22,39 +22,5 @@
    * @cloudflare/workers-types (both declare fetch, Request, Response). Tests
    * are type-checked by `bun test`, which runs them through the same compiler.
    */
-  "include": ["src/**/*.ts"],
-  /**
-   * Phase 6a removed the D1 binding, so `Env` no longer has `DB`. These files
-   * are the ones that used it. They are finished, tested work being kept for
-   * Phase 10 -- excluded from type-checking rather than deleted, so the shipped
-   * surface can be genuinely database-free without throwing that work away.
-   *
-   * The list is the *transitive* set, which is bigger than it first looks:
-   *
-   *  - `projectDetail` reads project expenses through this path. Phase 7b
-   *    gave it an explicit "inputs unavailable" fallback instead. The crew
-   *    roster half of that (`projectCrew`) came back in Phase 10f as a Draft
-   *    Purchase Order per member -- pure ERPNext, no D1 -- so it is no
-   *    longer on this list.
-   *  - `invoices` reads brand settings through `readBrand`, so the print route
-   *    is D1-backed even though invoices themselves are pure ERPNext.
-   *
-   * `lib/backup.ts` was on this list and is now deleted: Phase 6a removed the
-   * R2 bucket and the cron that called it, so the file had no caller.
-   *
-   * Everything else that is unmounted -- payables, clients, tasks, dashboard,
-   * vendors, equipment, inventory, insights, lookups, customers -- is pure
-   * ERPNext and stays type-checked, so it cannot rot while it waits. So do the
-   * tested pure-logic libs, including `invoiceHtml`, `payQr` and
-   * `invoiceNumber`: only the routes that touch storage are dropped.
-   */
-  "exclude": [
-    "src/db/client.ts",
-    "src/db/schema.ts",
-    "src/routes/brand.ts",
-    "src/routes/projectExpenses.ts",
-    "src/routes/studioRental.ts",
-    "src/routes/subscriptions.ts",
-    "src/routes/transactions.ts"
-  ]
+  "include": ["src/**/*.ts"]
 }
