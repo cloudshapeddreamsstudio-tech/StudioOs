@@ -16,7 +16,7 @@ import {
   type AuthState,
   type Session,
 } from '../lib/session';
-import { createSession, readSession, endSession } from '../kernel/auth';
+import { createSession, readSession, endSession, endAllMySessions } from '../kernel/auth';
 import type { AppEnv } from '../types';
 
 /**
@@ -280,26 +280,25 @@ app.get('/me', async (c) => {
 });
 
 /**
- * Sign out. Revokes the token at the studio's own site as well as dropping our
- * cookie -- otherwise the token stays valid there until it expires, and
- * "signed out" would be true only in this browser.
+ * Sign out of this browser. Revokes the token at the studio's own site as well
+ * as dropping our session -- otherwise the token stays valid there until it
+ * expires, and "signed out" would be true only in this browser. kernel/auth
+ * does both, and a failed revocation does not stop the sign-out.
  */
 app.post('/logout', async (c) => {
-  // Null when not signed in, or the cookie is unreadable. Ending it is still
-  // correct.
-  const session = await endSession(c);
-  const tenant = session ? await getTenant(c.env, session.host) : null;
-  if (session && tenant) {
-    // Best effort. A failed revocation must not leave the user unable to
-    // sign out of StudioOS itself.
-    await fetch(`${tenant.origin}/api/method/frappe.integrations.oauth2.revoke_token`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ token: session.accessToken }),
-    }).catch(() => undefined);
-  }
-
+  await endSession(c);
   return c.json({ signedOut: true });
+});
+
+/**
+ * Sign out everywhere: every session of the signed-in person on this studio,
+ * in each browser, and each of their ERPNext tokens. Only their own sessions --
+ * ending a different person's is a permission question StudioOS does not
+ * answer (docs/SEAM.md section 0), so that function has no route.
+ */
+app.post('/logout-all', async (c) => {
+  const sessionsEnded = await endAllMySessions(c);
+  return c.json({ signedOut: true, sessionsEnded });
 });
 
 /** Minimal cookie reader -- Hono's helper is not worth a dependency here. */
