@@ -148,7 +148,8 @@ this cost. Read them as the price of the decision.
 - **Brand data stays in D1.** The accent colour, the tagline, the notes wording
   and the margin split are presentation. They do not stay if you delete
   StudioOS. The UPI id is a studio setting and it goes to D1 with them.
-- **Overheads stay open.** This ADR makes the option available. It does not
+- **Overheads: decided 2026-10-02, native `Subscription`, not a provisioned
+  DocType.** See `docs/PLAN-v2.md` D8. The original text was: This ADR makes the option available. It does not
   choose it. The studio owner decides whether an overhead is a note or is
   bookkeeping, because that choice changes what the data means.
 

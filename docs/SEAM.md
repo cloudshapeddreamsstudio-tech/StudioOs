@@ -126,7 +126,7 @@ one.
 |---|---|---|
 | Expenses | no light native home exists | ERPNext — a `StudioOS Project Expense` DocType that StudioOS provisions. `Expense Claim` ships in HRMS, not stock ERPNext. See [ADR-0001](./adr/0001-studioos-provisions-its-own-doctypes.md) |
 | Transactions | money, with an audit record | ERPNext — `Journal Entry`, proven on a bench with the stock `Cash - ABBR` account |
-| Subscriptions | native costs the owner more than it gives | **Open.** Both homes are now available. The studio owner decides, because the choice changes what the data means |
+| Subscriptions | money, at regular intervals | ERPNext — `Subscription`. Generated invoices are drafts. StudioOS creates the Supplier, Item and Plan for the owner. See `docs/PLAN-v2.md` D8 |
 | Studio rental | money, and hours | ERPNext — `Timesheet` + `time_logs`, proven. **D1 holds the booking calendar** |
 | Crew | Phase 10f decided this | ERPNext — a Draft `Purchase Order` for each member. **D1 holds the rates and the availability** |
 | Brand | goes with StudioOS | D1 |
@@ -607,7 +607,8 @@ owner's DocType list, is exportable by the owner, and is in the owner's backup.
 A D1 table is none of those things and stops when StudioOS stops. The true
 concern is that a custom DocType is unfamiliar, and a clear name solves that.
 
-**Overheads stay open.** This amendment makes the option available. The studio
+**Overheads: decided 2026-10-02, native `Subscription`.** See `docs/PLAN-v2.md` D8.
+The text below is kept as the record. This amendment made the option available. The studio
 owner still decides whether an overhead is a note or is bookkeeping, because
 that choice changes what the data means.
 

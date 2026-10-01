@@ -254,6 +254,20 @@ Both must pass before you commit.
 
 ---
 
+## Environments
+
+| ERPNext site | Use |
+|---|---|
+| A shared site on Frappe Cloud | **Staging.** Test here. |
+| A different site on Frappe Cloud | **Production.** Shubham's real data. |
+
+Each site is a separate tenant in the StudioOS registry, keyed by its host. Each
+site registers its own OAuth client with the redirect URI
+`https://studioos.cloudshapeddreamsstudio.com/auth/callback`. Do not test on the
+production site.
+
+---
+
 ## The conventions that are not open for discussion
 
 Each one exists because it stopped a real problem, or because it stops a silent
@@ -372,13 +386,19 @@ Settled, and recorded:
 | The development loop. `wrangler.jsonc` stays in `worker/` | [ADR-0004](./docs/adr/0004-the-development-loop.md) |
 | Documentation is written in Simplified Technical English | `docs/adr/README.md` |
 | Changes go straight to `main` for now. Pull request review starts when Sandesh chooses | — |
+| **The release is: Shubham uses StudioOS each day.** No parity with the old app, which was never used. No second studio | `docs/PLAN-v2.md` D7 |
+| Production hostname: `studioos.cloudshapeddreamsstudio.com` | D3 |
+| Overheads are a native ERPNext `Subscription`, with draft invoices | D8 |
+| No role model in StudioOS. To remove a person, disable that person in ERPNext | D9 |
+| A project is closed, never deleted. No separate equipment catalogue | D6, D10 |
+| Each new studio is connected by hand | D2 |
 
 Still open. Do not guess these, and do not let an agent settle one quietly:
 
-| Question | Owner | Blocks |
-|---|---|---|
-| Overheads: a native `Subscription`, or a DocType that StudioOS provisions? | Shubham | Phase 10g |
-| The production subdomain under `cloudshapeddreamsstudio.com` | Malhar | nothing today. `APP_ORIGIN` is free to change until the first customer connects. See `docs/PLAN-v2.md` D3 |
+None today.
+
+**Scope rule.** A feature is in the release only when Shubham needs it for daily
+work. If you build something that no person asked for, stop and ask.
 
 ---
 

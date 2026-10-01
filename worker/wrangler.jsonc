@@ -46,7 +46,8 @@
     //
     // So: change it freely until the first real customer connects. Choose the
     // production hostname before that day, not before the first deploy.
-    // See docs/SEAM.md section 8, and the open question in docs/PLAN-v2.md D3.
+    // Production is https://studioos.cloudshapeddreamsstudio.com (docs/PLAN-v2.md
+    // D3). This file holds the development value. See docs/SEAM.md section 8.
     "APP_ORIGIN": "http://localhost:8787"
   },
 

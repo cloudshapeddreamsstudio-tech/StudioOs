@@ -1180,7 +1180,7 @@ Blocked on 10f. Each is its own phase.
   roster)
 - ⬜ Invoice designer, once brand has somewhere to be saved
 
-### 10h — equipment catalogue ⬜
+### 10h — equipment catalogue — dropped, see D10
 
 - ⬜ Confirm with the owner whether it still needs to exist separately from
   Inventory before rebuilding it. The old app unlinked it from nav as
@@ -1189,6 +1189,10 @@ Blocked on 10f. Each is its own phase.
 ---
 
 ## Phase 11 — cutover and the second customer ⬜
+
+> **2026-10-02.** There is no cutover. The old application was never deployed. The
+> release is D7: Shubham uses StudioOS each day. A second studio is not in the
+> release, see D2.
 
 - ⬜ Run both apps side by side; owner uses StudioOS for real project work
 - ⬜ Compare outputs page by page on the same data
@@ -1222,11 +1226,15 @@ daily. Phase 11 begins the moment Projects reaches parity, but finishes later.
 | # | Decision | Blocks | Note |
 |---|---|---|---|
 | ~~D1~~ | ~~Where the tenant registry lives~~ | — | **Resolved 2026-08-17: Cloudflare KV**, binding `TENANTS`, client secrets encrypted at application level. Note the eventual-consistency caveat in Phase 6 |
-| D2 | **Distribution** — Marketplace listing, or customers on private benches | 8, 11 | **Partially resolved 2026-08-24: StudioOS is a public product, general to any studio** — built by CSD Studio, who is also just its first user (dogfooding), not the sole intended customer. The multi-tenant architecture (per-studio OAuth, tenant registry in KV) already assumed this. Still open: *how* a new studio actually gets onto it — a Frappe Marketplace listing, self-serve sign-up on the marketing site, or hand-onboarding each one — which is what Phase 8/11 still need answered |
-| D3 | **Domain** | 9b, M1 | The company owns `cloudshapeddreamsstudio.com` on Cloudflare. The subdomain for StudioOS is not selected. `studioos.cloudshapeddreamsstudio.com` is the candidate. Nothing is blocked today. `APP_ORIGIN` in `worker/wrangler.jsonc` is a configuration value and you can change it. You cannot change the copies of the OAuth redirect URI that StudioOS registers on the ERPNext site of each customer. Select the hostname before the first customer connects. The first deploy is not the limit. See `docs/SEAM.md` section 8 |
+| ~~D2~~ | ~~Distribution~~ | — | **Decided 2026-10-02.** Malhar connects each studio by hand. Nobody waits to use StudioOS today, so a sign-up flow or a Marketplace listing is scope creep. Decide again when a studio asks |
+| ~~D3~~ | ~~Domain~~ | — | **Decided 2026-10-02: `studioos.cloudshapeddreamsstudio.com`.** `APP_ORIGIN` in production is `https://studioos.cloudshapeddreamsstudio.com`. Each ERPNext site registers `https://studioos.cloudshapeddreamsstudio.com/auth/callback` as its redirect URI |
 | ~~D4~~ | ~~Is the first release read-only?~~ | — | **Resolved 2026-08-17: no.** Privileged users create and edit projects from StudioOS; see 7c and 7d |
 | D5 | **Does "the Projects tab" include project detail**, or the list alone? | 7b | The plan assumes detail is included, with crew and expenses declared missing |
-| D6 | **Can a project manager delete a project from StudioOS?** | 7c | No delete handler exists today, and deletion in an accounting system is rarely what is wanted. Assumed **no** unless you say otherwise |
+| ~~D7~~ | ~~What "released" means~~ | — | **Decided 2026-10-02: Shubham uses StudioOS each day for real project work.** The old application was never deployed and nobody used it, so parity with it is not a goal. A feature is in the release only when Shubham needs it for daily work |
+| ~~D8~~ | ~~Overheads: a native `Subscription`, or a DocType that StudioOS provisions?~~ | — | **Decided 2026-10-02: a native ERPNext `Subscription`.** "Submit generated invoices" is off, so ERPNext makes each monthly invoice as a draft and a person confirms the real amount. StudioOS creates the Supplier, Item and Subscription Plan for the owner. A ₹0 placeholder is not recorded |
+| ~~D9~~ | ~~Roles (Phase 6d)~~ | — | **Decided 2026-10-02: no role model in StudioOS.** To remove a person, disable that person in ERPNext. The interface shows each button, and ERPNext refuses an action that is not permitted. `endAllSessionsOf` keeps no route |
+| ~~D10~~ | ~~A separate equipment catalogue (Phase 10h)~~ | — | **Decided 2026-10-02: no.** Inventory replaced it. Build it again only if Shubham asks for it |
+| ~~D6~~ | ~~Can a person delete a project from StudioOS?~~ | — | **Decided 2026-10-02: no.** In an accounting system you close or cancel a project. You do not delete it. To add deletion later is easy. To remove it after people use it is not |
 
 ---
 

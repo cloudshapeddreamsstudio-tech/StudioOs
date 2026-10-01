@@ -3,11 +3,11 @@
 The studio operations app: projects, clients, invoices and the money views,
 built on top of a studio's own ERPNext.
 
-It began as a rebuild of `Erpnext UI Application/CSDSxERPnext App` for one
-studio, Cloud Shaped Dreams. It is now built as a **product for many studios** —
-each one signs in with its own ERPNext, and StudioOS holds no copy of anyone's
-data. That folder is untouched and remains the working system until StudioOS
-reaches parity.
+It is built for one studio first, Cloud Shaped Dreams, and designed so that
+other studios can connect later. Each studio signs in with its own ERPNext, and
+StudioOS holds no copy of anyone's books.
+
+**The release target:** Shubham uses StudioOS each day for real project work.
 
 ```
 Browser ──► one Worker, one origin (Hono, Cloudflare Workers)
@@ -102,10 +102,10 @@ tests must pass.
 
 ## Status
 
-Sign-in, the Projects surface (list, detail, create, edit) and most of the
-read-only parity work are done and verified against a live site. In progress:
-**10f**, deciding where the six non-ERPNext datasets live. Not started:
-onboarding a second studio (8), deployment (9), and the ledger pages (10g).
+Sign-in, sessions that can be cancelled, the Projects surface, clients,
+invoices, and the money views are done. Not started: deployment (9), and the
+pages that read the non-ERPNext data sets (10g). A second studio is not in the
+release.
 
 **Nothing is deployed yet.** `docs/DEPLOY.md` predates the OAuth work and still
 describes the API-key setup that Phase 6c deleted; it is rewritten in Phase 9.
