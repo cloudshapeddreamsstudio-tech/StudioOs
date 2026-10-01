@@ -9,15 +9,22 @@
   // Only its SVG renderer is used -- see src/lib/payQr.ts for why not PNG.
   "compatibility_flags": ["nodejs_compat"],
 
-  // There is no database binding, deliberately.
+  // D1 holds StudioOS's own front-office data: today the sessions of
+  // ADR-0003. It does not hold studio records -- see docs/SEAM.md rule 1.
+  // The old ledger migrations are parked in migrations-parked/, not applied.
   //
-  // Removed in Phase 6a (docs/PLAN-v2.md):
-  //   d1_databases   the seven ledger tables
-  //   r2_buckets     the off-box backup destination
-  //   triggers       the nightly backup cron
-  //
-  // D1 returns at M4 to hold better-auth's tables and StudioOS's own front-office
-  // data. It does not return to hold studio records -- see docs/SEAM.md rule 1.
+  // `wrangler dev` uses local storage and ignores the id. Creating the real
+  // database is part of deployment:
+  //   bunx wrangler d1 create studioos-db
+  // A deploy with the placeholder still in place fails, which is intended.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "studioos-db",
+      "database_id": "REPLACE_WITH_ID_FROM_WRANGLER_D1_CREATE",
+      "migrations_dir": "migrations"
+    }
+  ],
 
   "vars": {
     // Non-secret configuration only. Secrets go in with `wrangler secret put`,

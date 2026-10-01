@@ -143,6 +143,11 @@ The conditions:
 7. **A `user` row is one ERPNext user on one studio.** The key is the studio
    and the ERPNext user id. One person on two studios is two `user` rows.
    Phase 8 decides if StudioOS links them.
+8. **The ERPNext tokens belong to one session, not to one user.** ERPNext
+   gives a new token at each sign-in. So one browser that signs out revokes
+   only its own token, and a different browser of the same person continues.
+   `docs/HANDOFF.md` says "the user and the studio as the key". The session
+   gives both, through its user row.
 
 ## Why
 

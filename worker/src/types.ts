@@ -2,9 +2,8 @@
  * Worker bindings. `vars` come from wrangler.toml, secrets from
  * `wrangler secret put` (or .dev.vars locally).
  *
- * There is deliberately no database binding. ERPNext is the only store —
- * see docs/PLAN-v2.md, decision 2. The D1 and R2 bindings were removed in
- * Phase 6a along with the routes that used them.
+ * `DB` is D1. It holds StudioOS's own data, today the sessions of ADR-0003,
+ * and never a studio's records -- see docs/SEAM.md section 1.
  *
  * There is also deliberately no ERPNext credential. Phase 6c removed the admin
  * key: every request runs on the signed-in user's own token, so StudioOS holds
@@ -19,6 +18,8 @@ export interface Env {
   FRAPPE_URL: string;
   COMPANY: string;
 
+  /** Sessions and users. Read and written only by kernel/auth. */
+  DB: D1Database;
   /** Tenant registry — see lib/tenants.ts. Added in Phase 6b. */
   TENANTS: KVNamespace;
   /** 32 bytes, base64. Encrypts tenant client secrets before they reach KV. */
