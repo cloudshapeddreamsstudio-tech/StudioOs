@@ -122,6 +122,9 @@ A reviewer forgets. A check does not. M3 adds these to continuous integration:
   does not import `withDocAccess` fails the build.
 - A migration check. Each `CREATE TABLE` has a `studio_id` column. Each index
   on `erp_name` starts with `studio_id`.
+- Continuous integration builds before it runs Wrangler, because `app/dist/`
+  is not in git. It must not keep `app/dist/` as an artifact: `vite build`
+  puts `worker/.dev.vars` inside it. See ADR-0004.
 
 ## Why
 

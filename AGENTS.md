@@ -277,6 +277,12 @@ one.
   under six conditions. Read
   [ADR-0001](./docs/adr/0001-studioos-provisions-its-own-doctypes.md) before you
   create one.
+- **`app/dist/` holds secrets. Never share it.** `vite build` copies
+  `worker/.dev.vars` into `app/dist/studioos_worker/`. It is outside the served
+  directory and the generated `.assetsignore` names it, so Cloudflare does not
+  upload it and nobody can fetch it. It is still your development keys sitting
+  in a folder. Do not commit it, do not attach it to an issue, and do not let
+  continuous integration keep it as an artifact. See ADR-0004.
 - **Correct a document in the same change that proves it wrong.** Do not work
   around a document that does not match the machine, and do not leave the fault
   for the next person. `worker/scripts/check-one-origin.ts` exists because of
