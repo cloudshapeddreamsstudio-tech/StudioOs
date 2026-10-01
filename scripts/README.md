@@ -5,11 +5,12 @@ nobody must remember which directory or which runtime.
 
 | Script | What it starts |
 |---|---|
-| `dev-worker.cmd` | builds the SPA, then the Worker on `:8787`, which serves both |
+| `dev.cmd` | the development server on `:8787`: the SPA with hot reload, and the Worker inside it |
+| `dev-worker.cmd` | `bun run start`: builds what production deploys, and runs it on `:8787` |
 | `bench-serve.cmd` | a local Frappe bench on `:8000`, through WSL |
 
-There is no separate SPA server. The Worker serves the built SPA and the API on
-one origin, so run `dev-worker.cmd` again after a change to the SPA.
+Both use `:8787`, one origin each, so run one at a time. Use `dev.cmd` for
+daily work. Use `dev-worker.cmd` to test what production does.
 
 ## Windows and WSL
 
@@ -24,7 +25,8 @@ Where you keep the repository is important. Two setups work:
   from a WSL shell:
 
   ```bash
-  bun run start
+  bun run dev         # daily work, hot reload
+  bun run start       # what production does
   ```
 
 Do not keep the repository on the Windows file system and run `bun` against it
@@ -36,6 +38,7 @@ think that something is broken.
 Do not use this folder. Use the root scripts:
 
 ```bash
-bun run start
+bun run dev         # daily work, hot reload
+bun run start       # what production does
 bun run check       # typecheck both sides, then the tests
 ```

@@ -1,4 +1,5 @@
-import QRCode from 'qrcode';
+import qrcore from 'qrcode/lib/core/qrcode';
+import svgTag from 'qrcode/lib/renderer/svg-tag';
 import type { BrandConfig } from '../schemas/brand';
 import type { InvoiceDoc } from './invoiceHtml';
 
@@ -38,7 +39,7 @@ export async function buildPayQr(
     `&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
 
   try {
-    const svg = await QRCode.toString(upi, { type: 'svg', margin: 1, width: 200 });
+    const svg = svgQr(upi, { margin: 1, width: 200 });
     // encodeURIComponent rather than btoa: the SVG is ASCII, and this avoids
     // any base64/binary handling differences between runtimes.
     return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -46,4 +47,15 @@ export async function buildPayQr(
     console.error('QR generation failed', err);
     return '';
   }
+}
+
+/**
+ * The QR as an SVG string. Exactly what `QRCode.toString(text, {type: 'svg'})`
+ * returns -- tests/payQr.test.ts compares the bytes -- but it calls qrcode's
+ * core and SVG renderer directly. The package entry point also loads the PNG
+ * renderer and `pngjs`, whose `util.inherits(…, Stream)` crashes the Worker at
+ * start under the Vite plugin. See docs/adr/0004-the-development-loop.md.
+ */
+export function svgQr(text: string, opts: { margin?: number; width?: number }): string {
+  return svgTag.render(qrcore.create(text, opts), opts);
 }

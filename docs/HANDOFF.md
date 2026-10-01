@@ -33,9 +33,11 @@ make the next item more difficult.
 > `APP_UI_ORIGIN` is deleted. `worker/scripts/check-one-origin.ts` tests the
 > routing from both directions and is the thing to run before you trust it.
 >
-> **One piece is left: [H1b](./tasks/h1b-dev-loop.md).** The Vite development
-> server was deleted with the second origin, so each change to the SPA now needs
-> a build. Do H1b before H3, or the Figma work is slow.
+> **H1b — done 2026-10-01.** `bun run dev` runs the Worker inside the Vite
+> development server with `@cloudflare/vite-plugin`: hot reload, one origin,
+> port 8787. `bun run start` is now `vite build` then `vite preview`, the
+> bundle that production deploys. `wrangler.jsonc` stays in `worker/`. See
+> [ADR-0004](./adr/0004-the-development-loop.md).
 
 
 **The goal.** One Cloudflare Worker serves the SPA files and also runs the API.

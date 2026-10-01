@@ -43,5 +43,5 @@ failure. It happened on the first card in this folder.
 
 | Card | What it does | State |
 |---|---|---|
-| [h1b-dev-loop.md](./h1b-dev-loop.md) | Give the SPA a fast development loop, on one origin | Open |
+| [h1b-dev-loop.md](./h1b-dev-loop.md) | Give the SPA a fast development loop, on one origin | Done |
 | [h2b-sign-out-everywhere.md](./h2b-sign-out-everywhere.md) | Finish the prize of H2: end every session of one person | Open |

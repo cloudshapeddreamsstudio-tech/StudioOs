@@ -184,8 +184,8 @@ it.
 
 ## Running it
 
-One process. The Worker serves the built SPA from `app/dist` and runs the API
-on the same port, so the browser has one origin. Production is the same.
+One process, one port, one origin. The Worker serves the SPA and runs the API
+on the same port. Production is the same.
 
 **Bun is the toolchain. It is not the runtime.** Bun installs, tests, and starts
 the development server. The Worker itself always runs in `workerd`, which is the
@@ -198,25 +198,35 @@ They run in Bun, on a real file system, and never inside the Worker.
 bun install          # once, from the repository root
 bun run db:migrate   # once, and after each new migration
 
-bun run start        # build the SPA, then start the Worker on :8787
+bun run dev          # daily work: http://localhost:8787, hot reload
+bun run start        # what production does: build, then run that build
 ```
 
-`bun run start` builds the SPA each time. After a change to the SPA, run it
-again. After a change to the Worker only, `bun run dev:api` is sufficient,
-because Wrangler reloads the Worker. There is no Vite development server: it is
-a second origin, and sign-in does not operate across two origins.
+Both use port 8787, which is one origin, so run one at a time.
+
+- `bun run dev` is Vite with `@cloudflare/vite-plugin`. The Worker runs inside
+  the Vite server, in `workerd`. A change in `app/src/` appears in the browser
+  with no build. A change in `worker/src/` reloads the Worker.
+- `bun run start` runs `vite build`, then `vite preview`. That is the bundle
+  that production deploys. Use it to test what production does.
+- `bun run dev:api` runs only the Worker, with `wrangler dev`, on the last
+  build of the SPA. It is not the production bundle.
+
+[ADR-0004](./docs/adr/0004-the-development-loop.md) gives the reasons, and the
+two settings in `app/vite.config.ts` that must not go: `configPath` and
+`persistState`.
 
 To check the routing between the SPA and the Worker, run
-`bun run worker/scripts/check-one-origin.ts` while the Worker runs. To check
-that a session can be cancelled, read the top of
-`worker/scripts/check-session-cancel.ts`.
+`bun run worker/scripts/check-one-origin.ts` against `bun run dev` and against
+`bun run start`. The two must agree. To check that a session can be cancelled,
+read the top of `worker/scripts/check-session-cancel.ts`.
 
 If sign-in fails with `no such table: studio`, you did not run
 `bun run db:migrate`.
 
-On Windows, `scripts/dev-worker.cmd` does the same thing as `bun run start`.
-Read `scripts/README.md` first if you use WSL. Where you keep the repository
-changes which method is correct.
+On Windows, `scripts/dev.cmd` is `bun run dev`, and `scripts/dev-worker.cmd` is
+`bun run start`. Read `scripts/README.md` first if you use WSL. Where you keep
+the repository changes which method is correct.
 
 - **Bun is the only tool you need.** Bun installs the packages, runs the
   scripts, runs the tests, and starts Wrangler. There is no `npm` and no `npx`
@@ -233,7 +243,7 @@ changes which method is correct.
   credential. If `registryBound` is false, the KV binding is missing.
 
 ```bash
-bun run check        # typecheck both sides, then run 165 tests
+bun run check        # typecheck both sides, then run the tests
 ```
 
 Both must pass before you commit.
@@ -349,6 +359,7 @@ Settled, and recorded:
 | StudioOS may provision its own DocTypes, under six conditions | [ADR-0001](./docs/adr/0001-studioos-provisions-its-own-doctypes.md) |
 | The repository structure, and the module plan for M2 | [ADR-0002](./docs/adr/0002-repository-structure.md) |
 | Sessions are a small store in D1 that StudioOS writes, not better-auth | [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md) |
+| The development loop. `wrangler.jsonc` stays in `worker/` | [ADR-0004](./docs/adr/0004-the-development-loop.md) |
 | Documentation is written in Simplified Technical English | `docs/adr/README.md` |
 | Changes go straight to `main` for now. Pull request review starts when Sandesh chooses | — |
 
@@ -369,8 +380,8 @@ each piece.
 | Work | What it does |
 |---|---|
 | ~~H1~~ | ~~One Worker and one origin.~~ **Done 2026-10-01.** |
-| H1b | A fast development loop, still on one origin. [Card](./docs/tasks/h1b-dev-loop.md). Do this before H3. |
-| ~~H2~~ | ~~Sessions that can be cancelled, on D1.~~ **Done 2026-10-01**, [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md). Reviewed and merged. Still only tested on a local Worker; real D1 is tested at deployment. |
+| ~~H1b~~ | ~~A fast development loop, still on one origin.~~ **Done 2026-10-01**, [ADR-0004](./docs/adr/0004-the-development-loop.md). |
+| ~~H2~~ | ~~Sessions that can be cancelled, on D1.~~ **Done 2026-10-01**, [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md). Still only tested on a local Worker; real D1 is tested at deployment. |
 | H2b | Sign out everywhere, and remove a person from a studio. [Card](./docs/tasks/h2b-sign-out-everywhere.md). |
 | H3 | The front end conventions and the Figma pipeline. Runs beside H1 and H2. |
 | then | The modules in ADR-0002, continuous integration, project notes, deployment. |

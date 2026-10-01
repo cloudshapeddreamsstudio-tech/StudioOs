@@ -8,8 +8,9 @@
     "worker"
   ],
   "scripts": {
-    "start": "bun run build && cd worker && bun run dev",
-    "dev:api": "[ -d app/dist ] || bun run build; cd worker && bun run dev",
+    "dev": "cd app && bun run dev",
+    "start": "cd app && bun run build && bun run preview",
+    "dev:api": "[ -d app/dist/client ] || bun run build; cd worker && bun run dev",
     "db:migrate": "cd worker && bun run db:migrate:local",
     "build": "cd app && bun run build",
     "test": "cd worker && bun test",
