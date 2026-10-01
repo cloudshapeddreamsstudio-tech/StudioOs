@@ -10,10 +10,9 @@ data. That folder is untouched and remains the working system until StudioOS
 reaches parity.
 
 ```
-Browser ──► frontend (React SPA, Vite)
-              │  fetch /api/*        session cookie
-              ▼
-            backend (Hono, Cloudflare Workers)
+Browser ──► one Worker, one origin (Hono, Cloudflare Workers)
+              ├──  static assets: the React SPA (app/dist)
+              │    /api/* and /auth/* run the Worker first
               ├──► the signed-in studio's ERPNext REST API
               │      projects, clients, invoices, tasks, inventory …
               └──► Cloudflare KV   (the tenant registry, and nothing else)
@@ -79,17 +78,15 @@ this backend contains no permission code. Both humans and agents start there.
 
 ## Running it
 
-Both sides, from two terminals:
+One process, one origin:
 
 ```bash
 bun install          # once, from the root
-
-bun run dev:api      # terminal one, the Worker on :8787
-bun run dev:app      # terminal two, the SPA on :5173
+bun run start        # build the SPA, then start the Worker on :8787
 ```
 
-The frontend dev server proxies both `/api/*` and `/auth/*` to the backend on
-`:8787`, so the browser sees one origin exactly as it did before. Sign-in needs
+The Worker serves the built SPA and runs `/api/*` and `/auth/*` on the same
+port, which is what production does. Rebuild after an SPA change. Sign-in needs
 a tenant registered against a local bench — see `docs/PLAN-v2.md` phase 6b,
 including the Frappe-specific traps worth reading before debugging one.
 

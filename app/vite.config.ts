@@ -8,28 +8,4 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
   },
-  server: {
-    port: 5173,
-    /**
-     * Proxy /api to the Worker running under `wrangler dev`. This keeps the
-     * browser on one origin in development, matching production (where
-     * Cloudflare Pages routes /api/* to the Worker) and matching how the old
-     * Express app behaved, where one process served both.
-     */
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8787',
-        changeOrigin: true,
-      },
-      /**
-       * Sign-in lives outside /api because these are browser navigations, not
-       * XHR. It must be proxied too, or `/auth/start` would hit Vite's dev
-       * server and 404 instead of redirecting to the studio's ERPNext.
-       */
-      '/auth': {
-        target: 'http://localhost:8787',
-        changeOrigin: true,
-      },
-    },
-  },
 });

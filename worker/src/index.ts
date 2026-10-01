@@ -1,5 +1,4 @@
 import { Hono } from 'hono';
-import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { requireSession } from './middleware/requireSession';
@@ -27,9 +26,10 @@ import type { AppEnv, Env } from './types';
  * The Worker equivalent of the old `server/index.js`. Two differences worth
  * knowing:
  *
- *  - It no longer serves static files. The React app is deployed separately to
- *    Cloudflare Pages, which proxies /api/* here. In dev, Vite's proxy does the
- *    same, so the browser still sees one origin.
+ *  - It serves the built SPA too, from `app/dist`, through the `assets` block in
+ *    wrangler.jsonc. `/api/*` and `/auth/*` run this code first; every other
+ *    path is a static file or falls back to index.html. One Worker, one origin,
+ *    so there is no CORS and the session cookie never crosses an origin.
  *  - There is no per-route try/catch. `app.onError` handles every thrown error
  *    once, in middleware/errorHandler.ts.
  *
@@ -69,18 +69,6 @@ import type { AppEnv, Env } from './types';
 const app = new Hono<AppEnv>();
 
 app.use('*', logger());
-
-/**
- * Dev only in practice -- in production the SPA is served from the same
- * hostname, so requests are same-origin and this never fires.
- */
-app.use(
-  '/api/*',
-  cors({
-    origin: ['http://localhost:5173'],
-    credentials: true,
-  }),
-);
 
 app.onError(errorHandler);
 

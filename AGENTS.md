@@ -161,8 +161,8 @@ it.
 
 ## Running it
 
-Two processes. The SPA sends `/api` and `/auth` to the Worker, so the browser
-stays on one origin. Production will do the same after M1.
+One process. The Worker serves the built SPA from `app/dist` and runs the API
+on the same port, so the browser has one origin. Production is the same.
 
 **Bun is the toolchain. It is not the runtime.** Bun installs, tests, and starts
 the development server. The Worker itself always runs in `workerd`, which is the
@@ -174,12 +174,18 @@ They run in Bun, on a real file system, and never inside the Worker.
 ```bash
 bun install          # once, from the repository root
 
-bun run dev:api      # terminal one, the Worker on :8787
-bun run dev:app      # terminal two, the SPA on :5173
+bun run start        # build the SPA, then start the Worker on :8787
 ```
 
-On Windows, `scripts/dev-worker.cmd` and `scripts/dev-app.cmd` do the same
-thing. Read `scripts/README.md` first if you use WSL. Where you keep the
+`bun run start` builds the SPA each time. After a change to the SPA, run it
+again. After a change to the Worker only, `bun run dev:api` is sufficient,
+because Wrangler reloads the Worker. There is no Vite development server: it is
+a second origin, and sign-in does not operate across two origins.
+
+To check the routing between the SPA and the Worker, run
+`bun run worker/scripts/check-one-origin.ts` while the Worker runs.
+
+On Windows, `scripts/dev-worker.cmd` does the same thing as `bun run start`. Read `scripts/README.md` first if you use WSL. Where you keep the
 repository changes which method is correct.
 
 - **Bun is the only tool you need.** Bun installs the packages, runs the
