@@ -58,6 +58,11 @@ section{padding-top:52px}
 .item > .top{display:flex;gap:14px;align-items:flex-start;padding:18px 22px;border-bottom:1px solid var(--rule-soft)}
 .badge{font:500 12px var(--mono);letter-spacing:.08em;padding:4px 9px;border-radius:2px;background:var(--erp-soft);color:var(--erp);white-space:nowrap;margin-top:1px}
 .badge.par{background:var(--d1-soft);color:var(--d1)}
+.badge.done{background:var(--panel2);color:var(--muted)}
+.doneflag{margin-top:24px;padding:16px 20px;background:var(--erp-soft);border:1px solid var(--erp);border-left:3px solid var(--erp);border-radius:2px}
+.doneflag p{margin:0;max-width:68ch;font-size:14px}
+.doneflag p + p{margin-top:8px}
+.doneflag b{color:var(--erp)}
 .top h3{font:600 17px/1.3 var(--serif)}
 .top .goal{margin-top:4px;font-size:13.5px;color:var(--muted);max-width:60ch}
 .body{padding:4px 22px 20px;display:grid;gap:0}
@@ -112,7 +117,7 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--rule);font:40
 <header class="hero">
   <div class="kicker">StudioOS &nbsp;/&nbsp; handoff &nbsp;/&nbsp; for Sandesh</div>
   <h1>The Work Ahead</h1>
-  <p class="thesis">Three pieces. Two in order, one in parallel. Inside each piece, the rows marked <em>you decide</em> are the part the agent cannot do &mdash; and H2 now contains a real open decision, not a task.</p>
+  <p class="thesis">H1 is <em>done and merged</em>. One follow-up, then H2 &mdash; which contains a real open decision, not a task. Inside each piece, the rows marked <em>you decide</em> are the part the agent cannot do.</p>
   <div class="meta">
     <span class="chip">read AGENTS.md first</span>
     <span class="chip">docs/SEAM.md is the constitution</span>
@@ -157,9 +162,14 @@ footer{margin-top:60px;padding-top:18px;border-top:1px solid var(--rule);font:40
 <section>
   <div class="sectitle"><div class="n">H1</div><div><h2>One Worker, one origin</h2></div></div>
 
+  <div class="doneflag">
+    <p><b>Done 2026-10-01, merged.</b> One Worker serves <code>app/dist</code> and runs the API. <code>APP_UI_ORIGIN</code> is deleted everywhere. <code>worker/scripts/check-one-origin.ts</code> tests the routing from both directions &mdash; run it before trusting any change to the assets config.</p>
+    <p><b>One piece left: H1b.</b> The Vite dev server went out with the second origin, so every SPA change now needs a full build. <code>@cloudflare/vite-plugin</code> runs the Worker inside Vite, in workerd, on one origin, with hot reload. <b>Do H1b before H3</b>, or the Figma work runs at build-per-change speed for weeks. The card is <code>docs/tasks/h1b-dev-loop.md</code>.</p>
+  </div>
+
   <div class="item">
     <div class="top">
-      <span class="badge">H1</span>
+      <span class="badge done">H1 &middot; DONE</span>
       <div>
         <h3>One Worker serves the SPA and runs the API</h3>
         <div class="goal"><code>APP_UI_ORIGIN</code> stops existing, because it is the same as <code>APP_ORIGIN</code>.</div>

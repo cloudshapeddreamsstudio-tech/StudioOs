@@ -405,9 +405,23 @@ run_worker_first = ["/api/*", "/auth/*"]
 
 The `run_worker_first` line is important. It sends `/api/*` and `/auth/*` to
 Hono. Without this line, Cloudflare uses the `Sec-Fetch-Mode` header to make the
-decision. The OAuth callback is a browser navigation. Cloudflare then sends
-`index.html` and the callback does not reach the Worker. This configuration
-needs Wrangler version 4.20 or higher.
+decision, and the division between the two halves becomes a guess.
+
+A guess fails in both directions, and you do not control which one you get.
+
+- The OAuth callback is a browser navigation. If `index.html` answers it, the
+  callback does not reach the Worker, and sign-in fails with no line in the
+  Worker log.
+- A deep link such as `/projects` is also a browser navigation. If the Worker
+  answers it, the person gets the Worker's 404 instead of the application.
+
+**The second failure is the one that was observed.** On Wrangler 4.144, in
+October 2026, the removal of this line broke the deep link and not the callback.
+The first version of this section gave only the first failure. Do not learn the
+behaviour from this page. Run `worker/scripts/check-one-origin.ts`, which tests
+both directions against a Worker that is running.
+
+This configuration needs Wrangler version 4.20 or higher.
 
 This change removes a group of errors. `APP_UI_ORIGIN` then becomes the same as
 `APP_ORIGIN`. You can then remove the difference between development and
