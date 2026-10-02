@@ -47,6 +47,20 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * A page that the browser restores from its back/forward cache is a frozen
+ * picture: no script ran, no request was made. After sign-out, the back button
+ * therefore showed the last person's dashboard, with its numbers, until a click
+ * made a request and got a 401. On a shared computer that is the next person
+ * reading the last person's data.
+ *
+ * `persisted` is true only for such a restore. A reload makes the page ask
+ * `/auth/me` again, and a signed-out browser goes to the sign-in page.
+ */
+window.addEventListener('pageshow', (event) => {
+  if (event.persisted) window.location.reload();
+});
+
 const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('#root not found');
 
