@@ -197,8 +197,8 @@ release 1.
 
 **I tested each item above myself, in a browser, on staging.**
 
-- Name:
-- Date:
+- Name: Sandesh
+- Date: 02/10/2026
 
 When each item is Pass, commit this file on `release-1`, push, and message
 Malhar. Malhar then approves `docs/tasks/r1-production.md`.
