@@ -4,9 +4,9 @@ This is the procedure to deploy one environment of StudioOS. Do it for
 `staging` first. Do it for `production` only after the staging sign-off in
 `docs/tasks/r1-staging.md`.
 
-> **State:** written 2026-10-02 from the configuration and a dry-run deploy. It
-> was not yet run against Cloudflare. The first person who runs it corrects it
-> in the same change. A step that does not operate is a fault in this file.
+> **State:** run for `staging` on 2026-10-02, on Windows, steps 1 to 9. The
+> corrections from that run are in this file. It was not yet run for
+> `production`. A step that does not operate is a fault in this file.
 
 Written in ASD-STE100 Simplified Technical English.
 
@@ -38,6 +38,11 @@ bunx wrangler login
 bunx wrangler whoami
 ```
 
+**On Windows.** Use PowerShell, not Command Prompt. In Command Prompt, type
+`powershell` first. Stop each development server before you deploy
+(`bun run dev`, `bun run start`, `bun run dev:api`). A server that runs keeps
+`app/dist` open, and the build then fails with `Device or resource busy`.
+
 ---
 
 ## Steps that you do one time for each environment
@@ -49,6 +54,9 @@ cd worker
 bunx wrangler d1 create studioos-ENV-db
 ```
 
+Wrangler asks if it must add the binding to the configuration. Answer no. The
+binding is there, with the name `DB`.
+
 Copy the `database_id` from the output. In `worker/wrangler.jsonc`, in the
 `env.ENV` block, replace `REPLACE_WITH_ID_FROM_WRANGLER_D1_CREATE_ENV`.
 
@@ -58,7 +66,7 @@ Copy the `database_id` from the output. In `worker/wrangler.jsonc`, in the
 bunx wrangler kv namespace create TENANTS --env ENV
 ```
 
-Copy the `id`. In the `env.ENV` block, replace
+Answer no to the same question. Copy the `id`. In the `env.ENV` block, replace
 `REPLACE_WITH_ID_FROM_WRANGLER_KV_CREATE_ENV`.
 
 ### 3. Set the company name
@@ -93,6 +101,15 @@ bun run deploy:ENV
 This builds the SPA and the Worker for that environment, then deploys them.
 Cloudflare attaches the custom domain. The first time, the certificate can
 take some minutes.
+
+The build folder is `app/dist/studioos_worker` for each environment. Its
+`wrangler.json` has the name and the bindings of the environment that you
+selected.
+
+**The end of the output must list one address: the custom domain.** If it also
+lists an address that ends in `workers.dev`, stop. That is a second origin, and
+sign-in does not return to it. `workers_dev` and `preview_urls` are `false` in
+each `env` block for this reason. `docs/SEAM.md` section 8.
 
 The output can show this warning. It is not a fault:
 
@@ -154,7 +171,11 @@ the staging ERPNext site. The StudioOS address of production goes only on the
 production ERPNext site.
 
 **7b. Register the site with StudioOS.** Put the values in a file, not on the
-command line, so that they are not kept in your shell history:
+command line, so that they are not kept in your shell history. Put the file
+outside the repository. The key names are exact: `host`, `clientId`,
+`clientSecret`.
+
+On macOS and Linux:
 
 ```bash
 cat > /tmp/register.json <<'JSON'
@@ -169,7 +190,23 @@ curl -X POST https://<StudioOS address>/auth/register \
 rm /tmp/register.json
 ```
 
+On Windows, make the file `register.json` in your user folder with an editor.
+Save it as UTF-8. Then, in PowerShell:
+
+```powershell
+$s = Read-Host "CONNECTOR_SHARED_SECRET of this environment"
+Invoke-RestMethod -Method Post -Uri "https://<StudioOS address>/auth/register" -Headers @{"x-connector-secret"=$s} -ContentType "application/json" -InFile "$HOME\register.json"
+Remove-Item "$HOME\register.json"; Remove-Variable s
+```
+
+`Read-Host` does not write the value to the command history.
+
 The answer contains `"registered":true`.
+
+If the answer is `Not authorised to register a site`, the secret is wrong. If
+the answer is `host, clientId and clientSecret are all required`, the secret is
+correct and the file is wrong: a key name, an empty value, or an encoding that
+is not UTF-8.
 
 ### 8. Check the routing
 
