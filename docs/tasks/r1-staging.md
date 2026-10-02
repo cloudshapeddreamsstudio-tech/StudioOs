@@ -141,35 +141,59 @@ Sandesh tells it.
 
 | # | Pass / Fail | What I saw |
 |---|---|---|
-| B1 | | |
-| B2 | | |
-| B3 | | |
-| B4 | | |
-| B5 | | |
-| B6 | | |
-| B7 | | |
-| B8 | | |
-| B9 | | |
-| B10 | | |
-| B11 | | |
-| B12 | | |
-| B13 | | |
-| B14 | | |
-| B15 | | |
-| B16 | | |
-| B17 | | |
-| B18 | | |
-| B19 | | |
-| B20 | | |
-| B21 | | |
-| B22 | | |
-| B23 | | |
-| B24 | | |
-| B25 | | |
-| B26 | | |
-| B27 | | |
-| B28 | | |
-| B29 | | |
+| B1 | Pass | The public home page, in a private window. After a sign-out, the app goes to the sign-in page and not to the home page. |
+| B2 | Pass |  |
+| B3 | Pass |  |
+| B4 | Pass |  |
+| B5 | Pass |  |
+| B6 | Pass |  |
+| B7 | Pass | The project list is shown. |
+| B8 | Pass | The project is saved, and it is visible in ERPNext. |
+| B9 | Pass | The change is visible in ERPNext. |
+| B10 | Pass | All six tabs load. |
+| B11 | Pass | Add, edit and remove operate. A draft Purchase Order is visible in ERPNext for the member. The contact number is in the `terms` field of the Purchase Order and not on the Supplier: see the Release 2 list. |
+| B12 | **Fail** | The Docs tab has no control to add a document, so no file can be uploaded or removed. Cause: the Worker has the upload and delete endpoints, and the app has no button for them. The Docs tab only lists and downloads. `docs/RELEASE-1.md` says "upload and remove files", which is not correct today. Open: Malhar decides if the document changes or the buttons are built. |
+| B13 | **Fail** | A note is added and is shown. There is no control to edit a note. Cause: the same as B12. The Worker has `PUT /api/project/:name/note/:commentId`, and the app has no button for it. `docs/RELEASE-1.md` says "add and edit notes"; only add operates today. Open: Malhar decides. |
+| B14 | Pass | The invoice list is shown. |
+| B15 | **Fail** | The Invoices page has no control to create a draft invoice. Cause: the app has only the invoice list and the print link. The Worker has the create, edit, submit, payment and amend endpoints, and the app has no screen for them. |
+| B16 | **Fail** | There is no control to edit or to submit an invoice. Cause: the same as B15. |
+| B17 | **Fail** | There is no control to record a payment. Cause: the same as B15. |
+| B18 | Pass | The branded invoice page opens. It has no QR code. |
+| B19 | **Fail** | There is no control to amend an invoice. Cause: the same as B15. |
+| B20 | **Fail** | A task moves to a different column, and the move is saved. There is no control to create, edit or delete a task. |
+| B21 | Pass | Payables shows what the studio owes. |
+| B22 | Pass | The client list opens, and the client detail page opens. |
+| B23 | Pass | Both changes are saved. |
+| B24 | Pass | The Vendors list and the Inventory list load. |
+| B25 | Pass | First test: Fail. After sign-out, the browser back button shows the dashboard with its numbers. A click on any control then goes to the sign-in page. Cause: the browser shows the page from its back/forward cache. The session is ended on the server, and no new data is read. Fixed in commit `53544aa` (a reload when the browser restores a page from that cache), deployed to staging, and tested again: the back button now goes to the sign-in page. |
+| B26 | **Fail** | There is no control to sign out on all devices. Cause: the Worker has `POST /auth/logout-all` (H2b), and the app has no button for it. The app calls only `/auth/logout`. |
+| B27 | Pass | The projects page opens directly in a new tab. |
+| B28 | Pass | The same page loads again after a refresh. |
+| B29 | Pass | On a phone, the menu opens and the pages can be read. |
+
+### The result, 2026-10-02
+
+21 items pass. 8 items fail: B12, B13, B15, B16, B17, B19, B20, B26. Gate 2 of
+`docs/RELEASE-1.md` is not passed.
+
+The 8 failures have one cause. The Worker has the endpoint, and the app has no
+control for it. `docs/RELEASE-1.md` lists what the Worker can do. It does not
+list what a person can do on the screen.
+
+| Area | The app has | The app does not have |
+|---|---|---|
+| Docs (B12) | list, download | upload, remove |
+| Activity (B13) | add a note | edit a note |
+| Invoices (B15, B16, B17, B19) | list, print | create a draft, edit, submit, record a payment, amend |
+| Tasks (B20) | move to a different column | create, edit, delete |
+| Sign out (B26) | sign out | sign out on all devices |
+
+One fault was found and corrected during the test: B25, commit `53544aa`.
+
+Malhar decides for each row: correct `docs/RELEASE-1.md` and move the row to
+release 2, or build the control and test the item again. These rows are not on
+the "Release 2" list below, because `docs/RELEASE-1.md` says they are in
+release 1.
 
 **I tested each item above myself, in a browser, on staging.**
 
@@ -186,4 +210,10 @@ Malhar. Malhar then approves `docs/tasks/r1-production.md`.
 Write here anything that you found missing and that is not in
 `docs/RELEASE-1.md`. Do not build it in this card.
 
--
+- **The contact number of a crew member goes to the wrong place.** Found at
+  B11. StudioOS writes it as text in the `terms` field of the draft Purchase
+  Order (`Contact: …`). It must be a Contact of the Supplier, in the Address
+  and Contact section, where ERPNext keeps the telephone number of a person.
+  Today a person types the number again for each project, and the number is
+  deleted when the booking is removed. Release 2 must also decide what to do
+  with the numbers that are in `terms` now. (Sandesh)
