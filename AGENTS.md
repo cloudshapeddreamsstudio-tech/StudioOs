@@ -18,6 +18,7 @@ Read this file. Then read, in this order, only what your task needs:
    what to read next.
 2. `docs/SEAM.md` section 10 — the three questions. Answer them for your change.
 3. `docs/RELEASE-1.md` — the current scope, if no card was given.
+4. `docs/WORKFLOW.md` — before you create a branch, or write a migration.
 
 Then work. Do not read the whole `docs/` folder. `docs/PLAN-v2.md` is 1200 lines
 of history and you almost never need it.
@@ -151,6 +152,7 @@ feature on one side, use the same word on the other side.
 | `docs/tasks/` | **Authoritative** | One card for one job, written to be given to an agent. See `docs/tasks/README.md`. |
 | `docs/FINDINGS.md` | **Authoritative** | Facts proved against a real ERPNext. The decisions stand on these. |
 | `docs/PLAN-v2.md` | **History, and the decisions table** | Phases 6 to 11, with the verification records. Its D-table holds the product decisions. It is long. Search it by phase or by D-number. |
+| `docs/WORKFLOW.md` | **Authoritative** | Branches, releases, version numbers, rollback, and the migration rule. |
 | `docs/DEPLOY.md` | **Authoritative** | The procedure to deploy staging or production. Written before its first run: correct it when it is wrong. |
 | `docs/archive/` | **History** | To learn why something is the way it is. Never as an instruction. |
 
@@ -264,8 +266,10 @@ Both must pass before you commit.
 | **Production** | `https://studioos.cloudshapeddreamsstudio.com` | `csdstudio.frappe.cloud` |
 | Development | `http://localhost:8787` | the staging site, or a local bench |
 
-Each environment is a separate Worker with its own D1, KV and secrets, declared
-in `worker/wrangler.jsonc` under `env`. Each ERPNext site has its own OAuth
+"Demo" and "staging" are one environment. Each environment is a separate Worker
+with its own D1, KV and secrets, declared in `worker/wrangler.jsonc` under
+`env`. Each Cloudflare resource name contains `studioos-staging` or
+`studioos-production`. Each ERPNext site has its own OAuth
 Client, and its redirect URI is the `/auth/callback` of **its own** StudioOS
 address. Staging never connects to production. **Do not test on the production
 site.** `docs/DEPLOY.md` has the procedure.
@@ -389,7 +393,8 @@ Settled, and recorded:
 | Sessions are a small store in D1 that StudioOS writes, not better-auth | [ADR-0003](./docs/adr/0003-how-sessions-are-stored.md) |
 | The development loop. `wrangler.jsonc` stays in `worker/` | [ADR-0004](./docs/adr/0004-the-development-loop.md) |
 | Documentation is written in Simplified Technical English | `docs/adr/README.md` |
-| Changes go straight to `main` for now. Pull request review starts when Sandesh chooses | — |
+| Branches: `feat/*` and `fix/*` merge into `release/vX.Y.Z`. That deploys to demo. `main` is production, from a tag. No `dev` branch | `docs/WORKFLOW.md` |
+| A D1 migration only adds. Wrangler migrations, no other tool | `docs/WORKFLOW.md` |
 | **The release is: Shubham uses StudioOS each day.** No parity with the old app, which was never used. No second studio | `docs/PLAN-v2.md` D7 |
 | Production hostname: `studioos.cloudshapeddreamsstudio.com` | D3 |
 | Overheads are a native ERPNext `Subscription`, with draft invoices | D8 |
@@ -408,8 +413,9 @@ work. If you build something that no person asked for, stop and ask.
 
 ## The work ahead
 
-**Release 1 is the only work now.** `docs/RELEASE-1.md` says what is in it.
-Work on the `release-1` branch.
+**Release 1 is the only work now.** `docs/RELEASE-1.md` says what is in it. Its
+branch is `release/v1.0.0`. `docs/WORKFLOW.md` says how branches, releases and
+migrations operate: read it before you create a branch.
 
 | Work | State |
 |---|---|

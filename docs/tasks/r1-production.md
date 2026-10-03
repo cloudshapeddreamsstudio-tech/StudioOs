@@ -6,7 +6,7 @@
 2. Malhar writes "approved" and the date below.
 
 **Owner:** Sandesh
-**Branch:** `release-1`
+**Code:** the tag `v1.0.0` on `main`
 
 Approved by Malhar:
 Date:
@@ -18,6 +18,19 @@ Date:
 - If the approval above is empty, stop. Tell Sandesh that this card is blocked.
 - **Production holds Shubham's real data.** Do not create, edit, submit or
   delete a record in production to test it. Part B below only looks.
+
+---
+
+## Before part A — make the release
+
+`docs/WORKFLOW.md` step 5. Do this only after Malhar's approval above.
+
+1. Merge `release/v1.0.0` into `main`.
+2. Tag that commit: `git tag v1.0.0`, then `git push origin main v1.0.0`.
+3. Check out the tag. Production deploys from it, and from nothing else.
+
+The names of the production resources are fixed. `docs/DEPLOY.md` has the
+table. Use the commands as they are written.
 
 ---
 

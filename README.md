@@ -102,8 +102,8 @@ tests must pass.
 
 ## Status
 
-**Release 1 is built and is not yet deployed.** It is on the `release-1`
-branch. The next step is to deploy staging at `demoos.cloudshapeddreamsstudio.com`
+**Release 1 is built and is not yet deployed.** It is on the
+`release/v1.0.0` branch. The next step is to deploy staging at `demoos.cloudshapeddreamsstudio.com`
 and test each feature by hand: `docs/tasks/r1-staging.md`. Then production at
 `studioos.cloudshapeddreamsstudio.com`.
 

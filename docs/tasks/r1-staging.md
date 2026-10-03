@@ -2,7 +2,7 @@
 
 **State:** Done 2026-10-03. Gate 1 and gate 2 passed.
 **Owner:** Sandesh
-**Branch:** `release-1`
+**Branch:** `release/v1.0.0` (it was named `release-1` during the test)
 **Gate:** this card is gate 1 and gate 2 of `docs/RELEASE-1.md`.
 
 ---
@@ -200,7 +200,7 @@ release 1.
 - Name: Sandesh
 - Date: 02/10/2026
 
-When each item is Pass, commit this file on `release-1`, push, and message
+When each item is Pass, commit this file on the release branch, push, and message
 Malhar. Malhar then approves `docs/tasks/r1-production.md`.
 
 ---

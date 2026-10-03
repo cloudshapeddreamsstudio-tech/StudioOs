@@ -12,6 +12,39 @@ Written in ASD-STE100 Simplified Technical English.
 
 ---
 
+## Which branch deploys where
+
+`docs/WORKFLOW.md` has the full rule. In short:
+
+- **Demo** (`staging`) deploys from the release branch that is in test,
+  `release/vX.Y.Z`.
+- **Production** deploys only from a tag on `main`, after Malhar approves.
+
+---
+
+## The names of the Cloudflare resources
+
+One pattern: `studioos-<environment>`, then the kind of thing.
+
+| Resource | Demo | Production |
+|---|---|---|
+| Worker | `studioos-staging` | `studioos-production` |
+| D1 database | `studioos-staging-db` | `studioos-production-db` |
+| KV namespace | made by Wrangler from the Worker name and `TENANTS` | the same pattern |
+| Custom domain | `demoos.cloudshapeddreamsstudio.com` | `studioos.cloudshapeddreamsstudio.com` |
+| OAuth Client on ERPNext, App Name | `StudioOS staging` | `StudioOS production` |
+| The three secrets, in the password manager | `StudioOS staging — SESSION_KEY`, and so on | `StudioOS production — SESSION_KEY`, and so on |
+
+The Worker name and the database name are set in `worker/wrangler.jsonc`. If you
+use the commands in this file with `--env`, you get these names. Do not type a
+different name. After step 2, run `bunx wrangler kv namespace list` and confirm
+that the new name contains the name of the environment.
+
+A resource that does not contain `studioos-staging` or `studioos-production` is
+not part of StudioOS. If you find one, ask before you delete it.
+
+---
+
 ## The two environments
 
 | `ENV` | StudioOS address | ERPNext site | Worker | D1 database |
@@ -28,7 +61,9 @@ In each command below, write `staging` or `production` where you see `ENV`.
 - You can sign in to the Cloudflare account that holds the
   `cloudshapeddreamsstudio.com` zone.
 - You are a System Manager on the ERPNext site of the environment.
-- `bun run check` passes on your branch.
+- You are on the correct code: the release branch for demo, a tag on `main` for
+  production. `docs/WORKFLOW.md`.
+- `bun run check` passes.
 - You have a password manager open. You make three secrets for each
   environment, and you keep them there.
 
