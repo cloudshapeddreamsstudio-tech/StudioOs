@@ -146,6 +146,7 @@ feature on one side, use the same word on the other side.
 | `docs/seam-map.html` | **Authoritative** | The same document as diagrams. Open it when the words are dense. |
 | `docs/adr/` | **Authoritative** | One decision for each record, with its evidence and its cost. |
 | `docs/RELEASE-1.md` | **Authoritative** | What release 1 contains, what it does not, and its gates. Start here. |
+| `docs/RELEASE-2.md` | **Authoritative** | What comes after release 1, in order. Not started. |
 | `docs/HANDOFF.md` | **Reference** | How H1, H1b and H2 were done, and the H3 front end work that comes after release 1. |
 | `docs/tasks/` | **Authoritative** | One card for one job, written to be given to an agent. See `docs/tasks/README.md`. |
 | `docs/FINDINGS.md` | **Authoritative** | Facts proved against a real ERPNext. The decisions stand on these. |
@@ -413,12 +414,17 @@ Work on the `release-1` branch.
 | Work | State |
 |---|---|
 | H1, H1b, H2, H2b | Done 2026-10-01 and 2026-10-02 |
-| [r1-staging](./docs/tasks/r1-staging.md) | **Next.** Deploy staging. Sandesh tests each feature himself and signs off. |
-| [r1-production](./docs/tasks/r1-production.md) | After the staging sign-off and Malhar's approval. |
+| [r1-staging](./docs/tasks/r1-staging.md) | Done 2026-10-03. Staging is live, and Sandesh tested it and signed. |
+| [r1-production](./docs/tasks/r1-production.md) | **Next.** Blocked until Malhar writes his approval in that file. |
 
-After release 1, and not before: the front end conventions and Figma (H3 in
-`docs/HANDOFF.md`), the modules of ADR-0002, continuous integration, and the
-release 2 features in `docs/RELEASE-1.md`.
+After release 1, and not before: everything in `docs/RELEASE-2.md`. That
+includes the design system of `docs/FRONTEND.md`, the missing invoice and task
+controls, the modules of ADR-0002, and continuous integration.
+
+**A list of features is written from the screen, not from the Worker.** The
+first `docs/RELEASE-1.md` named actions that the Worker has and the app has no
+control for. A person found that by clicking. Before you write that a person
+"can" do something, find the control in `app/src/`.
 
 ---
 

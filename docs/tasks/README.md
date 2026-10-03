@@ -45,5 +45,5 @@ failure. It happened on the first card in this folder.
 |---|---|---|
 | [h1b-dev-loop.md](./h1b-dev-loop.md) | Give the SPA a fast development loop, on one origin | Done |
 | [h2b-sign-out-everywhere.md](./h2b-sign-out-everywhere.md) | Finish the prize of H2: end every session of one person | Done |
-| [r1-staging.md](./r1-staging.md) | Deploy staging, test each feature yourself, sign off | **Open — next** |
-| [r1-production.md](./r1-production.md) | Deploy production after Malhar approves | Blocked on r1-staging |
+| [r1-staging.md](./r1-staging.md) | Deploy staging, test each feature yourself, sign off | Done |
+| [r1-production.md](./r1-production.md) | Deploy production after Malhar approves | **Next — needs Malhar's approval** |

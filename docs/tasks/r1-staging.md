@@ -1,6 +1,6 @@
 # R1 — deploy staging, test it yourself, sign off
 
-**State:** Open
+**State:** Done 2026-10-03. Gate 1 and gate 2 passed.
 **Owner:** Sandesh
 **Branch:** `release-1`
 **Gate:** this card is gate 1 and gate 2 of `docs/RELEASE-1.md`.
@@ -204,6 +204,22 @@ When each item is Pass, commit this file on `release-1`, push, and message
 Malhar. Malhar then approves `docs/tasks/r1-production.md`.
 
 ---
+
+### Malhar's decision, 2026-10-03
+
+**All five rows go to release 2.** Release 1 ships what is on the screen.
+`docs/RELEASE-1.md` is corrected: it now lists what a person can do in the app,
+not what the Worker can do. `docs/RELEASE-2.md` holds the five rows, in order.
+
+So B12, B13, B15, B16, B17, B19, B20 and B26 tested actions that are not in
+release 1. They are not faults of the app. The fault was in the document, and
+the test found it.
+
+**Gate 2 is passed:** each item that is in release 1 was tested by Sandesh and
+passes, and the one real fault (B25) is corrected and tested again.
+
+`docs/tasks/r1-production.md` is still blocked. It needs Malhar's approval in
+that file.
 
 ## Release 2
 

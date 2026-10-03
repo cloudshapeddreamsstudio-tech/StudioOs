@@ -2,7 +2,7 @@
 
 **State:** Blocked. Starts only when both are true:
 
-1. `docs/tasks/r1-staging.md` part C is complete, with each item Pass.
+1. `docs/tasks/r1-staging.md` gate 2 is passed. **True since 2026-10-03.**
 2. Malhar writes "approved" and the date below.
 
 **Owner:** Sandesh
@@ -43,6 +43,7 @@ Sandesh does each of these himself, in a browser.
 |---|---|---|
 | P1 | Sign in with `csdstudio.frappe.cloud`. | The dashboard. |
 | P2 | Open each page in the menu. | Each page loads, with production data. |
+| P2a | Sign out. Use the browser back button. | The sign-in page. No studio data. This is fault B25 from staging. |
 | P3 | Open one project and each of its tabs. Change nothing. | Each tab loads. |
 | P4 | Sign out. | The sign-in page. |
 
