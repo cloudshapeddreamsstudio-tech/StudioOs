@@ -1,8 +1,10 @@
 # FRONTEND — the design system of StudioOS
 
-> **State: OUTLINE, not accepted.** This file gives the sections, the rules
-> that are proposed, and the decisions that are still open. Nothing here is a
-> rule until Sandesh and Malhar accept it. Open decisions are marked **DECIDE**.
+> **State: OUTLINE. The direction is accepted by Malhar, 2026-10-03.** Each
+> decision D1 to D8 is closed. The sections marked "To write" are not written
+> yet, and the rules marked "proposed" become rules when those sections are
+> written. **No code changes for this document before release 1 is in
+> production** (D8).
 
 This document is the constitution of `app/`. `docs/SEAM.md` says where data
 lives. This document says how StudioOS looks, and where each design decision
@@ -313,10 +315,14 @@ the screens move, then the lint is switched on. In this sequence:
    runs as a warning, so the count of breaks goes down with each commit and is
    visible.
 
-**DECIDE (D8):** the place of this work in the sequence. It changes each screen
-in `app/`. Release 1 is frozen on `release-1`. If Malhar asks for the missing
-release-1 controls (invoices, tasks, docs), build them after step 3, so that
-they are built on the tokens once and not built two times.
+**Decided (D8, Malhar, 2026-10-03): the migration starts after release 1 is in
+production.** Release 1 ships the screens as they are today. The missing
+controls (invoices, tasks, documents, notes, sign out on all devices) are in
+release 2, and they are built after step 3, on the tokens, one time.
+`docs/RELEASE-2.md` on the `release-1` branch has the order.
+
+One risk to watch: `@shadcn/lint` is at version 0.2.0. It is new and can change.
+If it blocks the work, the rules of section 6 stay and the tool is replaced.
 
 ---
 
@@ -332,4 +338,4 @@ they are built on the tokens once and not built two times.
 | ~~D5~~ | ~~One muted text colour or two~~ **Decided 2026-10-03: two.** Section 2.1 | Sandesh. Confirmed by Shubham 2026-10-03 |
 | ~~D6~~ | ~~The token names~~ **Decided 2026-10-03: the shadcn/ui names.** Section 2.1 | Sandesh |
 | ~~D7~~ | ~~The feature names~~ **Decided 2026-10-03: the names of the app.** Section 5 | Sandesh |
-| D8 | When the migration runs, compared to release 1 | Malhar |
+| ~~D8~~ | ~~When the migration runs~~ **Decided 2026-10-03: after release 1 is in production.** Section 9 | Malhar |
