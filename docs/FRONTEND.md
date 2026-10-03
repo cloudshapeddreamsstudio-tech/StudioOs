@@ -90,8 +90,8 @@ addition, because shadcn/ui has no role for it.
   own dark value. Only a role name can hold that.
 
 `muted-foreground` is the shadcn name. `subtle-foreground` is a StudioOS name,
-because shadcn/ui has one muted role only. Shubham confirms the two
-descriptions above before the tokens are written.
+because shadcn/ui has one muted role only. Shubham confirmed the two
+descriptions above on 2026-10-03.
 
 **Decided (D6, 2026-10-03): the shadcn/ui names.** The shadcn components and
 `@shadcn/lint` read these names with no translation. A component writes
@@ -329,7 +329,7 @@ they are built on the tokens once and not built two times.
 | ~~D3~~ | ~~An icon set, or SVG by hand~~ **Decided 2026-10-03: an icon set.** | Sandesh |
 | ~~D3a~~ | ~~Which icon set~~ **Decided 2026-10-03: Lucide.** | Sandesh |
 | ~~D4~~ | ~~Inter from Google Fonts, or from our own files~~ **Decided 2026-10-03: Google Fonts.** Section 2.3 | Sandesh |
-| ~~D5~~ | ~~One muted text colour or two~~ **Decided 2026-10-03: two.** Section 2.1 | Sandesh, Shubham confirms |
+| ~~D5~~ | ~~One muted text colour or two~~ **Decided 2026-10-03: two.** Section 2.1 | Sandesh. Confirmed by Shubham 2026-10-03 |
 | ~~D6~~ | ~~The token names~~ **Decided 2026-10-03: the shadcn/ui names.** Section 2.1 | Sandesh |
 | ~~D7~~ | ~~The feature names~~ **Decided 2026-10-03: the names of the app.** Section 5 | Sandesh |
 | D8 | When the migration runs, compared to release 1 | Malhar |
