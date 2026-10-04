@@ -421,7 +421,7 @@ migrations operate: read it before you create a branch.
 |---|---|
 | H1, H1b, H2, H2b | Done 2026-10-01 and 2026-10-02 |
 | [r1-staging](./docs/tasks/r1-staging.md) | Done 2026-10-03. Staging is live, and Sandesh tested it and signed. |
-| [r1-production](./docs/tasks/r1-production.md) | **Next.** Blocked until Malhar writes his approval in that file. |
+| [r1-production](./docs/tasks/r1-production.md) | **Next.** Approved by Malhar, 2026-10-04. |
 
 After release 1, and not before: everything in `docs/RELEASE-2.md`. That
 includes the design system of `docs/FRONTEND.md`, the missing invoice and task

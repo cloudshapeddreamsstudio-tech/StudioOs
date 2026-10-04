@@ -1,15 +1,15 @@
 # R1 — deploy production
 
-**State:** Blocked. Starts only when both are true:
+**State:** Open. Approved 2026-10-04. Both conditions are true:
 
 1. `docs/tasks/r1-staging.md` gate 2 is passed. **True since 2026-10-03.**
-2. Malhar writes "approved" and the date below.
+2. Malhar writes "approved" and the date below. **Done.**
 
 **Owner:** Sandesh
 **Code:** the tag `v1.0.0` on `main`
 
-Approved by Malhar:
-Date:
+Approved by Malhar: **approved**
+Date: 2026-10-04
 
 ---
 
