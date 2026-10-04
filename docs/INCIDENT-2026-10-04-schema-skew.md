@@ -12,8 +12,10 @@ Each statement in this document has one of three marks:
 
 - **Observed** — seen on a screen, in a log, or in the code, on 2026-10-04.
 - **Recorded** — written in this repository before today.
-- **Not verified** — a conclusion that has no direct evidence yet. Section 6
+- **Not verified** — a conclusion that has no direct evidence yet. Section 8
   says how to get the evidence.
+
+Times are UTC. India time is UTC + 5:30.
 
 ---
 
@@ -25,57 +27,169 @@ Each statement in this document has one of three marks:
    for custom fields that a person added by hand to the old site
    (`cloudshapeddreamsstudio.m.erpnext.com`). The production site
    (`csdstudio.frappe.cloud`) does not have all of them. **Not verified** by the
-   text of the ERPNext error. Section 3 gives the evidence that is available.
+   text of the ERPNext error. Section 4 gives the evidence that is available,
+   and section 8.1 gives a check that takes one minute.
 4. Staging signs in on the old site, which has each field. So the test of 29
    items on staging could not find this fault.
 5. This is not a new problem. `docs/PLAN-v2.md` recorded it in August and
    deferred it to Phase 8. Projects and Payables were never protected.
 6. No data is changed or lost. StudioOS failed to read. It wrote nothing.
-7. Three decisions are necessary. Section 7.
+7. Two more faults were found on the way. The Worker does not log the reason
+   that ERPNext gives, and the app shows a development hint in production.
+   Section 6.
+8. Three decisions are necessary. Section 9.
 
 ---
 
-## 2. What was observed
-
-The deployment itself is correct.
+## 2. The deployment — it is correct
 
 | Fact | Value | Mark |
 |---|---|---|
-| Tag | `v1.0.0` = commit `79e74f6`, on `main` | Observed |
-| Worker | `studioos-production`, version `9e713de3-b151-42c1-838f-d3067f7b1c67` | Observed |
+| Tag | `v1.0.0` = commit `79e74f6`, on `main` and on `release/v1.0.0` | Observed |
+| Worker | `studioos-production` | Observed |
 | Address | `studioos.cloudshapeddreamsstudio.com` only. No `workers.dev` address | Observed |
+| D1 | `studioos-production-db`, id `ab380f30-6b13-44fd-b254-fa3c7d1f8bcf`, migration `0000_sessions.sql` applied | Observed |
+| KV | `production-TENANTS`, id `f60b45c3d6224c84b8395109f4437c45` | Observed |
+| `COMPANY` | `Cloud Shaped Dreams Studio`, confirmed by Sandesh on the Company list | Observed |
+| Secrets | `SESSION_KEY`, `REGISTRY_KEY`, `CONNECTOR_SHARED_SECRET`. New values, not the staging ones | Observed |
 | `/api/health` | `{"ok":true,"registryBound":true,"appOrigin":"https://studioos.cloudshapeddreamsstudio.com"}` | Observed |
 | `check-one-origin.ts` | 5 of 5 pass | Observed |
-| Sign-in with `csdstudio.frappe.cloud` | arrives on the dashboard (P1 passes) | Observed |
+| `/auth/start?site=csdstudio.frappe.cloud` | 302 to `https://csdstudio.frappe.cloud/api/method/frappe.integrations.oauth2.authorize`, with `redirect_uri=https://studioos.cloudshapeddreamsstudio.com/auth/callback` | Observed |
 | The staging ERPNext site, on production | refused: "is not connected to StudioOS yet" | Observed |
+| Sign-in with `csdstudio.frappe.cloud` | arrives on the dashboard. P1 passes | Observed |
+| Staging after the production work | `/api/health` ok, its three secrets unchanged | Observed |
 
-The live log of the production Worker, while Sandesh opened each page:
+### The versions of the Worker
 
-| Endpoint | Status | Page |
+Each `wrangler secret put` makes a new version of the Worker. So the version
+that runs is the fourth one, not the one that the deploy printed.
+
+| Time (UTC) | Source | Version |
 |---|---|---|
-| `/api/projects` | **417**, 6 times | Projects |
-| `/api/payables` | **417**, 4 times | Payables |
-| `/api/invoices` | 200 | Invoices |
-| `/api/tasks` | 200 | Tasks |
-| `/api/clients` | 200 | Clients |
-| `/api/vendors` | 200 | Vendors |
-| `/api/inventory` | 200 | Inventory |
-| `/api/customers`, `/api/sales-persons`, `/api/project-types`, `/api/project-templates` | 200 | the project form pickers |
+| 11:06:07 | the deploy, `bun run deploy:production` | `9e713de3-b151-42c1-838f-d3067f7b1c67` |
+| 11:14:23 | Secret Change | `e101ff1d-58f4-4a47-b5df-f7b418bdcde3` |
+| 11:15:04 | Secret Change | `51e244d9-4769-4ea9-9933-3dfd3c1f1a4d` |
+| 11:15:29 | Secret Change | **`82f0020b-e4e1-4a89-a660-62593f2c1cfd`** — this one runs |
+
+The code is the same in the four versions. Each log event in section 3 names
+version `82f0020b`.
+
+### The tools
+
+| Tool | Version |
+|---|---|
+| Bun | 1.4.2 |
+| Wrangler, in the repository | 4.145.0 |
+| `@cloudflare/vite-plugin` | 1.62.3 |
+| `compatibility_date` | `2025-01-15`, with `nodejs_compat` |
+| Workers observability | enabled, `worker/wrangler.jsonc:78` |
+
+One of the `secret put` commands was first run from the repository root, where
+there is no Wrangler configuration. `bunx` then used Wrangler 4.147.0 from the
+network, and it stopped with "No environment found". Nothing was uploaded. The
+command was run again from `worker/`.
+
+---
+
+## 3. The log of the production Worker
+
+Source: `wrangler tail studioos-production --format json`, from 11:28 to 11:33
+UTC, while Sandesh opened each page. 29 events. Each event had outcome `ok`,
+no exception, and version `82f0020b`. The two log lines of each event are from
+the Hono `logger()` middleware in `worker/src/index.ts:71`.
+
+The dashboard was opened before the log started. So `/api/dashboard` and
+`/api/insights` are not in it. Sandesh saw the dashboard load. **Observed** by
+eye, not by the log.
+
+### 3.1 Each event
+
+| Time | Method | Path | Status | Wall ms | CPU ms | Colo | Hono log |
+|---|---|---|---|---|---|---|---|
+| 11:28:25.828 | GET | `/api/clients` | 200 | 913 | 11 | MRS | `--> GET /api/clients 200 903ms` |
+| 11:28:29.950 | GET | `/api/payables` | **417** | 388 | 5 | MRS | `--> GET /api/payables 417 380ms` |
+| 11:28:31.563 | GET | `/api/payables` | **417** | 378 | 2 | MRS | `--> GET /api/payables 417 373ms` |
+| 11:28:34.808 | GET | `/api/vendors` | 200 | 356 | 2 | MRS | `--> GET /api/vendors 200 351ms` |
+| 11:28:37.003 | GET | `/api/inventory` | 200 | 1204 | 6 | MRS | `--> GET /api/inventory 200 1s` |
+| 11:30:25.831 | GET | `/api/projects` | **417** | 506 | 3 | MRS | `--> GET /api/projects 417 499ms` |
+| 11:30:27.504 | GET | `/api/projects` | **417** | 662 | 2 | MRS | `--> GET /api/projects 417 658ms` |
+| 11:30:46.699 | GET | `/auth/me` | 200 | 161 | 1 | MRS | `--> GET /auth/me 200 157ms` |
+| 11:30:47.051 | GET | `/api/projects` | **417** | 377 | 2 | MRS | `--> GET /api/projects 417 371ms` |
+| 11:30:48.665 | GET | `/api/projects` | **417** | 355 | 2 | MRS | `--> GET /api/projects 417 349ms` |
+| 11:30:54.920 | GET | `/api/customers` | 200 | 377 | 2 | MRS | `--> GET /api/customers 200 372ms` |
+| 11:30:54.920 | GET | `/api/project-types` | 200 | 388 | 2 | MRS | `--> GET /api/project-types 200 383ms` |
+| 11:30:54.921 | GET | `/api/sales-persons` | 200 | 377 | 2 | MRS | `--> GET /api/sales-persons 200 370ms` |
+| 11:30:54.921 | GET | `/api/project-templates` | 200 | 609 | 4 | MRS | `--> GET /api/project-templates 200 601ms` |
+| 11:31:20.468 | GET | `/api/projects` | **417** | 759 | 2 | MRS | `--> GET /api/projects 417 756ms` |
+| 11:31:22.470 | GET | `/api/projects` | **417** | 437 | 2 | MRS | `--> GET /api/projects 417 433ms` |
+| 11:31:36.229 | GET | `/api/invoices` | 200 | 793 | 3 | MRS | `--> GET /api/invoices 200 788ms` |
+| 11:31:40.485 | GET | `/api/tasks` | 200 | 364 | 2 | MRS | `--> GET /api/tasks 200 360ms` |
+| 11:31:43.699 | GET | `/api/payables` | **417** | 591 | 3 | MRS | `--> GET /api/payables 417 586ms` |
+| 11:31:45.480 | GET | `/api/payables` | **417** | 357 | 2 | MRS | `--> GET /api/payables 417 353ms` |
+| 11:32:02.205 | POST | `/api/graphql` | 401 | 7 | 6 | FRA | `--> POST /api/graphql 401 0ms` |
+| 11:32:02.330 | POST | `/api/graphql`, over `http://` | 401 | 4 | 3 | BOM | `--> POST /api/graphql 401 0ms` |
+| 11:32:02.345 | POST | `/api/gql` | 401 | 4 | 4 | FRA | `--> POST /api/gql 401 0ms` |
+| 11:32:02.468 | POST | `/api/gql`, over `http://` | 401 | 4 | 4 | BOM | `--> POST /api/gql 401 0ms` |
+| 11:32:03.685 | POST | `/api/graphql` | 401 | 4 | 4 | EWR | `--> POST /api/graphql 401 0ms` |
+| 11:32:04.243 | POST | `/api/gql` | 401 | 3 | 3 | EWR | `--> POST /api/gql 401 0ms` |
+| 11:32:28.225 | GET | `/api/clients` | 200 | 558 | 3 | MRS | `--> GET /api/clients 200 553ms` |
+| 11:32:30.656 | GET | `/api/vendors` | 200 | 788 | 5 | MRS | `--> GET /api/vendors 200 783ms` |
+| 11:32:32.964 | GET | `/api/inventory` | 200 | 1372 | 5 | MRS | `--> GET /api/inventory 200 1s` |
+
+### 3.2 The count for each endpoint
+
+| Endpoint | 200 | 417 | Page |
+|---|---|---|---|
+| `/api/projects` | 0 | **6** | Projects |
+| `/api/payables` | 0 | **4** | Payables |
+| `/api/clients` | 2 | 0 | Clients |
+| `/api/vendors` | 2 | 0 | Vendors |
+| `/api/inventory` | 2 | 0 | Inventory |
+| `/api/invoices` | 1 | 0 | Invoices |
+| `/api/tasks` | 1 | 0 | Tasks |
+| `/api/customers`, `/api/sales-persons`, `/api/project-types`, `/api/project-templates` | 1 each | 0 | the pickers of the project form |
+| `/auth/me` | 1 | 0 | the session check |
+
+### 3.3 What the log tells us
+
+1. **The fault is always the same two endpoints.** `/api/projects` failed 6 of
+   6 times. `/api/payables` failed 4 of 4 times. No endpoint failed one time and
+   passed a different time. So this is not a network fault and not a load fault.
+2. **ERPNext answered, and refused.** Each 417 took 349 to 756 ms. That is the
+   same time as a request that passes. It is not a timeout. The Worker reached
+   `csdstudio.frappe.cloud`, sent the token of the person, and got a refusal.
+3. **The token is good.** The same session got 200 from seven other endpoints,
+   in the same minute. So the 417 is not about permission. A permission
+   refusal from ERPNext is 403, and the app shows a different message for it.
+4. **The Worker did not fail.** Each event has outcome `ok` and no exception.
+   CPU time is 2 to 5 ms. The Worker passed the status of ERPNext to the
+   browser, as `middleware/errorHandler.ts` is written to do.
+5. **Each failed page made two requests.** They are 1.6 to 2.0 seconds apart.
+   That is the one retry of TanStack Query (`app/src/main.tsx`, `retry`:
+   `failureCount < 1`). It retries a 417, which cannot pass the second time.
+6. **The pickers of the project form load.** At 11:30:54 the four lookups
+   answered 200. So the form to create a project opens on production. No
+   project was created. Section 7.3 says why that form is a risk.
+7. **Six requests are not from a person.** `/api/graphql` and `/api/gql`, by
+   POST, from Frankfurt, Mumbai and Newark, in two seconds, two of them over
+   `http://`. They are scanners that look for a GraphQL endpoint. They arrived
+   26 minutes after the first deploy. `requireSession` refused each one with 401
+   in 0 ms. This is correct, and it shows that the address is found by scanners
+   at once.
+8. **The log does not hold the reason.** See section 6.1.
 
 The Inventory page loaded and showed this message. It is the proof that the
 production site lacks custom fields that the old site has:
 
 > Some columns are blank because your ERPNext does not have them. There is no
-> equipment_status field on Item ... There is no rental_source field ...
-
-`/api/gql` and `/api/graphql` answered 401, two times each. Those are scanners
-on the internet. The Worker refused them correctly.
+> equipment_status field on Item, so StudioOS cannot tell which gear is
+> available, rented out or in the shop ... There is no rental_source field ...
 
 ---
 
-## 3. The cause
+## 4. The cause
 
-### 3.1 What Frappe does
+### 4.1 What Frappe does
 
 When a list query names a field that the site does not have, Frappe does not
 return an empty value. It refuses the whole query with
@@ -83,17 +197,59 @@ return an empty value. It refuses the whole query with
 column stops one whole page. **Recorded** in `docs/PLAN-v2.md`, lines 692 to
 702.
 
-### 3.2 The two queries that fail
+### 4.2 The two queries that fail
 
 Both are plain `getList` calls on `Project`. Neither uses
 `lib/optionalFields.ts`. **Observed** in the code at `v1.0.0`.
 
-| File and line | Custom fields in the query |
-|---|---|
-| `worker/src/routes/projects.ts:111`, with `PROJECT_LIST_FIELDS` from `worker/src/schemas/project.ts:8` | all 8 fields of section 4.1 |
-| `worker/src/routes/payables.ts:42` | `custom_sales_person`, `custom_commission_percent`, `custom_sanction_amount` |
+**Projects.** `worker/src/routes/projects.ts:111`:
 
-### 3.3 Why this was known
+```ts
+const data = await frappe.getList<ProjectRow>('Project', {
+  fields: [...PROJECT_LIST_FIELDS],
+  limit: 200,
+  orderBy: 'creation desc',
+});
+```
+
+`PROJECT_LIST_FIELDS`, `worker/src/schemas/project.ts:5`, is 20 fields. Eight
+are custom:
+
+```
+name, project_name, customer, status, project_type, project_template,
+custom_sales_person, custom_commission_percent, custom_sanction_amount,
+custom_shoot_date, custom_brand, custom_ad_agency, custom_production_house,
+custom_poc,
+expected_start_date, expected_end_date, total_billed_amount,
+total_purchase_cost, gross_margin, per_gross_margin
+```
+
+**Payables.** `worker/src/routes/payables.ts:42`:
+
+```ts
+frappe.getList<PayableProjectRow>('Project', {
+  fields: [
+    'name', 'project_name', 'custom_sales_person', 'custom_commission_percent',
+    'custom_sanction_amount', 'total_billed_amount', 'department',
+  ],
+  limit: 1000,
+}),
+```
+
+### 4.3 The path of the error, from ERPNext to the screen
+
+| Step | Where | What occurs |
+|---|---|---|
+| 1 | `worker/src/lib/frappe.ts`, `request()` | ERPNext answers 417. The body holds the exception text. The code does `throw new FrappeError(res.status, data)` |
+| 2 | `worker/src/lib/errors.ts:33` | `FrappeError` sets the message to `ERPNext API error 417` and keeps the body in `details` |
+| 3 | `worker/src/middleware/errorHandler.ts` | It answers `{ "error": "ERPNext API error 417", "details": <the ERPNext body> }` with status 417. It writes no log line |
+| 4 | `app/src/lib/api.ts:56` to `66` | It makes an `ApiError` with the message from `error`. It keeps `details` on the error object |
+| 5 | `app/src/components/ui/QueryState.tsx:68` to `71`, and `features/payables/PayablesPage.tsx:28` | Each shows only `error.message`. No page reads `error.details` |
+
+So the reason reaches the browser, and the app keeps it in `ApiError.details`.
+No screen shows it and no log holds it.
+
+### 4.4 Why this was known
 
 **Recorded** in `docs/PLAN-v2.md`, lines 312 to 319, from August 2026:
 
@@ -106,20 +262,19 @@ So the fields were added by hand to the local bench, and the code was not
 changed. `lib/optionalFields.ts` was written later, for Inventory, Insights,
 Invoices and Clients. Projects and Payables did not get it.
 
-### 3.4 What is not verified
+### 4.5 What is not verified
 
-- The exact field that the production ERPNext names in its error. The app shows
-  only `ERPNext API error 417`.
-- Which of the 12 fields in section 4 exist on the production site.
+- The exact field that the production ERPNext names in its error.
+- Which of the 12 fields in section 5 exist on the production site.
 - The list of custom fields on the old site. The saved login of `frappe-ctl`
   for that site is from August and is expired. The site refused to renew it
   (HTTP 403), and the `frappe-ctl` program is not on this machine now. So this
   document has the list that **the code asks for**, not the list that **the
-  site has**. Section 6 closes this gap.
+  site has**. Section 8 closes this gap.
 
 ---
 
-## 4. Everything that StudioOS expects from an ERPNext site
+## 5. Everything that StudioOS expects from an ERPNext site
 
 This is the full list, read from the code at `v1.0.0`. It is the list to compare
 both sites against.
@@ -128,7 +283,13 @@ both sites against.
 page loads and says that the column is not available. "Not protected" means a
 plain `getList`: if the field is absent, the page fails with 417.
 
-### 4.1 Custom fields on `Project` — 8
+How `getListTolerant` operates, `worker/src/lib/optionalFields.ts`: it runs the
+query. If the error text matches `/Field not permitted in query:\s*([A-Za-z0-9_]+)/`,
+it removes that field and runs the query again. It returns the rows and a list
+`missingFields`. If the absent field is in a filter, it does not remove it. It
+throws `SchemaGapError`, because a filter that is removed changes the answer.
+
+### 5.1 Custom fields on `Project` — 8
 
 `custom_sales_person`, `custom_commission_percent`, `custom_sanction_amount`,
 `custom_shoot_date`, `custom_brand`, `custom_ad_agency`,
@@ -139,12 +300,12 @@ plain `getList`: if the field is absent, the page fails with 417.
 | `routes/projects.ts:111` | list | **No** | **Projects fails, 417. Observed** |
 | `routes/payables.ts:42` | list, 3 of the fields | **No** | **Payables fails, 417. Observed** |
 | `routes/clients.ts:136` | list, `custom_brand`, `custom_shoot_date` | Yes | the column is blank |
-| `routes/projectDetail.ts:406` and `409` | reads the whole document | — | **no error. See 5.2** |
-| `routes/projects.ts:229` to `236` | create a project | — | **no error. See 5.3** |
-| `routes/projects.ts:325` to `341` | edit a project | — | **no error. See 5.3** |
+| `routes/projectDetail.ts:406` and `409` | reads the whole document | — | **no error. See 7.2** |
+| `routes/projects.ts:229` to `236` | create a project | — | **no error. See 7.3** |
+| `routes/projects.ts:325` to `341` | edit a project | — | **no error. See 7.3** |
 | `routes/projectCrew.ts:261` to `271` | reads the whole document, for `custom_shoot_date` | — | no error. It uses `expected_start_date`, then today. That fallback is correct |
 
-### 4.2 Custom field on `Sales Invoice` — 1
+### 5.2 Custom field on `Sales Invoice` — 1
 
 `custom_invoice_number`. It holds the studio's own invoice number, such as
 `CSDS_SINV_02_260630`.
@@ -156,17 +317,17 @@ plain `getList`: if the field is absent, the page fails with 417.
 | `routes/projectDetail.ts:159` | list | **No** | **the project page fails, 417. Not verified** |
 | `lib/invoiceNumber.ts:105` | list, to find the next number | **No** | to create an invoice fails. Release 2 |
 
-### 4.3 Custom fields on `Item` — 2
+### 5.3 Custom fields on `Item` — 2
 
 `equipment_status`, `rental_source`. Both are protected, in
 `routes/inventory.ts:55` and `routes/insights.ts:73`. **Observed**: the
 production site does not have them, and Inventory loads with the message.
 
-### 4.4 Field on `Project Template` — 1
+### 5.4 Field on `Project Template` — 1
 
 `disabled`. Protected in `routes/lookups.ts`. **Observed**: 200.
 
-### 4.5 Master records that the code names
+### 5.5 Master records that the code names
 
 A site that does not have a record with this exact name gives a wrong result or
 an error. None of these is verified on the production site.
@@ -188,7 +349,7 @@ an error. None of these is verified on the production site.
 `routes/studioRental.ts`, which is not mounted. They are not a risk in
 release 1.
 
-### 4.6 Summary of the code
+### 5.6 The list calls in each route file
 
 | Route file | Protected list calls | Not protected |
 |---|---|---|
@@ -205,19 +366,67 @@ release 1.
 | `inventory.ts` | 2 | 1 |
 
 A call that is not protected is a fault only when it names a field that the
-site does not have. Sections 4.1 and 4.2 give the ones that do.
+site does not have. Sections 5.1 and 5.2 give the ones that do.
 
 ---
 
-## 5. The problems, in order of importance
+## 6. Two faults that made this difficult to diagnose
 
-### 5.1 Two pages do not load — the reason production is stopped
+Neither one caused the incident. Each one made it slower to find.
+
+### 6.1 The Worker does not log the reason that ERPNext gives
+
+`middleware/errorHandler.ts` writes `console.error` only for an error that is
+not an `AppError`. A `FrappeError` is an `AppError`. So a 417 from ERPNext
+leaves no line in the log except the Hono status line. Workers observability is
+enabled, and it has nothing to show.
+
+The exception text of ERPNext names the field. It is in `details` of the
+response. To read it, a person must open the developer tools of the browser, on
+the page that fails, at the moment that it fails.
+
+A correction: log the status, the path, and the `exception` text of ERPNext for
+each `FrappeError` of 4xx that is not 401, 403 or 404. The text names a field.
+It holds no secret and no studio data.
+
+### 6.2 The app shows a development hint in production
+
+`app/src/components/ui/QueryState.tsx:68` to `71`. A table that uses
+`QueryState`, such as the Projects list, shows this for each error that is not
+a 403. Sandesh saw it on Projects in production:
+
+> Couldn't load: ERPNext API error 417
+> Is the API Worker running? Try `bun run dev` in `worker/`.
+
+Payables has its own message and no hint: `Couldn't load payables: ERPNext API
+error 417`. Nine more pages have their own message of the same kind. None of
+them shows `details`.
+
+The second line is for a developer on a laptop. In production it is wrong, and
+it sends a person to look for the wrong fault. It also names a command that
+ADR-0004 changed: the command is `bun run dev` from the repository root.
+
+A correction: show the hint only in development (`import.meta.env.DEV`). In
+production, show the reason from `details` when it is a missing field, in the
+same words that Inventory uses.
+
+### 6.3 The app retries a request that cannot pass
+
+Section 3.3, item 5. A 417 is a refusal of the query, and the same query gets
+the same refusal. `app/src/main.tsx` stops the retry for 401 and 403. Add each
+other 4xx.
+
+---
+
+## 7. The problems, in order of importance
+
+### 7.1 Two pages do not load — the reason production is stopped
 
 Projects and Payables fail with 417. **Observed.** Projects is the first page
 that Shubham must see. `docs/tasks/r1-production.md` says release 1 is done
 "when Shubham sees his own projects".
 
-### 5.2 A project page can show a wrong money figure, with no error
+### 7.2 A project page can show a wrong money figure, with no error
 
 `routes/projectDetail.ts:406` and `409`:
 
@@ -232,14 +441,14 @@ the commission and the remaining budget from 0. That is a number that looks
 correct and is not. It breaks the studio's rule "never guess money"
 (`routes/projectCrew.ts:16`). `lib/optionalFields.ts` gives the same rule for
 this case: say that the figure is not available, and do not calculate one from
-data that is absent. **Observed** in the code.
-**Not verified** on the production screen, because the Projects list does not
-load and so no project was opened.
+data that is absent. **Observed** in the code. **Not verified** on the
+production screen, because the Projects list does not load and so no project
+was opened.
 
-This is more serious than 5.1. A page that fails is reported. A wrong number is
+This is more serious than 7.1. A page that fails is reported. A wrong number is
 believed.
 
-### 5.3 To create or edit a project can lose what the person typed, with no error
+### 7.3 To create or edit a project can lose what the person typed, with no error
 
 `routes/projects.ts:229` to `236` writes the 8 custom fields. The Frappe REST
 API is expected to ignore a field that the DocType does not have. If it does,
@@ -248,19 +457,23 @@ and a budget, the save succeeds, and the values are not kept. **Not verified**,
 for the behaviour of Frappe and for the production site. Do not test it on
 production, which holds real data. Test it on a site without the fields.
 
-### 5.4 The project page can fail a second time
+The form opens on production today. Section 3.3, item 6.
+
+### 7.4 The project page can fail a second time
 
 `routes/projectDetail.ts:159` asks for `custom_invoice_number` on
 `Sales Invoice`, not protected. If the production site lacks it, each project
-page fails with 417, after 5.1 is corrected. **Not verified.**
+page fails with 417, after 7.1 is corrected. **Not verified.** A hint that the
+field can be present: `/api/invoices` answered 200, but that call is protected,
+so the 200 does not prove it.
 
-### 5.5 The master records of section 4.5 are not checked
+### 7.5 The master records of section 5.5 are not checked
 
 Each name can be absent on the production site. The effect is small for a page
 that only reads, and a failed action for a page that writes. Crew (add, edit,
 remove) is in release 1 and depends on four of them.
 
-### 5.6 The data itself can be incomplete on the production site
+### 7.6 The data itself can be incomplete on the production site
 
 This is the question behind all the others. If `csdstudio.frappe.cloud` does
 not have `custom_sanction_amount`, then the budget, the commission, the brand
@@ -269,7 +482,7 @@ are not on the new site. That is a question about the data of the studio, not
 about StudioOS. Shubham must know the answer before he uses the new site as
 the record.
 
-### 5.7 The test could not find this
+### 7.7 The test could not find this
 
 Staging and production sign in on two different ERPNext sites with two
 different schemas. A test on staging proves the code against the old site only.
@@ -278,11 +491,48 @@ ships". That is true for the code. It is not true for the site behind it.
 
 ---
 
-## 6. The evidence that is missing, and how to get it
+## 8. The evidence that is missing, and how to get it
 
-A System Manager opens each address below in a browser, signed in on that
-site, and saves the page as a file. Do it for **both** sites. The answers are
-schema and names. They hold no secret.
+### 8.1 The check that takes one minute — do this first
+
+A System Manager signs in on `https://csdstudio.frappe.cloud`, then opens each
+address below in the same browser. Each one is the query that StudioOS sends,
+with a limit of one row. Each is a GET. It changes nothing.
+
+The Projects query:
+
+```
+https://csdstudio.frappe.cloud/api/resource/Project?fields=["name","project_name","customer","status","project_type","project_template","custom_sales_person","custom_commission_percent","custom_sanction_amount","custom_shoot_date","custom_brand","custom_ad_agency","custom_production_house","custom_poc","expected_start_date","expected_end_date","total_billed_amount","total_purchase_cost","gross_margin","per_gross_margin"]&limit_page_length=1
+```
+
+The Payables query:
+
+```
+https://csdstudio.frappe.cloud/api/resource/Project?fields=["name","project_name","custom_sales_person","custom_commission_percent","custom_sanction_amount","total_billed_amount","department"]&limit_page_length=1
+```
+
+The answer is one of two:
+
+- An exception that contains `Field not permitted in query: <field>`. That
+  names the first field that is absent. This confirms the cause.
+- One row of data. Then the cause in this document is wrong, and the diagnosis
+  starts again from the `details` of the response in the browser.
+
+Frappe names only one field for each query. To find each absent field, remove
+the named field from the address and open it again, until a row comes back.
+That is what `getListTolerant` does.
+
+A second way, with no address to type: on the production site, open Customize
+Form for `Project`, and look for the 8 fields of section 5.1.
+
+A third way: on the Projects page of production, open the developer tools,
+Network, the `projects` request in red, Response. Read `details`.
+
+### 8.2 The full comparison of the two sites
+
+A System Manager opens each address below, after the site name, and saves the
+page as a file. Do it for **both** sites. The answers are schema and names.
+They hold no secret.
 
 | # | Address, after the site name | Save as |
 |---|---|---|
@@ -298,23 +548,23 @@ Put the files in two folders, `skew/old-site/` and `skew/production/`, outside
 the repository. Then the two lists are compared, and each "Not verified" in this
 document becomes a fact.
 
-The fastest single check, if only one is done: on the production site, open
-Customize Form for `Project` and look for the 8 fields of section 4.1.
-
 ---
 
-## 7. The decisions
+## 9. The decisions
 
 ### D-A. How production gets its Projects page — decide first
 
 | Option | What | For | Against |
 |---|---|---|---|
-| **A1** | Add the missing custom fields to the production ERPNext, by hand | No code change. Minutes. Corrects 5.1 to 5.4 together | `docs/SEAM.md` section 3 forbids a dependency on a custom field of a stock DocType in version 1. The next studio has the same fault. A person must do it again on each site |
-| **A2** | Make the code tolerant: `getListTolerant` in `projects.ts`, `payables.ts` and `projectDetail.ts`, and "not available" in place of 0 | Correct for each site. Uses code that exists and is tested | A `fix/` branch, `release/v1.0.1`, a demo test, a tag, a deploy. Hours, not minutes. It does not bring the data of 5.6 |
+| **A1** | Add the missing custom fields to the production ERPNext, by hand | No code change. Minutes. Corrects 7.1 to 7.4 together | `docs/SEAM.md` section 3 forbids a dependency on a custom field of a stock DocType in version 1. The next studio has the same fault. A person must do it again on each site |
+| **A2** | Make the code tolerant: `getListTolerant` in `projects.ts`, `payables.ts` and `projectDetail.ts`, and "not available" in place of 0 | Correct for each site. Uses code that exists and is tested | A `fix/` branch, `release/v1.0.1`, a demo test, a tag, a deploy. Hours, not minutes. It does not bring the data of 7.6 |
 | **A3** | A1 now, then A2 as `v1.0.1` | Shubham starts today, and the code becomes correct | Two changes. The custom fields stay on the production site |
 
 Recommendation: **A3, if the studio wants those fields on the new site**, which
-5.6 decides. If the studio does not want them, A2 only.
+7.6 decides. If the studio does not want them, A2 only.
+
+In each option, `v1.0.1` also takes the three corrections of section 6. They are
+small, and they make the next fault of this kind visible in one minute.
 
 ### D-B. How `v1.0.1` is tested, if A2 or A3
 
@@ -325,15 +575,15 @@ site **without** the fields. Options: a new empty site on the local bench, or
 unit tests that give `getListTolerant` a fake site that refuses the field. The
 second one exists as a pattern in `worker/tests/optionalFields.test.ts`.
 
-### D-C. Is the data on the production site complete — 5.6
+### D-C. Is the data on the production site complete — 7.6
 
-Shubham and Malhar. The answers of section 6 show the difference in schema. A
+Shubham and Malhar. The answers of section 8.2 show the difference in schema. A
 count of projects, invoices and customers on each site shows the difference in
 data.
 
 ---
 
-## 8. What was done and what was not
+## 10. What was done and what was not
 
 Done on 2026-10-04:
 
