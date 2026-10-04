@@ -148,19 +148,19 @@
       "preview_urls": false,
       "routes": [{ "pattern": "studioos.cloudshapeddreamsstudio.com", "custom_domain": true }],
       "vars": {
-        "COMPANY": "REPLACE_WITH_THE_COMPANY_NAME_ON_THE_PRODUCTION_ERPNEXT_SITE",
+        "COMPANY": "Cloud Shaped Dreams Studio",
         "APP_ORIGIN": "https://studioos.cloudshapeddreamsstudio.com"
       },
       "d1_databases": [
         {
           "binding": "DB",
           "database_name": "studioos-production-db",
-          "database_id": "REPLACE_WITH_ID_FROM_WRANGLER_D1_CREATE_PRODUCTION",
+          "database_id": "ab380f30-6b13-44fd-b254-fa3c7d1f8bcf",
           "migrations_dir": "migrations"
         }
       ],
       "kv_namespaces": [
-        { "binding": "TENANTS", "id": "REPLACE_WITH_ID_FROM_WRANGLER_KV_CREATE_PRODUCTION" }
+        { "binding": "TENANTS", "id": "f60b45c3d6224c84b8395109f4437c45" }
       ]
     }
   }
