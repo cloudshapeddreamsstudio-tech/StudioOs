@@ -1,0 +1,269 @@
+<title>StudioOS Git Flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;600&display=swap">
+<style>
+:root{
+  color-scheme:light;
+  --paper:#F2F3F0; --panel:#FCFCFB; --panel2:#E9EBE6;
+  --ink:#15181A; --muted:#5A6560;
+  --rule:rgba(20,24,26,.15); --rule-soft:rgba(20,24,26,.07);
+  --main:#2C5F4F; --main-soft:rgba(44,95,79,.10);
+  --rel:#A9560B; --rel-soft:rgba(169,86,11,.10);
+  --work:#3F5E8C; --work-soft:rgba(63,94,140,.10);
+  --stop:#A32017; --stop-soft:rgba(163,32,23,.09);
+  --serif:"IBM Plex Serif",Georgia,serif;
+  --sans:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --paper:#101311; --panel:#181C1A; --panel2:#1F2422;
+  --ink:#E7EAE5; --muted:#95A19A;
+  --rule:rgba(231,234,229,.17); --rule-soft:rgba(231,234,229,.07);
+  --main:#77C6AA; --main-soft:rgba(119,198,170,.12);
+  --rel:#E0A055; --rel-soft:rgba(224,160,85,.12);
+  --work:#93B4E6; --work-soft:rgba(147,180,230,.12);
+  --stop:#F2867A; --stop-soft:rgba(242,134,122,.12);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#101311; --panel:#181C1A; --panel2:#1F2422;
+  --ink:#E7EAE5; --muted:#95A19A;
+  --rule:rgba(231,234,229,.17); --rule-soft:rgba(231,234,229,.07);
+  --main:#77C6AA; --main-soft:rgba(119,198,170,.12);
+  --rel:#E0A055; --rel-soft:rgba(224,160,85,.12);
+  --work:#93B4E6; --work-soft:rgba(147,180,230,.12);
+  --stop:#F2867A; --stop-soft:rgba(242,134,122,.12);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:400 15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:1040px;margin:0 auto;padding:0 24px 80px}
+header{padding:52px 0 28px;border-bottom:1px solid var(--rule)}
+.kicker{font:500 11px var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+h1{font:600 clamp(34px,6.5vw,58px)/1.03 var(--serif);margin:12px 0 0;letter-spacing:-.02em}
+.thesis{font:400 clamp(16px,2.3vw,20px)/1.45 var(--serif);max-width:30em;margin:16px 0 0}
+.thesis b{font-weight:600;color:var(--rel)}
+section{padding-top:48px}
+.st{display:flex;gap:14px;align-items:baseline;border-top:1px solid var(--rule-soft);padding-top:14px}
+.st .n{font:500 11px var(--mono);letter-spacing:.14em;color:var(--muted);white-space:nowrap}
+h2{font:600 clamp(20px,3.2vw,27px)/1.15 var(--serif);margin:0;letter-spacing:-.015em}
+p{margin:10px 0 0;max-width:60ch}
+code{font:400 .88em var(--mono);background:var(--panel2);padding:1px 5px;border-radius:2px}
+.figbox{margin-top:20px;background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:16px;overflow-x:auto}
+svg{display:block;width:100%;min-width:680px;height:auto;color:var(--ink)}
+.lbl{font:500 10.5px var(--mono);letter-spacing:.1em}
+.mono{font:500 12px var(--mono)}
+.t{font:400 12.5px var(--sans)}
+.s{font:400 11.5px var(--sans)}
+
+.grid{display:grid;gap:14px;margin-top:20px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.g5{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.card{background:var(--panel);border:1px solid var(--rule);border-radius:3px;padding:16px 18px}
+.card .k{font:500 10.5px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card .v{margin-top:8px;font:500 13px var(--mono);overflow-wrap:anywhere}
+.card .d{margin-top:6px;font-size:13.5px;color:var(--muted)}
+.card.main{border-left:3px solid var(--main)} .card.main .k{color:var(--main)}
+.card.rel{border-left:3px solid var(--rel)} .card.rel .k{color:var(--rel)}
+.step .num{font:600 26px var(--serif);color:var(--muted);line-height:1}
+.step .d{color:var(--ink);font-size:14px;margin-top:8px}
+.ver .big{font:600 22px var(--serif);margin-top:6px}
+.ver .ex{margin-top:8px;font:400 12.5px var(--mono);color:var(--muted)}
+.ver .ex b{color:var(--ink);font-weight:500}
+ul.rules{list-style:none;margin:20px 0 0;padding:0;display:grid;gap:0;max-width:70ch}
+ul.rules li{padding:12px 0;border-top:1px solid var(--rule-soft);display:grid;grid-template-columns:22px 1fr;gap:10px;font-size:14.5px}
+ul.rules li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--main);margin-top:7px}
+ul.rules li.no::before{background:var(--stop)}
+.files{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.files span{font:400 12px var(--mono);padding:5px 9px;border:1px solid var(--rule);border-radius:2px;background:var(--panel)}
+footer{margin-top:56px;padding-top:16px;border-top:1px solid var(--rule);font:400 12.5px var(--mono);color:var(--muted)}
+</style>
+
+<svg style="position:absolute;width:0;height:0" aria-hidden="true"><defs>
+<marker id="am" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--main)"/></marker>
+<marker id="ar" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--rel)"/></marker>
+<marker id="ax" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--stop)"/></marker>
+</defs></svg>
+
+<div class="wrap">
+
+<header>
+  <div class="kicker">StudioOS &nbsp;/&nbsp; docs/WORKFLOW.md &nbsp;/&nbsp; as a picture</div>
+  <h1>Git Flow</h1>
+  <p class="thesis">Demo runs the release branch. Production runs a tag on <code>main</code>. So <b>the code that a person tests is the code that ships.</b></p>
+</header>
+
+<section>
+  <div class="st"><div class="n">THE FLOW</div><h2>One release</h2></div>
+  <div class="figbox">
+    <svg viewBox="0 0 960 400" role="img" aria-label="A release branch is cut from main. A feature branch and a fix branch are cut from main and merge into the release branch. The release branch is tested on demo, approved, merged into main and tagged. Production deploys from the tag.">
+      <!-- lane labels -->
+      <text x="20" y="66" class="mono" fill="var(--main)">main</text>
+      <text x="20" y="84" class="s" fill="var(--muted)">production</text>
+      <text x="20" y="166" class="mono" fill="var(--rel)">release/v1.1.0</text>
+      <text x="20" y="184" class="s" fill="var(--muted)">demo</text>
+      <text x="20" y="256" class="mono" fill="var(--work)">feat/invoices</text>
+      <text x="20" y="274" class="s" fill="var(--muted)">one card</text>
+      <text x="20" y="326" class="mono" fill="var(--work)">fix/back-button</text>
+      <text x="20" y="344" class="s" fill="var(--muted)">one card</text>
+
+      <!-- main -->
+      <line x1="170" y1="70" x2="924" y2="70" stroke="var(--main)" stroke-width="3" marker-end="url(#am)"/>
+      <!-- release -->
+      <path d="M200 70 C 240 70, 235 170, 275 170 L 760 170 C 798 170, 790 70, 824 70" fill="none" stroke="var(--rel)" stroke-width="3"/>
+      <!-- feat -->
+      <path d="M200 70 C 305 70, 290 260, 350 260 L 470 260 C 512 260, 505 170, 540 170" fill="none" stroke="var(--work)" stroke-width="2"/>
+      <!-- fix -->
+      <path d="M200 70 C 335 70, 320 330, 392 330 L 540 330 C 590 330, 584 170, 622 170" fill="none" stroke="var(--work)" stroke-width="2" stroke-dasharray="6 4"/>
+
+      <!-- commits -->
+      <g fill="var(--panel)" stroke-width="2.5">
+        <circle cx="200" cy="70" r="7" stroke="var(--main)"/>
+        <circle cx="824" cy="70" r="7" stroke="var(--main)"/>
+        <circle cx="275" cy="170" r="6" stroke="var(--rel)"/>
+        <circle cx="540" cy="170" r="6" stroke="var(--rel)"/>
+        <circle cx="622" cy="170" r="6" stroke="var(--rel)"/>
+        <circle cx="410" cy="260" r="5" stroke="var(--work)"/>
+        <circle cx="470" cy="260" r="5" stroke="var(--work)"/>
+        <circle cx="460" cy="330" r="5" stroke="var(--work)"/>
+        <circle cx="540" cy="330" r="5" stroke="var(--work)"/>
+      </g>
+
+      <!-- tags -->
+      <rect x="166" y="24" width="68" height="24" rx="3" fill="var(--main-soft)" stroke="var(--main)" stroke-opacity=".5"/>
+      <text x="200" y="40" text-anchor="middle" class="mono" fill="var(--main)">v1.0.0</text>
+      <rect x="790" y="24" width="68" height="24" rx="3" fill="var(--main-soft)" stroke="var(--main)" stroke-opacity=".5"/>
+      <text x="824" y="40" text-anchor="middle" class="mono" fill="var(--main)">v1.1.0</text>
+      <text x="924" y="96" text-anchor="end" class="lbl" fill="var(--main)">DEPLOY PRODUCTION</text>
+
+      <!-- demo test gate -->
+      <rect x="672" y="152" width="36" height="36" rx="4" transform="rotate(45 690 170)" fill="var(--rel-soft)" stroke="var(--rel)" stroke-width="2"/>
+      <text x="690" y="216" text-anchor="middle" class="lbl" fill="var(--rel)">DEMO TEST</text>
+      <text x="690" y="233" text-anchor="middle" class="s" fill="var(--muted)">a person, in a browser</text>
+      <text x="760" y="146" text-anchor="middle" class="lbl" fill="var(--ink)">APPROVED</text>
+      <circle cx="760" cy="170" r="6" fill="var(--rel)" stroke="var(--rel)"/>
+
+      <!-- small notes -->
+      <text x="244" y="124" class="s" fill="var(--muted)">cut from main</text>
+      <text x="556" y="150" class="s" fill="var(--muted)">merge</text>
+      <text x="826" y="128" class="s" fill="var(--muted)">merge, then tag</text>
+
+      <!-- legend -->
+      <line x1="170" y1="378" x2="204" y2="378" stroke="var(--work)" stroke-width="2"/>
+      <text x="212" y="382" class="s" fill="var(--muted)">feat/ : a new feature</text>
+      <line x1="380" y1="378" x2="414" y2="378" stroke="var(--work)" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="422" y="382" class="s" fill="var(--muted)">fix/ : a fault correction</text>
+    </svg>
+  </div>
+</section>
+
+<section>
+  <div class="st"><div class="n">DEPLOY</div><h2>Which code runs where</h2></div>
+  <div class="grid g2">
+    <div class="card rel"><div class="k">Demo</div><div class="v">release/vX.Y.Z</div><div class="d">demoos.cloudshapeddreamsstudio.com</div></div>
+    <div class="card main"><div class="k">Production</div><div class="v">a tag on main</div><div class="d">studioos.cloudshapeddreamsstudio.com</div></div>
+  </div>
+  <p>There is no <code>dev</code> branch. Only one release is in the demo test at one time.</p>
+</section>
+
+<section>
+  <div class="st"><div class="n">STEPS</div><h2>Five steps</h2></div>
+  <div class="grid g5">
+    <div class="card step"><div class="num">1</div><div class="d">Open the release branch from <code>main</code>. Write its scope.</div></div>
+    <div class="card step"><div class="num">2</div><div class="d">One card, one branch. Cut it from <code>main</code>.</div></div>
+    <div class="card step"><div class="num">3</div><div class="d">Merge the branch into the release.</div></div>
+    <div class="card step"><div class="num">4</div><div class="d">Deploy the release to demo. A person tests it.</div></div>
+    <div class="card step"><div class="num">5</div><div class="d">Malhar approves. Merge, tag, deploy production.</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="st"><div class="n">VERSION</div><h2>One step at a time</h2></div>
+  <div class="grid g3">
+    <div class="card ver"><div class="k">Patch</div><div class="big">a fault correction</div><div class="ex">v1.0.<b>0</b> &rarr; v1.0.<b>1</b></div></div>
+    <div class="card ver"><div class="k">Minor</div><div class="big">a new feature</div><div class="ex">v1.<b>0</b>.1 &rarr; v1.<b>1</b>.0</div></div>
+    <div class="card ver"><div class="k">Major</div><div class="big">a studio must act</div><div class="ex">v<b>1</b>.4.2 &rarr; v<b>2</b>.0.0</div></div>
+  </div>
+  <p>A small release is easy to test and easy to roll back.</p>
+</section>
+
+<section>
+  <div class="st"><div class="n">ROLL BACK</div><h2>Deploy the previous tag again</h2></div>
+  <div class="figbox">
+    <svg viewBox="0 0 960 250" role="img" aria-label="Production moves back from the faulty tag v1.1.0 to the previous tag v1.0.1. A fix branch then ships as v1.1.1.">
+      <line x1="60" y1="120" x2="900" y2="120" stroke="var(--main)" stroke-width="3" marker-end="url(#am)"/>
+      <text x="60" y="150" class="mono" fill="var(--main)">main</text>
+
+      <g fill="var(--panel)" stroke-width="2.5">
+        <circle cx="260" cy="120" r="7" stroke="var(--main)"/>
+        <circle cx="480" cy="120" r="7" stroke="var(--stop)"/>
+        <circle cx="760" cy="120" r="7" stroke="var(--main)"/>
+      </g>
+      <text x="260" y="152" text-anchor="middle" class="mono" fill="var(--main)">v1.0.1</text>
+      <text x="480" y="152" text-anchor="middle" class="mono" fill="var(--stop)">v1.1.0</text>
+      <text x="480" y="170" text-anchor="middle" class="s" fill="var(--stop)">has a fault</text>
+      <text x="760" y="152" text-anchor="middle" class="mono" fill="var(--main)">v1.1.1</text>
+
+      <!-- production pointer moves back -->
+      <path d="M480 100 C 460 36, 290 36, 266 98" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#am)"/>
+      <text x="372" y="34" text-anchor="middle" class="lbl" fill="var(--ink)">1 · PRODUCTION GOES BACK</text>
+
+      <!-- fix forward -->
+      <path d="M480 120 C 530 120, 530 200, 580 200 L 660 200 C 712 200, 708 120, 754 120" fill="none" stroke="var(--work)" stroke-width="2" stroke-dasharray="6 4"/>
+      <circle cx="620" cy="200" r="5" fill="var(--panel)" stroke="var(--work)" stroke-width="2.5"/>
+      <text x="620" y="226" text-anchor="middle" class="lbl" fill="var(--work)">2 · FIX/ , THROUGH DEMO</text>
+    </svg>
+  </div>
+  <ul class="rules">
+    <li class="no">Do not merge an old release branch into <code>main</code>. It is already in <code>main</code>, so Git changes nothing.</li>
+    <li>A rollback changes the code. It does not change the database.</li>
+  </ul>
+</section>
+
+<section>
+  <div class="st"><div class="n">DATABASE</div><h2>A migration only adds</h2></div>
+  <div class="figbox">
+    <svg viewBox="0 0 960 190" role="img" aria-label="To remove a column, release A stops using it and release B removes it.">
+      <text x="24" y="24" class="lbl" fill="var(--muted)">TO REMOVE OR RENAME A COLUMN, USE TWO RELEASES</text>
+
+      <rect x="24" y="48" width="400" height="112" rx="5" fill="var(--main-soft)" stroke="var(--main)" stroke-opacity=".45"/>
+      <text x="46" y="78" class="lbl" fill="var(--main)">RELEASE A</text>
+      <text x="46" y="106" class="t" fill="currentColor">The code stops using the column.</text>
+      <text x="46" y="130" class="t" fill="currentColor">The column stays.</text>
+
+      <line x1="424" y1="104" x2="528" y2="104" stroke="currentColor" stroke-opacity=".45" marker-end="url(#am)"/>
+      <text x="476" y="94" text-anchor="middle" class="s" fill="var(--muted)">later</text>
+
+      <rect x="536" y="48" width="400" height="112" rx="5" fill="var(--rel-soft)" stroke="var(--rel)" stroke-opacity=".45"/>
+      <text x="558" y="78" class="lbl" fill="var(--rel)">RELEASE B</text>
+      <text x="558" y="106" class="t" fill="currentColor">A migration removes the column.</text>
+      <text x="558" y="130" class="t" fill="currentColor">No code uses it.</text>
+    </svg>
+  </div>
+  <p>After a rollback, the previous code runs on the new database. If the migration only added, that code still operates.</p>
+</section>
+
+<section>
+  <div class="st"><div class="n">PARALLEL</div><h2>Files that two branches change</h2></div>
+  <div class="files">
+    <span>worker/src/index.ts</span><span>app/src/router.tsx</span><span>Sidebar.tsx</span><span>AGENTS.md</span><span>docs/tasks/README.md</span><span>bun.lock</span><span>the next migration number</span>
+  </div>
+  <p>The branch that merges second corrects the conflict.</p>
+</section>
+
+<section>
+  <div class="st"><div class="n">RULES</div><h2>For each person and each agent</h2></div>
+  <ul class="rules">
+    <li>Find your branch name before you change a file.</li>
+    <li>Start a <code>feat/</code> or <code>fix/</code> branch from <code>main</code>.</li>
+    <li>Run <code>bun run check</code> before you merge.</li>
+    <li class="no">Do not commit to <code>main</code>.</li>
+    <li class="no">Do not deploy demo from a <code>feat/</code> or <code>fix/</code> branch.</li>
+    <li class="no">An agent does not merge, tag, or deploy production. A person does that.</li>
+  </ul>
+</section>
+
+<footer>docs/WORKFLOW.md is the rule. This page is the picture.</footer>
+</div>

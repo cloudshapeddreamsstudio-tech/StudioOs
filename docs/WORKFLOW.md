@@ -6,6 +6,8 @@ each person obeys it.
 
 Written in ASD-STE100 Simplified Technical English. See `docs/adr/README.md`.
 
+`docs/git-flow.html` is the same rule as a picture.
+
 ---
 
 ## The branches
