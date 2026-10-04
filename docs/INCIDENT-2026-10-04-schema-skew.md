@@ -33,11 +33,14 @@ Times are UTC. India time is UTC + 5:30.
    items on staging could not find this fault.
 5. This is not a new problem. `docs/PLAN-v2.md` recorded it in August and
    deferred it to Phase 8. Projects and Payables were never protected.
-6. No data is changed or lost. StudioOS failed to read. It wrote nothing.
-7. Two more faults were found on the way. The Worker does not log the reason
+6. **The old site was read on 2026-10-04.** It has 567 custom fields. Apps
+   installed 554 of them. A person added 13. Twelve of those 13 are exactly the
+   fields that StudioOS asks for. Appendix A.
+7. No data is changed or lost. StudioOS failed to read. It wrote nothing.
+8. Two more faults were found on the way. The Worker does not log the reason
    that ERPNext gives, and the app shows a development hint in production.
    Section 6.
-8. Three decisions are necessary. Section 9.
+9. Three decisions are necessary. Section 9.
 
 ---
 
@@ -266,11 +269,11 @@ Invoices and Clients. Projects and Payables did not get it.
 
 - The exact field that the production ERPNext names in its error.
 - Which of the 12 fields in section 5 exist on the production site.
-- The list of custom fields on the old site. The saved login of `frappe-ctl`
-  for that site is from August and is expired. The site refused to renew it
-  (HTTP 403), and the `frappe-ctl` program is not on this machine now. So this
-  document has the list that **the code asks for**, not the list that **the
-  site has**. Section 8 closes this gap.
+- Anything about the production site. No tool has access to it. Section 8.1
+  is the check.
+
+The old site is no longer in this list. Its custom fields, its master records
+and the data in them were read on 2026-10-04. **Observed.** Appendix A.
 
 ---
 
@@ -348,6 +351,10 @@ an error. None of these is verified on the production site.
 `Sales - CSDS`, `Debtors - CSDS` and `Main - CSDS` are named only in
 `routes/studioRental.ts`, which is not mounted. They are not a risk in
 release 1.
+
+**Each name in this table exists on the old site. Observed.** Appendix A.4. A
+person made most of them by hand, so the production site has them only if a
+person made them there too.
 
 ### 5.6 The list calls in each route file
 
@@ -482,6 +489,10 @@ are not on the new site. That is a question about the data of the studio, not
 about StudioOS. Shubham must know the answer before he uses the new site as
 the record.
 
+What is in those fields on the old site, **Observed**, Appendix A.2: 30 of 34
+projects have a sanctioned amount, and the total is ₹3,66,334. That is the
+budget figure of almost each project. 193 of 270 items have a rental source.
+
 ### 7.7 The test could not find this
 
 Staging and production sign in on two different ERPNext sites with two
@@ -530,9 +541,12 @@ Network, the `projects` request in red, Response. Read `details`.
 
 ### 8.2 The full comparison of the two sites
 
-A System Manager opens each address below, after the site name, and saves the
-page as a file. Do it for **both** sites. The answers are schema and names.
-They hold no secret.
+**The old site is done.** Appendix A. The files are in
+`E:\Swadharma\skew\old-site\`, outside the repository.
+
+**The production site is not done.** A System Manager opens each address below
+on `https://csdstudio.frappe.cloud`, and saves the page as a file. The answers
+are schema and names. They hold no secret.
 
 | # | Address, after the site name | Save as |
 |---|---|---|
@@ -544,9 +558,12 @@ They hold no secret.
 | 6 | `/api/resource/Department?limit_page_length=500` | `departments.json` |
 | 7 | `/api/method/frappe.utils.change_log.get_versions` | `versions.json` |
 
-Put the files in two folders, `skew/old-site/` and `skew/production/`, outside
-the repository. Then the two lists are compared, and each "Not verified" in this
-document becomes a fact.
+Put the files in `skew/production/`, beside `skew/old-site/`. Then the two
+lists are compared, and each "Not verified" in this document becomes a fact.
+
+To the first address, add `"owner","creation","module","is_system_generated"`
+in the list of fields. `is_system_generated` is what separates a field that an
+app installed from a field that a person added.
 
 ---
 
@@ -590,12 +607,190 @@ Done on 2026-10-04:
 - Production deployed from `v1.0.0`, steps 1 to 8 of `docs/DEPLOY.md`.
 - P1 passed. P2 failed on Projects and Payables.
 - The live log was read. The code was read. This document was written.
+- The old site was read with `frappe-ctl`, in read-only mode. Appendix A.
 
 Not done, on purpose:
 
 - No change to the production ERPNext site.
+- No change to the old ERPNext site. It was read only.
 - No change to the code, and no new deploy.
 - No record created, edited or deleted in production.
 - No rollback. There is no earlier version to roll back to, and the seven pages
   that operate are of use.
 - Shubham has not signed in.
+
+---
+
+## Appendix A — the old site, read on 2026-10-04
+
+Site: `cloudshapeddreamsstudio.m.erpnext.com`. Read with `frappe-ctl` 0.3.0, as
+`tangadesandesh2001@gmail.com`, with `FRAPPE_CTL_READONLY=1`, which stops each
+write. Only the verbs `get`, `count` and `describe` were used. Each statement in
+this appendix is **Observed**.
+
+The files are in `E:\Swadharma\skew\old-site\`, outside the repository.
+
+### A.1 The custom fields: 567, and who made them
+
+Frappe marks a custom field `is_system_generated = 1` when an app or the system
+installed it. A field with `0` was added by a person, in Customize Form.
+
+| Origin | Count |
+|---|---|
+| India Compliance app, module `GST India` | 522 |
+| Module `Income Tax India` | 9 |
+| Module `Audit Trail` | 2 |
+| System, no module: Print Designer (9), impersonation (3), print settings (3), others (6) | 21 |
+| **Added by a person** | **13** |
+| Total | 567 |
+
+**The 13 fields that a person added.** This is the schema skew.
+
+| DocType | Field | Type | Options | Added by | Date | StudioOS asks for it |
+|---|---|---|---|---|---|---|
+| Project | `custom_sanction_amount` | Currency | | Malhar | 2026-02-09 | Yes |
+| Project | `custom_sales_person` | Link | Sales Person | Shubham | 2026-07-09 | Yes |
+| Project | `custom_commission_percent` | Percent | | Shubham | 2026-07-09 | Yes |
+| Project | `custom_brand` | Data | | Shubham | 2026-07-10 | Yes |
+| Project | `custom_production_house` | Data | | Shubham | 2026-07-10 | Yes |
+| Project | `custom_poc` | Data | | Shubham | 2026-07-10 | Yes |
+| Project | `custom_shoot_date` | Date | | Shubham | 2026-07-10 | Yes |
+| Project | `custom_ad_agency` | Data | | Shubham | 2026-07-10 | Yes |
+| Sales Invoice | `custom_invoice_number` | Data | | Shubham | 2026-07-10 | Yes |
+| Item | `equipment_status` | Select | Available, Rented Out, In Repair, In Maintenance | Shubham | 2026-07-05 | Yes, protected |
+| Item | `rental_source` | Link | Supplier | Shubham | 2026-07-05 | Yes, protected |
+| Company | `custom_authorized_signature` | Attach Image | | Sandesh | 2026-07-15 | **No** |
+| Company | `custom_upi_qr_code` | Attach Image | | Sandesh | 2026-07-15 | **No** |
+
+So the 12 fields of section 5 are not a guess from the code. They are 12 of the
+13 fields that three people added by hand to one site, from February to July
+2026. No app, no fixture and no script creates them. A site gets them only when
+a person adds them.
+
+`Project Template.disabled` (section 5.4) is not in this list. On the old site
+it is a field of the DocType itself, not a custom field. `docs/PLAN-v2.md` says
+that a stock ERPNext v15 does not have it. So that one is a difference of
+ERPNext version, not a field that a person added. The version of each site is
+not collected. See A.6.
+
+### A.2 What is in those fields — the data at stake
+
+34 projects, 47 sales invoices, 270 items.
+
+| Field | Has a value in | Note |
+|---|---|---|
+| `Project.custom_sanction_amount` | **30 of 34** projects | The total is ₹3,66,334. This is the budget of almost each project |
+| `Project.custom_sales_person` | 4 of 34 | |
+| `Project.custom_commission_percent` | 3 of 34 | |
+| `Project.custom_shoot_date` | 3 of 34 | |
+| `Project.custom_poc` | 3 of 34 | |
+| `Project.custom_brand` | 1 of 34 | |
+| `Project.custom_production_house` | 1 of 34 | |
+| `Project.custom_ad_agency` | **0 of 34** | Never used |
+| `Sales Invoice.custom_invoice_number` | 3 of 47 | |
+| `Item.rental_source` | 193 of 270 | Each item in `Rental House Catalogue` |
+| `Item.equipment_status` | 16 of 270 | Each one is `Available`. Each item in `In-House Equipment` |
+| `Company.custom_authorized_signature` | set | An image |
+| `Company.custom_upi_qr_code` | set | An image |
+
+Only one field holds much data: the sanctioned amount. Five of the eight Project
+fields have a value in three projects or fewer. One has none.
+
+### A.3 The number of records
+
+| DocType | Count | DocType | Count |
+|---|---|---|---|
+| Project | 34 | Customer | 20 |
+| Task | 270 | Supplier | 16 |
+| Sales Invoice | 47 | Item | 270 |
+| Purchase Invoice | 45 | Payment Entry | 17 |
+| Purchase Order | 8 | Sales Order | 4 |
+| Quotation | 2 | Comment | 373 |
+| File | 17 | Journal Entry, Timesheet | 0 |
+
+Count the same DocTypes on the production site. The difference is the answer
+to decision D-C.
+
+### A.4 The master records that the code names
+
+Each one exists on the old site.
+
+| Name in the code | On the old site | Made by |
+|---|---|---|
+| Supplier Group `Freelance Crew` | Yes. It is a group node. Its children are `Direction & Production` and `Theatre & Performance` | Malhar, 2026-03-25 |
+| Supplier Group `Rental House` | Yes, under `Vendor Companies`. 3 suppliers | Shubham, 2026-07-05 |
+| Item Group `Services` | Yes. It is a group node. 5 items | ERPNext setup |
+| Item Group `In-House Equipment` | Yes. 16 items | Shubham, 2026-07-05 |
+| Item Group `Rental House Catalogue` | Yes. 193 items | Shubham, 2026-07-05 |
+| Supplier `Shubham Chauhan` | Yes | — |
+| Department `Theatre Education - CSDS` | Yes. 2 projects use it | Shubham, 2026-07-07 |
+| UOM `Nos` | Yes | ERPNext setup |
+| Company `Cloud Shaped Dreams Studio` | Yes. `abbr` is `CSDS` | ERPNext setup |
+| Company accounts | `Sales - CSDS`, `Debtors - CSDS`, `Main - CSDS`, `Creditors - CSDS` | ERPNext setup |
+| HSN `998431`, India Compliance | The app is installed: 522 of its fields are present | — |
+
+Two facts about the Supplier Groups that the code does not know:
+
+- `Freelance Crew` is a group node. The 7 crew suppliers are in its two child
+  groups, not in `Freelance Crew` itself. `routes/projectCrew.ts:62` makes a new
+  crew supplier in `Freelance Crew`. The split between crew and vendor still
+  operates, because it tests only for `Rental House`.
+- 2 of the 16 suppliers have no group.
+
+Other master records, for the comparison with production:
+
+| Kind | On the old site |
+|---|---|
+| Project Type | 13. Ten were added by a person: Advertisement, Documentary, Feature Film, Podcast, Promotional, Short Film, Social Media Reel, Theatre Education, TV/DV Commercial, and `Software`, which Sandesh added on 2026-10-02, the day of the staging test |
+| Project Template | 2: `Ad Film Production`, `Workshop / Education`. 5 of 34 projects use one |
+| Sales Person | 2, and the group: `Prem Kumar Boinwad`, `Shubham Chauhan` |
+| Mode of Payment | 6. One is not a standard ERPNext record: `UPI \| Kotak 811` |
+| Supplier Group | 16. Eight were added by a person: `Freelance Crew` and `Vendor Companies`, and six groups under them |
+| Item Group | 24. Eighteen were added by a person: a tree of 15 under `Services`, and `In-House Equipment`, `Rental House Catalogue` and `Equipment Rental` |
+
+### A.5 The other things that a person changed on the old site
+
+StudioOS reads none of these. They are listed so that the comparison with the
+production site is complete.
+
+| Kind | What |
+|---|---|
+| Property setters, 9 by hand | On `Project`: the label of `customer` is "Client", of `project_type` is "Project Category", of `project_template` is "Sub-Category Template", of `users` is "Crew". A field order. Quick entry for two fields. On `Sales Invoice`: the default print format is `GST Tax Invoice` |
+| Property setters, 26 from list settings | Which columns show in the list of Project, Sales Invoice, Purchase Invoice and Payment Entry |
+| Custom DocType | `Resource Booking`, module `Custom`. 0 records |
+| Client Script | `Resource Booking - Overlap Warning`, enabled |
+| Server Script | `Resource Booking - Prevent Overlap`, disabled |
+| Print Format | `CSDS Invoice` and `Custom_Invoice`, on Sales Invoice, 2026-07-15. The Print Designer app is installed |
+| Workflow, custom Role, custom Report | None |
+
+### A.6 What was not collected from the old site
+
+- **The versions of ERPNext and of each app.** The read-only mode of the tool
+  stops the method call that gives them, and `Installed Application` answered
+  403 for this user. India Compliance and Print Designer are known to be
+  installed, from their fields.
+- **The full list of custom DocTypes.** The tool cannot list the DocType
+  `DocType`. One is known: `Resource Booking`.
+
+### A.7 Two facts that this reading found, outside the incident
+
+1. **The old site has an image of the UPI QR code.** `Company.custom_upi_qr_code`
+   and `Company.custom_authorized_signature` are both set. StudioOS reads
+   neither: `lib/companyProfile.ts` does not ask for them. `docs/RELEASE-1.md`
+   says that the invoice has no UPI QR code because "ERPNext has no field for a
+   UPI id". That is correct for a UPI id as text. An image of the code is there.
+   This is a fact for the release 2 list, not a fault of release 1.
+2. **Two errors are in the error log of the old site, from this reading.** A
+   query for the DocType `DocType` gave HTTP 500, two times. Nothing was written.
+
+### A.8 What this appendix changes in the decisions
+
+- **For D-A.** Option A1 is a known and small piece of work: 12 fields, on 3
+  DocTypes, with the types and options of table A.1. Without `custom_ad_agency`,
+  which no project uses, it is 11.
+- **For D-C.** The data that is at risk is mostly one figure: the sanctioned
+  amount of 30 projects. If the production site has the projects and not this
+  field, the budgets are not there.
+- **For the code, option A2.** Each of the 12 fields can be absent on each new
+  site, because only a person adds them. So StudioOS must operate without each
+  one, and must say "not available" and not show 0.
