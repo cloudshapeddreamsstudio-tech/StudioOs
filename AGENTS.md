@@ -100,6 +100,9 @@ worker/                the Worker: Hono on Cloudflare Workers
   tests/               bun test. Pure logic, no network. One exception:
                        sessionStore.d1.test.ts runs kernel/auth on a local,
                        in-memory D1 (wrangler getPlatformProxy)
+erpnext/               what StudioOS adds to an ERPNext site - erpnext/README.md
+  schema/              one custom field in each numbered file. Add-only
+  reference/           the fixed lists that the code names
 docs/                  see "Which documents to trust"
   adr/                 architecture decision records
 scripts/               Windows and WSL helpers - see scripts/README.md
@@ -298,8 +301,9 @@ one.
   time, in `middleware/errorHandler.ts`. A route with its own try/catch is a
   fault.
 - **ERPNext must not depend on StudioOS.** Tier 1, use a DocType that ERPNext
-  ships. Tier 2, a custom field on a DocType that ERPNext ships, is forbidden in
-  version 1. Tier 3, a DocType that StudioOS owns and provisions, is permitted
+  ships. Tier 2, a custom field on a DocType that ERPNext ships, is permitted
+  only under the five conditions of ADR-0005, and only from a file in
+  `erpnext/schema/`. Never add one by hand in Customize Form. Tier 3, a DocType that StudioOS owns and provisions, is permitted
   under six conditions. Read
   [ADR-0001](./docs/adr/0001-studioos-provisions-its-own-doctypes.md) before you
   create one.
@@ -334,6 +338,10 @@ Read this list when you are going to be clever.
   one divided domain reputation. Start the ERPNext send function instead.
 - The ERPNext access token in the cookie. You then cannot cancel it.
 - One of the five parked routes, mounted "because it already works".
+- A read of a custom field that is not in `erpnext/schema/`. The site does not
+  have it, and ERPNext answers 417 for the whole list.
+- `Number(doc.custom_field || 0)` for money. An absent field is "not available".
+  It is not 0.
 - A `FRAPPE_API_KEY` variable. If you want one, question 3 said stop.
 - A second custom DocType, before the first one has run for one month.
 
@@ -395,6 +403,7 @@ Settled, and recorded:
 | Documentation is written in Simplified Technical English | `docs/adr/README.md` |
 | Branches: `feat/*` and `fix/*` merge into `release/vX.Y.Z`. That deploys to demo. `main` is production, from a tag. No `dev` branch | `docs/WORKFLOW.md` |
 | A D1 migration only adds. Wrangler migrations, no other tool | `docs/WORKFLOW.md` |
+| A custom field on a stock DocType is permitted under five conditions, from a file in `erpnext/schema/` | [ADR-0005](./docs/adr/0005-custom-fields-and-the-erpnext-schema.md) |
 | **The release is: Shubham uses StudioOS each day.** No parity with the old app, which was never used. No second studio | `docs/PLAN-v2.md` D7 |
 | Production hostname: `studioos.cloudshapeddreamsstudio.com` | D3 |
 | Overheads are a native ERPNext `Subscription`, with draft invoices | D8 |

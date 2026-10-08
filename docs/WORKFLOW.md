@@ -114,6 +114,19 @@ not the plan.
 
 ---
 
+## ERPNext schema files
+
+`erpnext/schema/` holds the custom fields that StudioOS needs on a studio's
+ERPNext site. The rules are the same as for a D1 migration: a numbered file,
+add-only, applied to the test site first and then to production, as part of a
+release. `erpnext/README.md` has the procedure, and ADR-0005 has the five
+conditions.
+
+Before a deploy, check that the site has each file. A release that needs a
+field that the site does not have fails with HTTP 417.
+
+---
+
 ## Work in parallel
 
 Each agent has one branch and one card, so two agents can work at the same
