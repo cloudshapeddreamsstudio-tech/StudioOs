@@ -261,7 +261,7 @@ rule is now given as three tiers. See
 | Tier | The act | The rule |
 |---|---|---|
 | 1 | Use a DocType that ERPNext ships | **Permitted.** This is the first choice for each data set. |
-| 2 | Add a custom field to a DocType that ERPNext ships | **Forbidden in version 1.** |
+| 2 | Add a custom field to a DocType that ERPNext ships | **Permitted under five conditions** (Amendment 5, ADR-0005). |
 | 3 | Create a DocType that StudioOS owns, on the studio's site | **Permitted, with six conditions.** |
 
 **Tier 2 is forbidden because it couples both ways.** If you add
@@ -682,3 +682,24 @@ time, not kind. We accepted it to get cancellation, which Section 0 asked for.
 The ADR records this in its costs. It is repeated here because Section 0 is
 where a reader looks, and a caveat that lives only in an ADR is a caveat nobody
 finds.
+
+### Amendment 5 — a custom field is permitted under conditions (2026-10-09)
+
+Section 3 said that tier 2 is forbidden in version 1. That rule was not true on
+the day it was written: the code read 12 custom fields that three people had
+added by hand to one site. On 2026-10-04 the production site did not have them,
+and two pages failed.
+
+[ADR-0005](./adr/0005-custom-fields-and-the-erpnext-schema.md) replaces the
+rule. A custom field on a stock DocType is permitted only when all five are
+true: it is a record of the studio; ERPNext has no field with that meaning; a
+released screen uses it; it is a file in `erpnext/schema/`; and StudioOS
+operates when it is absent, and shows "not available", never 0.
+
+The reason that tier 2 was forbidden still stands as a caution. A field that a
+person adds by hand is a dependency that nothing records. So no person adds one
+by hand. A field comes from a file.
+
+**What this incident teaches.** A rule that nobody checks against the code is a
+wish. Before you write a rule in this document, search the code for a break of
+it.

@@ -1,0 +1,8 @@
+{
+  "doctype": "Custom Field",
+  "dt": "Project",
+  "fieldname": "custom_sanction_amount",
+  "label": "Sanction Amount",
+  "fieldtype": "Currency",
+  "insert_after": "company"
+}

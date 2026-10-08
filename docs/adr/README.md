@@ -52,6 +52,7 @@ them exactly.
 | [0002](./0002-repository-structure.md) | The repository structure | Accepted |
 | [0003](./0003-how-sessions-are-stored.md) | How sessions are stored | Accepted |
 | [0004](./0004-the-development-loop.md) | The development loop, and where wrangler.jsonc lives | Accepted |
+| [0005](./0005-custom-fields-and-the-erpnext-schema.md) | Custom fields, and the ERPNext schema that StudioOS needs | Accepted |
 
 ## What an ADR does not do
 

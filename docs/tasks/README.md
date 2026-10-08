@@ -47,3 +47,4 @@ failure. It happened on the first card in this folder.
 | [h2b-sign-out-everywhere.md](./h2b-sign-out-everywhere.md) | Finish the prize of H2: end every session of one person | Done |
 | [r1-staging.md](./r1-staging.md) | Deploy staging, test each feature yourself, sign off | Done |
 | [r1-production.md](./r1-production.md) | Deploy production | **Open — approved 2026-10-04** |
+| [v101-missing-fields.md](./v101-missing-fields.md) | v1.0.1: StudioOS operates on a site that does not have a field | **Open — next** |
