@@ -11,6 +11,7 @@ import {
   type PurchaseRow,
 } from '../lib/projectFinance';
 import { NotFoundError } from '../lib/errors';
+import { getListTolerant } from '../lib/optionalFields';
 import { readCrewForProject } from './projectCrew';
 import type { AppEnv } from '../types';
 
@@ -155,13 +156,19 @@ app.get('/:name', async (c) => {
           orderBy: 'lft asc',
         })
         .catch(() => [] as TaskRow[]),
-      frappe
-        .getList<SalesRow>('Sales Invoice', {
-          fields: ['name', 'custom_invoice_number', 'posting_date', 'due_date', 'grand_total', 'outstanding_amount', 'status'],
-          filters: [['project', '=', projectName]],
-          limit: 100,
-          orderBy: 'posting_date desc',
-        })
+      /**
+       * Tolerant, for `custom_invoice_number`. On a site without that field the
+       * plain query failed, the catch below hid the failure, and the project
+       * showed no invoice at all -- so its billed and outstanding figures were
+       * wrong with no error on the screen.
+       */
+      getListTolerant<SalesRow>(frappe, 'Sales Invoice', {
+        fields: ['name', 'custom_invoice_number', 'posting_date', 'due_date', 'grand_total', 'outstanding_amount', 'status'],
+        filters: [['project', '=', projectName]],
+        limit: 100,
+        orderBy: 'posting_date desc',
+      })
+        .then((r) => r.rows)
         .catch(() => [] as SalesRow[]),
       frappe
         .getList<PurchaseRow>('Purchase Invoice', {

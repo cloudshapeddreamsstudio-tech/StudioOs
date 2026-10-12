@@ -15,6 +15,11 @@ import { formatCurrency, formatDate } from '@/lib/format';
 export function PayablesPage() {
   const { data, isLoading, error } = usePayables();
   const [open, setOpen] = useState<string | null>(null);
+  /**
+   * The Worker sends null, not 0, when this site cannot give the commission.
+   * `formatCurrency(null)` is ₹0, so the null must be read here.
+   */
+  const commissionUnknown = data ? data.totals.commissionOwed === null : false;
 
   const conflicts =
     data?.supplierGroups.flatMap((g) => g.invoices.filter((i) => i.conflict)) ?? [];
@@ -43,12 +48,17 @@ export function PayablesPage() {
         />
         <StatTile
           label="Commission owed"
-          value={isLoading ? '…' : formatCurrency(data?.totals.commissionOwed)}
-          sub="Owed by formula; payouts aren't tracked"
+          value={isLoading ? '…' : commissionUnknown ? 'Not available' : formatCurrency(data?.totals.commissionOwed)}
+          sub={
+            commissionUnknown
+              ? 'Your ERPNext does not have the commission fields'
+              : "Owed by formula; payouts aren't tracked"
+          }
         />
         <StatTile
           label="Grand total"
-          value={isLoading ? '…' : formatCurrency(data?.totals.grandTotal)}
+          value={isLoading ? '…' : commissionUnknown ? 'Not available' : formatCurrency(data?.totals.grandTotal)}
+          sub={commissionUnknown ? 'It needs the commission, which is not available' : undefined}
         />
       </div>
 
@@ -83,7 +93,7 @@ export function PayablesPage() {
           />
         ))}
 
-        {data && data.commission.length > 0 && (
+        {data && data.commission && data.commission.length > 0 && (
           <Card title="Commission owed">
             <div className="p-5 space-y-3">
               {data.commission.map((c) => (

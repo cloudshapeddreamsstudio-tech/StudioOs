@@ -54,10 +54,22 @@ export interface PayableProjectRow {
   department?: string | null;
 }
 
+/** The fields the commission is calculated from. All three are custom. */
+const COMMISSION_FIELDS = ['custom_sales_person', 'custom_commission_percent', 'custom_sanction_amount'];
+
+/**
+ * @param missingFields Fields of `Project` that this site does not have, from
+ *   `getListTolerant`. If one is a commission field, the commission is `null`:
+ *   not available. It is never 0, because "the studio owes no commission" and
+ *   "this site cannot say" are different facts (ADR-0005 condition 5).
+ */
 export function buildPayables(
   purchaseInvoices: PayablePurchaseRow[],
   projects: PayableProjectRow[],
+  missingFields: string[] = [],
 ) {
+  const commissionUnavailable = COMMISSION_FIELDS.some((f) => missingFields.includes(f));
+
   // --- Group unpaid purchase invoices by supplier ---
   const bySupplier: Record<
     string,
@@ -144,7 +156,9 @@ export function buildPayables(
     });
   }
 
-  const commission = Object.values(commissionByPerson).sort((a, b) => b.totalOwed - a.totalOwed);
+  const commission = commissionUnavailable
+    ? null
+    : Object.values(commissionByPerson).sort((a, b) => b.totalOwed - a.totalOwed);
 
   const owedToOthers = supplierGroups
     .filter((g) => !g.isOwner)
@@ -152,7 +166,7 @@ export function buildPayables(
   const owedToOwner = supplierGroups
     .filter((g) => g.isOwner)
     .reduce((s, g) => s + g.totalOutstanding, 0);
-  const commissionOwed = commission.reduce((s, c) => s + c.totalOwed, 0);
+  const commissionOwed = commission === null ? null : commission.reduce((s, c) => s + c.totalOwed, 0);
 
   return {
     supplierGroups,
@@ -161,7 +175,8 @@ export function buildPayables(
       owedToOthers,
       owedToOwner,
       commissionOwed,
-      grandTotal: owedToOthers + owedToOwner + commissionOwed,
+      // A total with a part that is not known is not a total.
+      grandTotal: commissionOwed === null ? null : owedToOthers + owedToOwner + commissionOwed,
     },
     poCount: purchaseInvoices.length,
   };

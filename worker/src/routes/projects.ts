@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import type { FrappeClient } from '../lib/frappe';
 import { computeSmartAction } from '../lib/smartAction';
+import { getListTolerant } from '../lib/optionalFields';
 import {
   PROJECT_LIST_FIELDS,
   createProjectSchema,
@@ -108,7 +109,15 @@ interface SalesRow {
 app.get('/', async (c) => {
   const frappe = c.get('frappe');
 
-  const data = await frappe.getList<ProjectRow>('Project', {
+  /**
+   * Tolerant, because PROJECT_LIST_FIELDS names custom fields that a person
+   * added to one site by hand. A site without one refuses the whole query with
+   * 417, and that stopped this page in production on 2026-10-04
+   * (docs/INCIDENT-2026-10-04-schema-skew.md). A field the site does not have is
+   * absent from each row -- not null and not 0 -- so nothing here may read it
+   * as a value. ADR-0005 condition 5.
+   */
+  const { rows: data } = await getListTolerant<ProjectRow>(frappe, 'Project', {
     fields: [...PROJECT_LIST_FIELDS],
     limit: 200,
     orderBy: 'creation desc',

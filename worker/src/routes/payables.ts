@@ -4,6 +4,7 @@ import {
   type PayablePurchaseRow,
   type PayableProjectRow,
 } from '../lib/payablesAggregate';
+import { getListTolerant } from '../lib/optionalFields';
 import type { AppEnv } from '../types';
 
 /**
@@ -38,8 +39,13 @@ app.get('/', async (c) => {
       limit: 500,
       orderBy: 'due_date asc',
     }),
-    // Needed for the commission leg.
-    frappe.getList<PayableProjectRow>('Project', {
+    /**
+     * Needed for the commission leg. Tolerant: the three custom fields exist
+     * only where a person added them, and a site without one refused this
+     * query with 417 and took the whole page down (the incident of 2026-10-04).
+     * What the studio owes its suppliers does not depend on them.
+     */
+    getListTolerant<PayableProjectRow>(frappe, 'Project', {
       fields: [
         'name', 'project_name', 'custom_sales_person', 'custom_commission_percent',
         'custom_sanction_amount', 'total_billed_amount', 'department',
@@ -48,7 +54,7 @@ app.get('/', async (c) => {
     }),
   ]);
 
-  return c.json(buildPayables(purchaseInvoices, projects));
+  return c.json(buildPayables(purchaseInvoices, projects.rows, projects.missingFields));
 });
 
 export default app;
