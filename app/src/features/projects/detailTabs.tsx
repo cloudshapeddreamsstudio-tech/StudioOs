@@ -157,12 +157,6 @@ export function MoneyTab({ data }: { data: ProjectDetail }) {
             tone={f.purchaseOutstanding > 0 ? 'bad' : 'good'}
           />
           <Figure label="Gross margin" value={formatCurrency(f.grossMargin)} />
-          <Figure
-            label={f.commissionPercent === null ? 'Commission' : `Commission (${f.commissionPercent}%)`}
-            value={f.commissionOwed === null ? 'Not available' : formatCurrency(f.commissionOwed)}
-            tone={f.commissionOwed === null ? 'muted' : undefined}
-            hint={f.commissionBase === null ? undefined : `on ${formatCurrency(f.commissionBase)}`}
-          />
         </div>
         <p className="px-5 pb-4 text-xs text-gray-400">
           &ldquo;To collect&rdquo; and &ldquo;to pay&rdquo; count only submitted invoices — a
@@ -423,11 +417,6 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
 
       <Card title="Margin against sanctioned">
         <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <Figure
-            label="Commission"
-            value={formatCurrencyOrDash(m.commissionActual)}
-            tone={m.commissionActual === null ? 'muted' : undefined}
-          />
           {/**
            * `formatCurrency` renders null as ₹0, which is right for "nothing
            * spent" and wrong for "cannot see the spend". These two figures can
@@ -441,8 +430,8 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
           />
           <Figure
             label="Production ceiling"
-            value={formatCurrencyOrDash(m.productionCeilingActual)}
-            tone={m.productionCeilingActual === null ? 'muted' : undefined}
+            value={formatCurrencyOrDash(m.productionCeiling)}
+            tone={m.productionCeiling === null ? 'muted' : undefined}
             hint="before profit drops under 20%"
           />
           <Figure

@@ -4,7 +4,6 @@ import {
   computeFinance,
   buildExpenseOverview,
   readSanctionedAmount,
-  readCommissionPercent,
 } from '../src/lib/projectFinance';
 import projectDetail from '../src/routes/projectDetail';
 import { errorHandler } from '../src/middleware/errorHandler';
@@ -42,21 +41,6 @@ describe('readSanctionedAmount', () => {
   });
 });
 
-describe('readCommissionPercent', () => {
-  it('is null when the site has no such field', () => {
-    expect(readCommissionPercent({ name: 'PROJ-1' })).toBeNull();
-  });
-
-  it('is 0 when the field is there and empty: no commission is a real answer', () => {
-    expect(readCommissionPercent({ custom_commission_percent: 0 })).toBe(0);
-    expect(readCommissionPercent({ custom_commission_percent: null })).toBe(0);
-  });
-
-  it('is the rate when one is set', () => {
-    expect(readCommissionPercent({ custom_commission_percent: 10 })).toBe(10);
-  });
-});
-
 const base = {
   billed: 0,
   purchaseCost: 20000,
@@ -68,7 +52,7 @@ const base = {
 };
 
 describe('computeFinance with no sanctioned amount', () => {
-  const f = computeFinance({ ...base, sanctioned: null, commissionPercent: 10 });
+  const f = computeFinance({ ...base, sanctioned: null });
 
   it('reports the sanctioned amount as not available, not 0', () => {
     expect(f.sanctioned).toBeNull();
@@ -79,37 +63,16 @@ describe('computeFinance with no sanctioned amount', () => {
     expect(f.remaining).toBeNull();
   });
 
-  it('does not calculate a commission on a base it does not have', () => {
-    // Nothing is billed, so the base falls back to the sanctioned amount.
-    expect(f.commissionBase).toBeNull();
-    expect(f.commissionOwed).toBeNull();
-  });
-
-  it('still calculates the commission from what is billed', () => {
-    const billed = computeFinance({ ...base, billed: 50000, sanctioned: null, commissionPercent: 10 });
-    expect(billed.commissionBase).toBe(50000);
-    expect(billed.commissionOwed).toBe(5000);
-  });
-
-  it('does not calculate a commission when the rate is not available', () => {
-    const noRate = computeFinance({ ...base, billed: 50000, sanctioned: 100000, commissionPercent: null });
-    expect(noRate.commissionPercent).toBeNull();
-    expect(noRate.commissionOwed).toBeNull();
-  });
-
   it('is unchanged when the amount is there', () => {
-    const ok = computeFinance({ ...base, sanctioned: 100000, commissionPercent: 10 });
+    const ok = computeFinance({ ...base, sanctioned: 100000 });
     expect(ok.sanctioned).toBe(100000);
     expect(ok.remaining).toBe(75000);
-    expect(ok.commissionOwed).toBe(10000);
   });
 });
 
 describe('buildExpenseOverview with no sanctioned amount', () => {
   const overview = buildExpenseOverview({
     sanctioned: null,
-    commissionPercent: 10,
-    commissionOwed: null,
     livePurchases: [],
     vendorPurchases: [],
     crewEntries: [],
@@ -119,10 +82,7 @@ describe('buildExpenseOverview with no sanctioned amount', () => {
 
   it('leaves each figure that is measured against the sanctioned amount as null', () => {
     const m = overview.margin;
-    expect(m.commissionPlanned).toBeNull();
-    expect(m.commissionActual).toBeNull();
-    expect(m.productionCeilingPlanned).toBeNull();
-    expect(m.productionCeilingActual).toBeNull();
+    expect(m.productionCeiling).toBeNull();
     expect(m.profitPlanned).toBeNull();
     expect(m.profitActual).toBeNull();
     expect(m.profitActualPercent).toBeNull();
@@ -166,8 +126,6 @@ describe('GET /api/project/:name, the Money figures', () => {
     const f = await finance({ name: 'PROJ-1', status: 'Open', total_purchase_cost: 20000 });
     expect(f.sanctioned).toBeNull();
     expect(f.remaining).toBeNull();
-    expect(f.commissionPercent).toBeNull();
-    expect(f.commissionOwed).toBeNull();
     // The stock fields are still read.
     expect(f.purchaseCost).toBe(20000);
   });
@@ -177,12 +135,9 @@ describe('GET /api/project/:name, the Money figures', () => {
       name: 'PROJ-2',
       status: 'Open',
       custom_sanction_amount: 0,
-      custom_commission_percent: 0,
     });
     expect(f.sanctioned).toBeNull();
     expect(f.remaining).toBeNull();
-    // The rate field is there and empty: 0%, a real answer.
-    expect(f.commissionPercent).toBe(0);
   });
 
   it('gives the amount for a project that has one', async () => {
@@ -190,10 +145,10 @@ describe('GET /api/project/:name, the Money figures', () => {
       name: 'PROJ-3',
       status: 'Open',
       custom_sanction_amount: 100000,
-      custom_commission_percent: 10,
+      total_purchase_cost: 20000,
     });
     expect(f.sanctioned).toBe(100000);
-    expect(f.commissionPercent).toBe(10);
-    expect(f.commissionOwed).toBe(10000);
+    // No commission is reported: ADR-0005 does not permit its fields.
+    expect('commissionOwed' in f).toBe(false);
   });
 });

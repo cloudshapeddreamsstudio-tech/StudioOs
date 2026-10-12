@@ -132,34 +132,38 @@ describe('GET /api/projects', () => {
 });
 
 describe('GET /api/payables', () => {
-  it('loads on a site that has none of the custom fields, and does not invent a commission', async () => {
+  it('loads on a site that has none of the custom fields', async () => {
     const res = await mount(payables, fakeSite(noProjectCustom, ALL)).request('/');
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       supplierGroups: { supplier: string; totalOutstanding: number }[];
-      commission: unknown;
-      totals: { owedToOthers: number; commissionOwed: number | null; grandTotal: number | null };
+      totals: { owedToOthers: number; grandTotal: number };
     };
-    // What the studio owes its suppliers is read from stock fields. It is whole.
     expect(body.supplierGroups).toHaveLength(1);
     expect(body.totals.owedToOthers).toBe(8000);
-    // The commission cannot be known here. Not available -- never 0.
-    expect(body.commission).toBeNull();
-    expect(body.totals.commissionOwed).toBeNull();
-    // A total with an unknown part is not a total.
-    expect(body.totals.grandTotal).toBeNull();
+    expect(body.totals.grandTotal).toBe(8000);
   });
 
-  it('calculates the commission on a site that has the fields', async () => {
-    const res = await mount(payables, fakeSite([], ALL)).request('/');
-    const body = (await res.json()) as {
-      commission: { party: string; totalOwed: number }[];
-      totals: { commissionOwed: number; grandTotal: number };
-    };
-    expect(body.commission).toHaveLength(1);
-    expect(body.commission[0]?.totalOwed).toBe(5000);
-    expect(body.totals.commissionOwed).toBe(5000);
-    expect(body.totals.grandTotal).toBe(13000);
+  it('does not read Project at all, so no field of Project can stop it', async () => {
+    // A site that refuses every query on Project.
+    const site = fakeSite([], ALL);
+    const plain = site.getList.bind(site);
+    site.getList = (async (doctype: string, opts?: ListOptions) => {
+      if (doctype === 'Project') throw new FrappeError(417, { exception: 'DataError: refused' });
+      return plain(doctype, opts);
+    }) as FrappeClient['getList'];
+
+    const res = await mount(payables, site).request('/');
+    expect(res.status).toBe(200);
+  });
+
+  it('reports no commission, on a site with the fields or without them', async () => {
+    for (const absent of [[], noProjectCustom]) {
+      const res = await mount(payables, fakeSite(absent, ALL)).request('/');
+      const body = (await res.json()) as { totals: Record<string, unknown> } & Record<string, unknown>;
+      expect('commission' in body).toBe(false);
+      expect('commissionOwed' in body.totals).toBe(false);
+    }
   });
 });
 

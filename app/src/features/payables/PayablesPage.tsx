@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePayables, type SupplierGroup } from './api';
-import { PageHeader, StatTile, Card } from '@/components/ui/PageHeader';
+import { PageHeader, StatTile } from '@/components/ui/PageHeader';
 import { formatCurrency, formatDate } from '@/lib/format';
 
 /**
@@ -15,11 +15,6 @@ import { formatCurrency, formatDate } from '@/lib/format';
 export function PayablesPage() {
   const { data, isLoading, error } = usePayables();
   const [open, setOpen] = useState<string | null>(null);
-  /**
-   * The Worker sends null, not 0, when this site cannot give the commission.
-   * `formatCurrency(null)` is ₹0, so the null must be read here.
-   */
-  const commissionUnknown = data ? data.totals.commissionOwed === null : false;
 
   const conflicts =
     data?.supplierGroups.flatMap((g) => g.invoices.filter((i) => i.conflict)) ?? [];
@@ -47,18 +42,8 @@ export function PayablesPage() {
           sub="Own crew fees — not an external liability"
         />
         <StatTile
-          label="Commission owed"
-          value={isLoading ? '…' : commissionUnknown ? 'Not available' : formatCurrency(data?.totals.commissionOwed)}
-          sub={
-            commissionUnknown
-              ? 'Your ERPNext does not have the commission fields'
-              : "Owed by formula; payouts aren't tracked"
-          }
-        />
-        <StatTile
           label="Grand total"
-          value={isLoading ? '…' : commissionUnknown ? 'Not available' : formatCurrency(data?.totals.grandTotal)}
-          sub={commissionUnknown ? 'It needs the commission, which is not available' : undefined}
+          value={isLoading ? '…' : formatCurrency(data?.totals.grandTotal)}
         />
       </div>
 
@@ -92,33 +77,6 @@ export function PayablesPage() {
             onToggle={() => setOpen(open === g.supplier ? null : g.supplier)}
           />
         ))}
-
-        {data && data.commission && data.commission.length > 0 && (
-          <Card title="Commission owed">
-            <div className="p-5 space-y-3">
-              {data.commission.map((c) => (
-                <div key={c.party}>
-                  <div className="flex justify-between font-medium text-gray-800 dark:text-gray-100">
-                    <span>{c.party}</span>
-                    <span>{formatCurrency(c.totalOwed)}</span>
-                  </div>
-                  {c.projects.map((p) => (
-                    <div
-                      key={p.project}
-                      className="flex justify-between text-xs text-gray-500 dark:text-gray-400 pl-4 mt-1"
-                    >
-                      <span>
-                        {p.projectName} · {p.commissionPercent}% of{' '}
-                        {formatCurrency(p.commissionBase)}
-                      </span>
-                      <span>{formatCurrency(p.commissionOwed)}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
       </div>
     </>
   );

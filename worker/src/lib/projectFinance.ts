@@ -203,66 +203,11 @@ export function readSanctionedAmount(project: Record<string, unknown>): number |
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-/**
- * The commission rate of a project, or `null` when the site does not have the
- * field. Unlike the budget, an empty rate is a real answer: 0%, no commission.
- * So only an absent key is "not available".
- */
-export function readCommissionPercent(project: Record<string, unknown>): number | null {
-  if (!('custom_commission_percent' in project)) return null;
-  const n = Number(project.custom_commission_percent || 0);
-  return Number.isFinite(n) ? n : 0;
-}
-
-/**
- * Commission owed on a project.
- *
- * Charged on what is actually invoiced to the client, per studio policy,
- * falling back to the sanctioned amount when nothing is billed yet — so the
- * figure is meaningful the moment a project is created.
- *
- * The old app had this formula written out twice, in `projectDetail.js` and
- * again in `payables.js`, with a comment in the latter saying it was "copied
- * here rather than reinvented". Two copies is one copy too many for a money
- * rule; both callers now share this.
- */
-export function computeCommission(
-  billed: number,
-  sanctioned: number,
-  commissionPercent: number,
-): { commissionBase: number; commissionOwed: number };
-export function computeCommission(
-  billed: number,
-  sanctioned: number | null,
-  commissionPercent: number | null,
-): { commissionBase: number | null; commissionOwed: number | null };
-/**
- * With a `null` input the answer is `null` where it depends on that input:
- * not available, never 0. What is billed is a stock field, so a commission on
- * a billed amount is still known when the sanctioned amount is not.
- */
-export function computeCommission(
-  billed: number,
-  sanctioned: number | null,
-  commissionPercent: number | null,
-): { commissionBase: number | null; commissionOwed: number | null } {
-  const commissionBase = billed > 0 ? billed : sanctioned;
-  return {
-    commissionBase,
-    commissionOwed:
-      commissionBase === null || commissionPercent === null
-        ? null
-        : Math.round((commissionBase * commissionPercent) / 100),
-  };
-}
-
 export interface FinanceInput {
   /** `null` when not available — see `readSanctionedAmount`. */
   sanctioned: number | null;
   billed: number;
   purchaseCost: number;
-  /** `null` when the site does not have the field — see `readCommissionPercent`. */
-  commissionPercent: number | null;
   liveSales: SalesRow[];
   livePurchases: PurchaseRow[];
   /** `null` when project expenses are unavailable — see CompletionInput.crewRoster. */
@@ -272,13 +217,7 @@ export interface FinanceInput {
 }
 
 export function computeFinance(input: FinanceInput) {
-  const { sanctioned, billed, purchaseCost, commissionPercent } = input;
-
-  const { commissionBase, commissionOwed } = computeCommission(
-    billed,
-    sanctioned,
-    commissionPercent,
-  );
+  const { sanctioned, billed, purchaseCost } = input;
 
   // Only submitted invoices count as money owed — a Draft hasn't been sent.
   const salesOutstanding = sumOutstanding(input.liveSales.filter((i) => i.status !== 'Draft'));
@@ -306,9 +245,6 @@ export function computeFinance(input: FinanceInput) {
         : sanctioned - purchaseCost - input.expenseTotal,
     grossMargin: input.grossMargin,
     marginPercent: input.marginPercent,
-    commissionPercent,
-    commissionBase,
-    commissionOwed,
     salesOutstanding,
     purchaseOutstanding,
   };
@@ -317,8 +253,6 @@ export function computeFinance(input: FinanceInput) {
 export interface ExpenseOverviewInput {
   /** `null` when not available. Each figure measured against it is then `null`. */
   sanctioned: number | null;
-  commissionPercent: number | null;
-  commissionOwed: number | null;
   livePurchases: PurchaseRow[];
   vendorPurchases: PurchaseRow[];
   /** `null` when the roster is unavailable — see CompletionInput.crewRoster. */
@@ -330,7 +264,7 @@ export interface ExpenseOverviewInput {
 
 /** The owner's "where did the money go" table: planned versus actual. */
 export function buildExpenseOverview(input: ExpenseOverviewInput) {
-  const { sanctioned, commissionPercent, commissionOwed } = input;
+  const { sanctioned } = input;
 
   /**
    * "Actual" is grand_total of every live purchase invoice regardless of paid
@@ -405,33 +339,23 @@ export function buildExpenseOverview(input: ExpenseOverviewInput) {
   const actualTotal = expensesUnavailable ? null : rows.reduce((s, r) => s + r.actual, 0);
 
   /**
-   * Margin model, per the owner's explicit split on SANCTIONED:
-   * commission% → sales person, 20% → profit (the minimum he wants to clear),
-   * the rest → all production (crew + vendor + expenses).
+   * Margin model, on SANCTIONED: 20% is profit, the minimum the owner wants to
+   * clear, and the rest is production (crew + vendor + expenses).
    *
-   * Commission is its own cost line feeding profit and is never folded into the
-   * expense rows above.
-   */
-  /**
+   * The model had a third part, a commission for a sales person. It was read
+   * from two custom fields that ADR-0005 does not permit in release 1, so it is
+   * not here. It returns with those fields.
+   *
    * Each figure below is measured against the sanctioned amount. When that is
    * not available, each one is null. `0 - spend` would read as a loss of the
    * whole spend, on a project whose budget is simply not known here.
    */
-  const commissionPlanned =
-    sanctioned === null || commissionPercent === null
-      ? null
-      : Math.round((sanctioned * commissionPercent) / 100);
-  const commissionActual = commissionOwed; // reuse, don't re-derive
   const profitActual =
-    actualTotal === null || sanctioned === null || commissionActual === null
-      ? null
-      : sanctioned - commissionActual - actualTotal;
+    actualTotal === null || sanctioned === null ? null : sanctioned - actualTotal;
   // Planned profit is derived from planned production, so it inherits its
   // unknown-ness rather than quietly assuming the plan was zero.
   const profitPlanned =
-    plannedTotal === null || sanctioned === null || commissionPlanned === null
-      ? null
-      : sanctioned - commissionPlanned - plannedTotal;
+    plannedTotal === null || sanctioned === null ? null : sanctioned - plannedTotal;
   const targetProfit = sanctioned === null ? null : 0.2 * sanctioned;
   const hasBudget = sanctioned !== null && sanctioned > 0;
 
@@ -440,19 +364,11 @@ export function buildExpenseOverview(input: ExpenseOverviewInput) {
     plannedTotal,
     actualTotal,
     margin: {
-      commissionPlanned,
-      commissionActual,
       productionPlanned: plannedTotal,
       productionActual: actualTotal,
       // The ceiling the owner wants visible so he can see headroom before quoting.
-      productionCeilingPlanned:
-        sanctioned === null || commissionPlanned === null || targetProfit === null
-          ? null
-          : sanctioned - commissionPlanned - targetProfit,
-      productionCeilingActual:
-        sanctioned === null || commissionActual === null || targetProfit === null
-          ? null
-          : sanctioned - commissionActual - targetProfit,
+      productionCeiling:
+        sanctioned === null || targetProfit === null ? null : sanctioned - targetProfit,
       profitPlanned,
       profitActual,
       profitPlannedPercent:

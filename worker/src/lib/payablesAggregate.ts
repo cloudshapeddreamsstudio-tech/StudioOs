@@ -1,5 +1,3 @@
-import { computeCommission } from './projectFinance';
-
 /**
  * Payables aggregation — everything the studio still owes, in one shape.
  *
@@ -44,32 +42,15 @@ export interface PayablePurchaseRow {
   project?: string | null;
 }
 
-export interface PayableProjectRow {
-  name: string;
-  project_name?: string;
-  custom_sales_person?: string | null;
-  custom_commission_percent?: number | null;
-  custom_sanction_amount?: number | null;
-  total_billed_amount?: number | null;
-  department?: string | null;
-}
-
-/** The fields the commission is calculated from. All three are custom. */
-const COMMISSION_FIELDS = ['custom_sales_person', 'custom_commission_percent', 'custom_sanction_amount'];
-
 /**
- * @param missingFields Fields of `Project` that this site does not have, from
- *   `getListTolerant`. If one is a commission field, the commission is `null`:
- *   not available. It is never 0, because "the studio owes no commission" and
- *   "this site cannot say" are different facts (ADR-0005 condition 5).
+ * What the studio owes its suppliers. Each figure is read from stock fields of
+ * `Purchase Invoice`, so it is the same on each ERPNext site.
+ *
+ * This had a second part: a commission owed to each sales person, calculated
+ * from two custom fields of `Project`. ADR-0005 does not permit those fields in
+ * release 1, so that part is not here. It returns with the fields.
  */
-export function buildPayables(
-  purchaseInvoices: PayablePurchaseRow[],
-  projects: PayableProjectRow[],
-  missingFields: string[] = [],
-) {
-  const commissionUnavailable = COMMISSION_FIELDS.some((f) => missingFields.includes(f));
-
+export function buildPayables(purchaseInvoices: PayablePurchaseRow[]) {
   // --- Group unpaid purchase invoices by supplier ---
   const bySupplier: Record<
     string,
@@ -118,65 +99,19 @@ export function buildPayables(
     (a, b) => b.totalOutstanding - a.totalOutstanding,
   );
 
-  /**
-   * Commission owed, per person. This route has no way to know which
-   * commission has already been paid out — no Payment Entry links to commission
-   * specifically — so it reports what is OWED by the formula, the same
-   * read-only scope as the rest of this endpoint.
-   */
-  const commissionByPerson: Record<
-    string,
-    { party: string; totalOwed: number; projects: unknown[] }
-  > = {};
-
-  for (const p of projects) {
-    const percent = Number(p.custom_commission_percent || 0);
-    const salesPerson = p.custom_sales_person;
-    if (!salesPerson || percent <= 0) continue;
-
-    const { commissionBase, commissionOwed } = computeCommission(
-      Number(p.total_billed_amount || 0),
-      Number(p.custom_sanction_amount || 0),
-      percent,
-    );
-    if (commissionOwed <= 0) continue;
-
-    const entry = (commissionByPerson[salesPerson] ??= {
-      party: salesPerson,
-      totalOwed: 0,
-      projects: [],
-    });
-    entry.totalOwed += commissionOwed;
-    entry.projects.push({
-      project: p.name,
-      projectName: p.project_name,
-      commissionOwed,
-      commissionPercent: percent,
-      commissionBase,
-    });
-  }
-
-  const commission = commissionUnavailable
-    ? null
-    : Object.values(commissionByPerson).sort((a, b) => b.totalOwed - a.totalOwed);
-
   const owedToOthers = supplierGroups
     .filter((g) => !g.isOwner)
     .reduce((s, g) => s + g.totalOutstanding, 0);
   const owedToOwner = supplierGroups
     .filter((g) => g.isOwner)
     .reduce((s, g) => s + g.totalOutstanding, 0);
-  const commissionOwed = commission === null ? null : commission.reduce((s, c) => s + c.totalOwed, 0);
 
   return {
     supplierGroups,
-    commission,
     totals: {
       owedToOthers,
       owedToOwner,
-      commissionOwed,
-      // A total with a part that is not known is not a total.
-      grandTotal: commissionOwed === null ? null : owedToOthers + owedToOwner + commissionOwed,
+      grandTotal: owedToOthers + owedToOwner,
     },
     poCount: purchaseInvoices.length,
   };

@@ -168,13 +168,10 @@ export interface ProjectDetail {
     plannedTotal: number | null;
     actualTotal: number | null;
     margin: {
-      /** `null` when the sanctioned amount or the rate is not available. */
-      commissionPlanned: number | null;
-      commissionActual: number | null;
       productionPlanned: number | null;
       productionActual: number | null;
-      productionCeilingPlanned: number | null;
-      productionCeilingActual: number | null;
+      /** `null` when the sanctioned amount is not available. */
+      productionCeiling: number | null;
       profitPlanned: number | null;
       profitActual: number | null;
       profitPlannedPercent: number | null;
@@ -195,10 +192,6 @@ export interface ProjectDetail {
     remaining: number | null;
     grossMargin: number;
     marginPercent: number;
-    /** `null` when the ERPNext site does not have the rate field. */
-    commissionPercent: number | null;
-    commissionBase: number | null;
-    commissionOwed: number | null;
     salesOutstanding: number;
     purchaseOutstanding: number;
   };

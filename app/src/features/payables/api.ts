@@ -27,25 +27,7 @@ export interface SupplierGroup {
 
 export interface Payables {
   supplierGroups: SupplierGroup[];
-  /**
-   * `null` when this ERPNext site does not have the fields the commission is
-   * calculated from. Not available -- which is a different fact from "nothing
-   * is owed", so it must never be shown as ₹0.
-   */
-  commission:
-    | {
-        party: string;
-        totalOwed: number;
-        projects: { project: string; projectName: string; commissionOwed: number; commissionPercent: number; commissionBase: number }[];
-      }[]
-    | null;
-  /** `commissionOwed` and `grandTotal` are `null` together with `commission`. */
-  totals: {
-    owedToOthers: number;
-    owedToOwner: number;
-    commissionOwed: number | null;
-    grandTotal: number | null;
-  };
+  totals: { owedToOthers: number; owedToOwner: number; grandTotal: number };
   poCount: number;
 }
 

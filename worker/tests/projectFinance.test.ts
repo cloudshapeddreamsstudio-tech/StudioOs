@@ -169,25 +169,12 @@ describe('computeFinance', () => {
     sanctioned: 100000,
     billed: 0,
     purchaseCost: 0,
-    commissionPercent: 5,
     liveSales: [] as SalesRow[],
     livePurchases: [] as PurchaseRow[],
     expenseTotal: 0,
     grossMargin: 0,
     marginPercent: 0,
   };
-
-  it('charges commission on billed once anything is invoiced', () => {
-    const f = computeFinance({ ...base, billed: 80000 });
-    expect(f.commissionBase).toBe(80000);
-    expect(f.commissionOwed).toBe(4000);
-  });
-
-  it('falls back to sanctioned before anything is billed', () => {
-    const f = computeFinance(base);
-    expect(f.commissionBase).toBe(100000);
-    expect(f.commissionOwed).toBe(5000);
-  });
 
   it('computes budget remaining after spend and expenses', () => {
     const f = computeFinance({ ...base, purchaseCost: 30000, expenseTotal: 5000 });
@@ -208,8 +195,6 @@ describe('computeFinance', () => {
 describe('buildExpenseOverview', () => {
   const base = {
     sanctioned: 100000,
-    commissionPercent: 5,
-    commissionOwed: 5000,
     livePurchases: [] as PurchaseRow[],
     vendorPurchases: [] as PurchaseRow[],
     crewEntries: [] as CrewRow[],
@@ -251,13 +236,13 @@ describe('buildExpenseOverview', () => {
     expect(o.rows).toContainEqual({ category: 'Transport', planned: 0, actual: 1250 });
   });
 
-  it('computes profit as sanctioned minus commission minus production', () => {
+  it('computes profit as sanctioned minus production', () => {
     const o = buildExpenseOverview({
       ...base,
       expenses: [{ category: 'Props', amount: 20000, estimatedAmount: 25000 }],
     });
-    expect(o.margin.profitActual).toBe(100000 - 5000 - 20000);
-    expect(o.margin.profitPlanned).toBe(100000 - 5000 - 25000);
+    expect(o.margin.profitActual).toBe(100000 - 20000);
+    expect(o.margin.profitPlanned).toBe(100000 - 25000);
   });
 
   it('flags whether the 20% profit target is met', () => {
@@ -265,17 +250,17 @@ describe('buildExpenseOverview', () => {
       ...base,
       expenses: [{ category: 'Props', amount: 10000 }],
     });
-    expect(meets.margin.meetsTargetActual).toBe(true); // 85k profit vs 20k target
+    expect(meets.margin.meetsTargetActual).toBe(true); // 90k profit vs 20k target
 
     const misses = buildExpenseOverview({
       ...base,
       expenses: [{ category: 'Props', amount: 90000 }],
     });
-    expect(misses.margin.meetsTargetActual).toBe(false); // 5k profit vs 20k target
+    expect(misses.margin.meetsTargetActual).toBe(false); // 10k profit vs 20k target
   });
 
   it('returns null percentages rather than dividing by zero on an unsanctioned project', () => {
-    const o = buildExpenseOverview({ ...base, sanctioned: 0, commissionOwed: 0 });
+    const o = buildExpenseOverview({ ...base, sanctioned: 0 });
     expect(o.margin.profitActualPercent).toBeNull();
     expect(o.margin.meetsTargetActual).toBeNull();
   });
@@ -306,7 +291,6 @@ describe('unavailable inputs are never treated as zero', () => {
     sanctioned: 100000,
     billed: 0,
     purchaseCost: 0,
-    commissionPercent: 5,
     liveSales: [] as SalesRow[],
     livePurchases: [] as PurchaseRow[],
     grossMargin: 0,
@@ -315,8 +299,6 @@ describe('unavailable inputs are never treated as zero', () => {
 
   const overviewBase = {
     sanctioned: 100000,
-    commissionPercent: 5,
-    commissionOwed: 5000,
     livePurchases: [] as PurchaseRow[],
     vendorPurchases: [] as PurchaseRow[],
   };
@@ -408,6 +390,6 @@ describe('unavailable inputs are never treated as zero', () => {
     });
 
     expect(overview.actualTotal).toBe(41250);
-    expect(overview.margin.profitActual).toBe(100000 - 5000 - 41250);
+    expect(overview.margin.profitActual).toBe(100000 - 41250);
   });
 });

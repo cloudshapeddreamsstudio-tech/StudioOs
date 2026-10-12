@@ -7,7 +7,6 @@ import {
   buildExpenseOverview,
   desiredPercentComplete,
   readSanctionedAmount,
-  readCommissionPercent,
   type TaskRow,
   type SalesRow,
   type PurchaseRow,
@@ -416,7 +415,6 @@ app.get('/:name', async (c) => {
     sanctioned: readSanctionedAmount(project),
     billed: Number(project.total_billed_amount || 0),
     purchaseCost: Number(project.total_purchase_cost || 0),
-    commissionPercent: readCommissionPercent(project),
     liveSales,
     livePurchases,
     expenseTotal,
@@ -426,8 +424,6 @@ app.get('/:name', async (c) => {
 
   const expenseOverview = buildExpenseOverview({
     sanctioned: finance.sanctioned,
-    commissionPercent: finance.commissionPercent,
-    commissionOwed: finance.commissionOwed,
     livePurchases,
     vendorPurchases,
     crewEntries,
