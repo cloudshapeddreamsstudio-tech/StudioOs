@@ -6,6 +6,8 @@ import {
   computeFinance,
   buildExpenseOverview,
   desiredPercentComplete,
+  readSanctionedAmount,
+  readCommissionPercent,
   type TaskRow,
   type SalesRow,
   type PurchaseRow,
@@ -410,10 +412,11 @@ app.get('/:name', async (c) => {
   const expensesByCategory = expenses === null ? null : groupExpenses(expenses);
 
   const finance = computeFinance({
-    sanctioned: Number(project.custom_sanction_amount || 0),
+    // null, not 0, when the budget is not available. ADR-0005 condition 5.
+    sanctioned: readSanctionedAmount(project),
     billed: Number(project.total_billed_amount || 0),
     purchaseCost: Number(project.total_purchase_cost || 0),
-    commissionPercent: Number(project.custom_commission_percent || 0),
+    commissionPercent: readCommissionPercent(project),
     liveSales,
     livePurchases,
     expenseTotal,

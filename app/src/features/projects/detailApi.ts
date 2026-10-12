@@ -168,12 +168,13 @@ export interface ProjectDetail {
     plannedTotal: number | null;
     actualTotal: number | null;
     margin: {
-      commissionPlanned: number;
-      commissionActual: number;
+      /** `null` when the sanctioned amount or the rate is not available. */
+      commissionPlanned: number | null;
+      commissionActual: number | null;
       productionPlanned: number | null;
       productionActual: number | null;
-      productionCeilingPlanned: number;
-      productionCeilingActual: number;
+      productionCeilingPlanned: number | null;
+      productionCeilingActual: number | null;
       profitPlanned: number | null;
       profitActual: number | null;
       profitPlannedPercent: number | null;
@@ -183,16 +184,21 @@ export interface ProjectDetail {
     };
   };
   finance: {
-    sanctioned: number;
+    /**
+     * `null` when it is not available: the ERPNext site does not have the
+     * field, or no budget is typed in. Never show it as ₹0.
+     */
+    sanctioned: number | null;
     billed: number;
     purchaseCost: number;
     expenseTotal: number | null;
     remaining: number | null;
     grossMargin: number;
     marginPercent: number;
-    commissionPercent: number;
-    commissionBase: number;
-    commissionOwed: number;
+    /** `null` when the ERPNext site does not have the rate field. */
+    commissionPercent: number | null;
+    commissionBase: number | null;
+    commissionOwed: number | null;
     salesOutstanding: number;
     purchaseOutstanding: number;
   };
