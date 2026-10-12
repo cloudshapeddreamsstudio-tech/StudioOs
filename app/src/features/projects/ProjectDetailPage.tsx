@@ -85,7 +85,10 @@ export function ProjectDetailPage() {
       <CompletionBanner completion={data.completion} status={p.status} />
 
       <div className="grid grid-cols-12 gap-6 mb-6">
-        <StatTile label="Sanctioned" value={formatCurrency(f.sanctioned)} />
+        <StatTile
+          label="Sanctioned"
+          value={f.sanctioned === null ? 'Not available' : formatCurrency(f.sanctioned)}
+        />
         <StatTile label="Billed" value={formatCurrency(f.billed)} />
         <StatTile
           label="To collect"
