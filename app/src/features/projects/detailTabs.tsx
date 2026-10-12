@@ -188,7 +188,7 @@ export function MoneyTab({ data }: { data: ProjectDetail }) {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {i.custom_invoice_number || i.name}
+                    {i.name}
                   </a>
                 </td>
                 <td className="px-2 py-3">{formatDate(i.posting_date)}</td>

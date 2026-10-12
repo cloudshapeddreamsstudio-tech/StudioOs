@@ -2,13 +2,11 @@
  * The shape /api/invoices returns — the list projection, not the full
  * ERPNext Sales Invoice doc.
  *
- * `custom_invoice_number` is the studio's own number (CSDS_SINV_NN_YYMMNN).
- * It is empty on invoices raised before that feature existed, which is why the
- * table falls back to ERPNext's internal `name`.
+ * `name` is the number of the invoice. ERPNext makes it from the naming
+ * series, for example `SINV-26-00002`.
  */
 export interface InvoiceListRow {
   name: string;
-  custom_invoice_number: string | null;
   customer: string | null;
   project: string | null;
   posting_date: string | null;

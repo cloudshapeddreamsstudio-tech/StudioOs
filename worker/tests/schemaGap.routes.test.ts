@@ -2,6 +2,7 @@ import { describe, it, expect } from 'bun:test';
 import { Hono } from 'hono';
 import projects from '../src/routes/projects';
 import payables from '../src/routes/payables';
+import invoices from '../src/routes/invoices';
 import projectDetail from '../src/routes/projectDetail';
 import { errorHandler } from '../src/middleware/errorHandler';
 import { FrappeError } from '../src/lib/errors';
@@ -269,15 +270,35 @@ describe('GET /api/payables', () => {
   });
 });
 
-describe('GET /api/project/:name', () => {
-  it('keeps the sales invoices on a site with no custom_invoice_number', async () => {
+describe('Sales Invoice.custom_invoice_number', () => {
+  // ADR-0005 does not permit this field. The number of an invoice is its
+  // `name`, from the naming series of ERPNext.
+
+  it('the project page keeps its invoices on a site that does not have the field', async () => {
     const site = fakeSite(['Sales Invoice.custom_invoice_number'], ALL);
     const res = await mount(projectDetail, site).request('/PROJ-0001');
     expect(res.status).toBe(200);
     const body = (await res.json()) as { salesInvoices: { name: string }[] };
-    // Before this correction the query failed, a catch hid the failure, and
-    // the project showed no invoice at all.
+    // Before B1 the query named the field, failed, a catch hid the failure,
+    // and the project showed no invoice at all.
     expect(body.salesInvoices).toHaveLength(1);
     expect(body.salesInvoices[0]?.name).toBe('SINV-1');
+  });
+
+  it('no page asks ERPNext for it', async () => {
+    const site = fakeSite([], ALL);
+    await mount(projectDetail, site).request('/PROJ-0001');
+    await mount(invoices, site).request('/');
+    const asked = (site.seen.asked['Sales Invoice'] ?? []).flat();
+    expect(asked.length).toBeGreaterThan(0);
+    expect(asked).not.toContain('custom_invoice_number');
+  });
+
+  it('the invoice list gives the ERPNext number of each invoice', async () => {
+    const res = await mount(invoices, fakeSite([], ALL)).request('/');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, unknown>[];
+    expect(body[0]?.name).toBe('SINV-1');
+    expect('custom_invoice_number' in (body[0] ?? {})).toBe(false);
   });
 });

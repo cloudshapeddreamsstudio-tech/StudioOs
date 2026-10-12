@@ -1,13 +1,11 @@
 import { Hono } from 'hono';
 import { renderInvoiceHtml, type InvoiceDoc } from '../lib/invoiceHtml';
-import { computeInvoiceNumber } from '../lib/invoiceNumber';
 import { buildPayQr } from '../lib/payQr';
 import {
   resolveBrand,
   resolveCompany,
   requirePostingAccounts,
 } from '../lib/companyProfile';
-import { getListTolerant } from '../lib/optionalFields';
 import type { BrandConfig } from '../schemas/brand';
 import {
   createInvoiceSchema,
@@ -88,13 +86,12 @@ function requireItems(items: ReturnType<typeof buildInvoiceItems>) {
 /** GET /api/invoices -- list Sales Invoices with the fields the dashboard needs. */
 app.get('/', async (c) => {
   const frappe = c.get('frappe');
-  // `custom_invoice_number` is a CSDS field. Asking for it on a site without it
-  // fails the whole query, so ask tolerantly -- the studio's own numbering is a
-  // convention, not a requirement for listing invoices.
-  const { rows } = await getListTolerant(frappe, 'Sales Invoice', {
+  // Stock fields only. The number of an invoice is its `name`, which ERPNext
+  // makes from the naming series. The studio had its own second number in a
+  // custom field; ADR-0005 does not permit that field.
+  const rows = await frappe.getList('Sales Invoice', {
     fields: [
       'name',
-      'custom_invoice_number',
       'customer',
       'project',
       'posting_date',
@@ -155,7 +152,6 @@ app.post('/brand-preview', async (c) => {
 
   const sample: InvoiceDoc = {
     name: 'SINV-26-00002',
-    custom_invoice_number: 'CSDS_SINV_02_260630',
     customer_name: 'Mr. Raj Hande',
     posting_date: '2026-06-30',
     due_date: '2026-07-15',
@@ -228,9 +224,6 @@ app.post('/', async (c) => {
   const accounts = requirePostingAccounts(profile);
 
   const cleanItems = requireItems(buildInvoiceItems(body.items, accounts, body.project));
-  // Null on a site that does not carry `custom_invoice_number`. Omitted rather
-  // than defaulted -- see lib/invoiceNumber.ts.
-  const invoiceNumber = await computeInvoiceNumber(frappe, profile.abbr, body.posting_date);
 
   const created = await frappe.createDoc('Sales Invoice', {
     docstatus: 0,
@@ -248,7 +241,6 @@ app.post('/', async (c) => {
     apply_discount_on: 'Grand Total',
     discount_amount: Number(body.discount_amount) || 0,
     remarks: body.subject || undefined,
-    custom_invoice_number: invoiceNumber ?? undefined,
     items: cleanItems,
   });
 
@@ -370,9 +362,6 @@ app.post('/:name/amend', async (c) => {
     apply_discount_on: 'Grand Total',
     discount_amount: Number(body.discount_amount) || 0,
     remarks: body.subject || old.remarks || undefined,
-    // Carry the same studio invoice number forward -- this is a correction of
-    // the same invoice, not a new one, so it shouldn't consume a fresh slot.
-    custom_invoice_number: old.custom_invoice_number || undefined,
     items: cleanItems,
   });
 

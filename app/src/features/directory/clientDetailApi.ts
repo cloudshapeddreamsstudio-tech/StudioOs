@@ -14,7 +14,6 @@ import { describeSaveError as describe, type SaveError } from '@/lib/saveError';
 
 export interface ClientInvoice {
   name: string;
-  custom_invoice_number?: string | null;
   posting_date?: string | null;
   due_date?: string | null;
   grand_total?: number | null;

@@ -43,8 +43,7 @@ export function InvoicesListPage() {
       return (
         inv.name.toLowerCase().includes(q) ||
         inv.customer?.toLowerCase().includes(q) ||
-        inv.project?.toLowerCase().includes(q) ||
-        inv.custom_invoice_number?.toLowerCase().includes(q)
+        inv.project?.toLowerCase().includes(q)
       );
     });
   }, [all, search, status]);
@@ -142,11 +141,8 @@ export function InvoicesListPage() {
                     <tr key={inv.name}>
                       <td className="px-2 first:pl-5 py-3">
                         <div className="font-medium text-sky-600 dark:text-sky-400">
-                          {inv.custom_invoice_number || inv.name}
+                          {inv.name}
                         </div>
-                        {inv.custom_invoice_number && (
-                          <div className="text-xs text-gray-400">{inv.name}</div>
-                        )}
                       </td>
                       <td className="px-2 py-3 font-medium text-gray-800 dark:text-gray-100">
                         {inv.customer || '—'}
