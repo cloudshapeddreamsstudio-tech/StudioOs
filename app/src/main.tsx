@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider, QueryCache } from '@tanstack/react-query';
 import { ApiError } from './lib/api';
+import { shouldRetry } from './lib/retry';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
 import './styles/index.css';
@@ -32,17 +33,8 @@ const queryClient = new QueryClient({
       // ERPNext data changes when the owner changes it, not on its own.
       staleTime: 30_000,
       refetchOnWindowFocus: false,
-      /**
-       * Retrying an authentication or permission answer is pointless -- the
-       * second attempt fails identically, it just delays the redirect and
-       * doubles the load on the studio's site.
-       */
-      retry: (failureCount, error) => {
-        if (error instanceof ApiError && (error.isUnauthenticated || error.isForbidden)) {
-          return false;
-        }
-        return failureCount < 1;
-      },
+      // No retry for a 4xx. One retry for a 5xx or a network failure.
+      retry: shouldRetry,
     },
   },
 });
