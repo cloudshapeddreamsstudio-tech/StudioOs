@@ -2,9 +2,14 @@
 
 **For:** Malhar
 **From:** Sandesh
-**State:** Open. Production is deployed and is partly broken. Nothing is changed
-since the fault was found. Part B of `docs/tasks/r1-production.md` is stopped at
-P2. Part C (Shubham signs in) is not started.
+**State:** The report is complete. The correction is release `v1.0.1`:
+`docs/tasks/v101-missing-fields.md`. Section 11 gives what followed, and two
+statements of this report that were wrong.
+
+When this report was written, on 2026-10-04: production was deployed and partly
+broken, nothing was changed after the fault was found, Part B of
+`docs/tasks/r1-production.md` was stopped at P2, and Part C (Shubham signs in)
+was not started.
 
 Written in ASD-STE100 Simplified Technical English. See `docs/adr/README.md`.
 
@@ -317,7 +322,7 @@ throws `SchemaGapError`, because a filter that is removed changes the answer.
 |---|---|---|---|
 | `routes/invoices.ts:94` | list | Yes | Invoices loads. **Observed**: 200 |
 | `routes/clients.ts:118` | list | Yes | the column is blank |
-| `routes/projectDetail.ts:159` | list | **No** | **the project page fails, 417. Not verified** |
+| `routes/projectDetail.ts:159` | list | **No** | ~~the project page fails, 417. Not verified~~ **Wrong.** The page loads and shows no invoice. Section 11.2 |
 | `lib/invoiceNumber.ts:105` | list, to find the next number | **No** | to create an invoice fails. Release 2 |
 
 ### 5.3 Custom fields on `Item` — 2
@@ -467,6 +472,9 @@ production, which holds real data. Test it on a site without the fields.
 The form opens on production today. Section 3.3, item 6.
 
 ### 7.4 The project page can fail a second time
+
+> **This section was wrong. Section 11.2 has the correction.** The page does
+> not fail. It loads, and it shows no invoice. That is worse.
 
 `routes/projectDetail.ts:159` asks for `custom_invoice_number` on
 `Sales Invoice`, not protected. If the production site lacks it, each project
@@ -618,6 +626,92 @@ Not done, on purpose:
 - No rollback. There is no earlier version to roll back to, and the seven pages
   that operate are of use.
 - Shubham has not signed in.
+
+---
+
+## 11. What followed, and what this report had wrong
+
+Added on 2026-10-12. The sections above are as they were written on
+2026-10-04, with two marks where a statement was wrong.
+
+### 11.1 The decisions
+
+Malhar read the report. These decisions followed.
+
+| Decision of section 9 | What was decided | Where |
+|---|---|---|
+| D-A, the Projects page | Option A2 for the code. Option A1 for one field only, and from a file, not by hand | ADR-0005, `erpnext/schema/0001_project_sanction_amount.json` |
+| D-B, the test | Unit tests on a fake site that refuses a field | `worker/tests/schemaGap.routes.test.ts` |
+| D-C, the data | The studio moves to the new site. Invoices and payments do not move. The projects and their budgets move in a later card | `docs/AUDIT-2026-10-09-old-site.md` |
+
+One custom field is permitted: `Project.custom_sanction_amount`. The seven
+other `Project` fields and `Sales Invoice.custom_invoice_number` are not
+permitted in release 1. StudioOS does not read them and does not write them.
+
+"A wrong number is believed", from section 7.2, is condition 5 of ADR-0005.
+
+### 11.2 Correction: the project page did not fail. It showed no invoice
+
+Sections 5.2 and 7.4 said that a project page fails with 417 on a site that
+does not have `Sales Invoice.custom_invoice_number`. That was marked "Not
+verified", and it was wrong.
+
+The query had a catch:
+
+```ts
+frappe
+  .getList<SalesRow>('Sales Invoice', {
+    fields: ['name', 'custom_invoice_number', ...],
+    ...
+  })
+  .catch(() => [] as SalesRow[]),
+```
+
+So on such a site the query failed, the catch made the result an empty list,
+and the page loaded. The project showed no sales invoice. Its billed and
+outstanding figures were calculated from no invoices. No error was on the
+screen and none was in the log.
+
+This is the fault of section 7.2 again, in a different place: a page that fails
+is reported, and a page that shows a wrong figure is believed. The report found
+the query and did not read the three lines after it.
+
+A test now proves the correct behaviour, with a site that does not have the
+field: `the project page keeps its invoices on a site that does not have the
+field`. It failed before the correction, with 0 invoices in place of 1.
+
+### 11.3 Correction: the app keeps the reason of ERPNext
+
+The second draft of section 4.3 said that `app/src/lib/api.ts` discards
+`details`. It keeps `details` on the `ApiError`. No page shows it. This was
+corrected in the third draft, before this section was written. It is recorded
+here because the first statement was sent to Malhar.
+
+### 11.4 What `v1.0.1` changes, for each problem of section 7
+
+| Problem | Correction in `v1.0.1` |
+|---|---|
+| 7.1 Projects and Payables do not load | Projects uses `getListTolerant`. Payables does not read `Project` at all |
+| 7.2 A wrong money figure, with no error | A sanctioned amount that is absent, or is 0, is `null`. The page says "Not available". Each figure measured against it is `null` too |
+| 7.3 The form loses what a person typed | The form has no input for a field that is not permitted. It writes one custom field, the one that is permitted |
+| 7.4 The project page and the invoice number | The query names stock fields only. Section 11.2 |
+| 7.5 The master records | Checked on the two sites with `frappe-ctl`. Four are absent on the new site, not two. The decisions are open in the card, item B5 |
+| 7.6 The data on the production site | Decided: section 11.1, D-C |
+| 7.7 The test could not find this | Each route is tested on a fake site that answers as ERPNext does: only the fields that were asked for, and a 417 for a field that is absent |
+| 6.1 No reason in the log | The Worker logs the status, the path and the exception text of ERPNext |
+| 6.2 The development hint | It shows only in development. Checked in a production build |
+| 6.3 The retry | No retry for a 4xx |
+
+Found during the work, and not in this report:
+
+- **Payables would have shown "Commission owed ₹0".** `formatCurrency(null)` is
+  ₹0. The commission is now removed with its fields, so the question is closed.
+- **The checklist ticked the "Shoot Date" task by itself**, when
+  `custom_shoot_date` had passed. StudioOS does not read that field now, so a
+  person ticks the task.
+- **The new site has a different tree of Supplier Groups.** The code tells a
+  vendor from crew with the group `Rental House`. The new site has `Equipment
+  Rental`, with two groups below it. So on production each supplier is "Crew".
 
 ---
 
