@@ -2,29 +2,17 @@ import { Hono } from 'hono';
 import type { AppEnv } from '../types';
 
 /**
- * The three picker endpoints that populate dropdowns on the project form.
+ * The picker endpoints that populate dropdowns on the project form.
  *
- * In the old app these were three separate ~20-line files (`salesPersons.js`,
- * `projectTypes.js`, `projectTemplates.js`) that differed only in doctype and
- * field list. Consolidated here since they are one concern — reference data for
- * form pickers — while keeping their original mount paths so the API contract
- * is unchanged.
+ * In the old app these were separate ~20-line files (`projectTypes.js`,
+ * `projectTemplates.js`) that differed only in doctype and field list.
+ * Consolidated here since they are one concern — reference data for form
+ * pickers — while keeping their original mount paths.
+ *
+ * A third one, `/api/sales-persons`, filled the "Referred by" input. That input
+ * wrote `Project.custom_sales_person`, which ADR-0005 does not permit in
+ * release 1, so the input and its picker are gone.
  */
-
-/**
- * GET /api/sales-persons — populates the "Referred By" picker.
- * `is_group = 0` excludes the tree's parent nodes, which aren't selectable.
- */
-export const salesPersons = new Hono<AppEnv>().get('/', async (c) => {
-  const frappe = c.get('frappe');
-  const data = await frappe.getList('Sales Person', {
-    fields: ['name', 'sales_person_name', 'commission_rate'],
-    filters: [['is_group', '=', 0]],
-    limit: 500,
-    orderBy: 'sales_person_name asc',
-  });
-  return c.json(data);
-});
 
 /** GET /api/project-types — populates the "Project Type" picker. */
 export const projectTypes = new Hono<AppEnv>().get('/', async (c) => {

@@ -258,7 +258,7 @@ app.post('/', async (c) => {
     resolveCrewSupplier(frappe, body.name, body.role),
     resolveDesignationItem(frappe, body.designation || ''),
     resolveCompany(frappe),
-    frappe.getDoc<{ expected_start_date?: string; custom_shoot_date?: string }>(
+    frappe.getDoc<{ expected_start_date?: string }>(
       'Project',
       body.project,
     ),
@@ -268,7 +268,7 @@ app.post('/', async (c) => {
   const days = Number(body.days) || 1;
   const total = body.total !== undefined && body.total !== '' ? Number(body.total) : rate * days;
   const scheduleDate =
-    project.custom_shoot_date || project.expected_start_date || new Date().toISOString().slice(0, 10);
+    project.expected_start_date || new Date().toISOString().slice(0, 10);
 
   const created = await frappe.createDoc<PurchaseOrderRow>('Purchase Order', {
     docstatus: 0,

@@ -27,8 +27,7 @@ export interface ClientProject {
   name: string;
   project_name?: string | null;
   status?: string | null;
-  custom_shoot_date?: string | null;
-  custom_brand?: string | null;
+  expected_start_date?: string | null;
   creation?: string | null;
 }
 

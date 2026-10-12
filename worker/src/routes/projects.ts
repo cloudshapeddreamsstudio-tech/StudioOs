@@ -36,26 +36,6 @@ async function resolveCustomer(frappe: FrappeClient, customerName: string): Prom
   return created.name;
 }
 
-/**
- * Same on-the-fly-create pattern, but for Sales Person -- "who brought this
- * project in" can be a crew member, an agency, a middleman, or the studio
- * itself, so typing a new name just creates the record.
- */
-async function resolveSalesPerson(frappe: FrappeClient, salesPersonName: string): Promise<string> {
-  const existing = await frappe.getList<{ name: string }>('Sales Person', {
-    fields: ['name', 'sales_person_name'],
-    filters: [['sales_person_name', '=', salesPersonName]],
-    limit: 1,
-  });
-  if (existing.length && existing[0]) return existing[0].name;
-  const created = await frappe.createDoc<{ name: string }>('Sales Person', {
-    sales_person_name: salesPersonName,
-    is_group: 0,
-    enabled: 1,
-  });
-  return created.name;
-}
-
 /** And again for Project Type -- a handful exist (Corporate, Documentary,
  *  Short Film) but typing a new category shouldn't be blocked on setup. */
 async function resolveProjectType(frappe: FrappeClient, projectTypeName: string): Promise<string> {
@@ -221,9 +201,6 @@ app.post('/', async (c) => {
   const projectTypeName = body.project_type
     ? await resolveProjectType(frappe, body.project_type)
     : undefined;
-  const salesPersonName = body.sales_person
-    ? await resolveSalesPerson(frappe, body.sales_person)
-    : undefined;
 
   const data = await frappe.createDoc<{ name: string }>('Project', {
     naming_series: 'PROJ-.####',
@@ -235,14 +212,8 @@ app.post('/', async (c) => {
     expected_end_date: body.expected_end_date || null,
     project_type: projectTypeName || null,
     project_template: body.project_template || null,
-    custom_sales_person: salesPersonName || null,
-    custom_commission_percent: body.commission_percent || null,
+    // The one custom field that ADR-0005 permits. erpnext/schema/0001.
     custom_sanction_amount: body.sanctioned_amount || null,
-    custom_brand: body.brand || null,
-    custom_ad_agency: body.ad_agency || null,
-    custom_production_house: body.production_house || null,
-    custom_poc: body.poc || null,
-    custom_shoot_date: body.shoot_date || null,
   });
 
   /**
@@ -317,7 +288,7 @@ app.put('/:name', async (c) => {
    * done once every task is checked off AND every crew/vendor bill is fully
    * paid. This route silently drops an incoming "Completed" rather than
    * writing it. That is harmless when it is just the current value passing
-   * through on an unrelated edit (e.g. changing Brand on an already-completed
+   * through on an unrelated edit (e.g. changing the end date of an already-completed
    * project), and it can't be used to force completion manually.
    */
   if (body.status !== undefined && body.status !== 'Completed') patch.status = body.status;
@@ -330,24 +301,9 @@ app.put('/:name', async (c) => {
       ? await resolveProjectType(frappe, body.project_type)
       : null;
   }
-  if (body.sales_person !== undefined) {
-    patch.custom_sales_person = body.sales_person
-      ? await resolveSalesPerson(frappe, body.sales_person)
-      : null;
-  }
-  if (body.commission_percent !== undefined) {
-    patch.custom_commission_percent = body.commission_percent || null;
-  }
   if (body.sanctioned_amount !== undefined) {
     patch.custom_sanction_amount = body.sanctioned_amount || null;
   }
-  if (body.brand !== undefined) patch.custom_brand = body.brand || null;
-  if (body.production_house !== undefined) {
-    patch.custom_production_house = body.production_house || null;
-  }
-  if (body.poc !== undefined) patch.custom_poc = body.poc || null;
-  if (body.ad_agency !== undefined) patch.custom_ad_agency = body.ad_agency || null;
-  if (body.shoot_date !== undefined) patch.custom_shoot_date = body.shoot_date || null;
 
   const data = await frappe.updateDoc('Project', c.req.param('name'), patch);
   return c.json(data);

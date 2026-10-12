@@ -222,7 +222,6 @@ app.get('/:name', async (c) => {
     ]);
 
   // --- Milestone task matching -------------------------------------------
-  const primaryMilestoneTask = findByMarker(tasks, 'milestone-primary', 'shoot date');
   const invoiceMailedTask =
     findByMarker(tasks, 'milestone-invoice-mailed', 'invoice mailed') ??
     findByMarker(tasks, null, 'send invoice'); // pre-rename subject
@@ -256,17 +255,13 @@ app.get('/:name', async (c) => {
   }
 
   /**
-   * Auto-tick the primary milestone once its date has passed. Compared in UTC
-   * against the date-only string, avoiding the local-midnight drift the
-   * original's `today.setHours(0,0,0,0)` had.
+   * The primary milestone ("Shoot Date") is ticked by a person.
+   *
+   * It was ticked here, when the shoot date of the project had passed. That
+   * date was `custom_shoot_date`, a custom field that ADR-0005 does not permit
+   * in release 1. StudioOS does not read it, so it has no date to compare. The
+   * automatic tick returns with the field.
    */
-  const shootDate = project.custom_shoot_date as string | undefined;
-  if (primaryMilestoneTask && primaryMilestoneTask.status !== 'Completed' && shootDate) {
-    const todayUtc = new Date().toISOString().slice(0, 10);
-    if (String(shootDate).slice(0, 10) < todayUtc) {
-      await setTaskStatus(frappe, primaryMilestoneTask, 'Completed', `primary milestone auto-complete for ${projectName}`);
-    }
-  }
 
   // Only real (non-cancelled) invoices count toward money.
   const liveSales = salesInvoices.filter((i) => i.status !== 'Cancelled');

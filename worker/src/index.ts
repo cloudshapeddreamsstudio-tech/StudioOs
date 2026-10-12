@@ -6,7 +6,7 @@ import projects from './routes/projects';
 import projectDetail from './routes/projectDetail';
 import projectCrew from './routes/projectCrew';
 import customers from './routes/customers';
-import { salesPersons, projectTypes, projectTemplates } from './routes/lookups';
+import { projectTypes, projectTemplates } from './routes/lookups';
 import dashboard from './routes/dashboard';
 import insights from './routes/insights';
 import payables from './routes/payables';
@@ -102,7 +102,6 @@ app.route('/api/project-crew', projectCrew);
 // signed-in user's token like everything else, so a user who cannot read
 // Customers simply gets an empty picker rather than someone else's data.
 app.route('/api/customers', customers);
-app.route('/api/sales-persons', salesPersons);
 app.route('/api/project-types', projectTypes);
 app.route('/api/project-templates', projectTemplates);
 

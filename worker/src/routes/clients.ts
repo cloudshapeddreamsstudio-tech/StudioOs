@@ -131,10 +131,9 @@ app.get('/:name', async (c) => {
         orderBy: 'posting_date desc',
       }),
     ),
-    // Same for `custom_shoot_date` and `custom_brand`.
     readOrNull(
       getListTolerant(frappe, 'Project', {
-        fields: ['name', 'project_name', 'status', 'custom_shoot_date', 'custom_brand', 'creation'],
+        fields: ['name', 'project_name', 'status', 'expected_start_date', 'creation'],
         filters: [['customer', '=', clientName]],
         limit: 500,
         orderBy: 'creation desc',

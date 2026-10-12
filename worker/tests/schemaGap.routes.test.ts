@@ -33,31 +33,75 @@ const PROJECT_CUSTOM = [
 
 type Rows = Record<string, Record<string, unknown>[]>;
 
-/** A site. `absent` lists the fields it does not have, as `DocType.field`. */
-function fakeSite(absent: string[], rows: Rows) {
+/** What the routes asked the site for, and what they wrote to it. */
+interface Seen {
+  /** The fields of each list query, by DocType. */
+  asked: Record<string, string[][]>;
+  /** Each document that was created or updated. */
+  written: { doctype: string; fields: Record<string, unknown> }[];
+}
+
+/**
+ * A site. `absent` lists the fields it does not have, as `DocType.field`.
+ *
+ * A list query gets back only the fields it named, as ERPNext answers. So a
+ * test cannot pass on a field that the route did not ask for.
+ */
+function fakeSite(absent: string[], rows: Rows): FrappeClient & { seen: Seen } {
   const lacks = (doctype: string, field: unknown) => absent.includes(`${doctype}.${String(field)}`);
   const strip = (doctype: string, row: Record<string, unknown>) =>
     Object.fromEntries(Object.entries(row).filter(([k]) => !lacks(doctype, k)));
+  const seen: Seen = { asked: {}, written: [] };
 
-  const client: Partial<FrappeClient> = {
+  const client: Partial<FrappeClient> & { seen: Seen } = {
+    seen,
     getList: async <T>(doctype: string, opts: ListOptions = {}) => {
-      const asked = [...(opts.fields ?? []), ...(opts.filters ?? []).map((f) => f[0])];
-      const offender = asked.find((f) => lacks(doctype, f));
+      const fields = opts.fields ?? ['name'];
+      (seen.asked[doctype] ??= []).push([...fields]);
+      const named = [...fields, ...(opts.filters ?? []).map((f) => f[0])];
+      const offender = named.find((f) => lacks(doctype, f));
       if (offender) {
         throw new FrappeError(417, {
           exception: `frappe.exceptions.DataError: Field not permitted in query: ${String(offender)}`,
           exc_type: 'DataError',
         });
       }
-      return (rows[doctype] ?? []).map((r) => strip(doctype, r)) as T[];
+      return (rows[doctype] ?? []).map((r) =>
+        Object.fromEntries(Object.entries(r).filter(([k]) => fields.includes(k))),
+      ) as T[];
     },
     getDoc: async <T>(doctype: string, name: string) => {
       const row = (rows[doctype] ?? []).find((r) => r.name === name);
       if (!row) throw new FrappeError(404, { exception: 'DoesNotExistError' });
       return strip(doctype, row) as T;
     },
+    createDoc: async <T>(doctype: string, fields: Record<string, unknown>) => {
+      seen.written.push({ doctype, fields });
+      return { name: `${doctype}-NEW`, ...fields } as T;
+    },
+    updateDoc: async <T>(doctype: string, name: string, fields: Record<string, unknown>) => {
+      seen.written.push({ doctype, fields });
+      return { name, ...fields } as T;
+    },
   };
-  return client as FrappeClient;
+  return client as FrappeClient & { seen: Seen };
+}
+
+/** The custom fields that ADR-0005 does not permit in release 1. */
+const NOT_PERMITTED = [
+  'custom_sales_person',
+  'custom_commission_percent',
+  'custom_shoot_date',
+  'custom_brand',
+  'custom_ad_agency',
+  'custom_production_house',
+  'custom_poc',
+];
+
+function mountWithCompany(route: Hono<AppEnv>, site: FrappeClient) {
+  const app = mount(route, site);
+  return (path: string, init?: RequestInit) =>
+    app.request(path, init, { COMPANY: 'Cloud Shaped Dreams Studio' } as AppEnv['Bindings']);
 }
 
 function mount(route: Hono<AppEnv>, site: FrappeClient) {
@@ -122,12 +166,70 @@ describe('GET /api/projects', () => {
     expect('custom_sanction_amount' in (body[0] ?? {})).toBe(false);
   });
 
-  it('still returns the fields on a site that has them', async () => {
+  it('returns the sanctioned amount on a site that has the field', async () => {
     const res = await mount(projects, fakeSite([], ALL)).request('/');
     expect(res.status).toBe(200);
     const body = (await res.json()) as Record<string, unknown>[];
     expect(body[0]?.custom_sanction_amount).toBe(100000);
-    expect(body[0]?.custom_shoot_date).toBe('2026-10-20');
+  });
+
+  it('asks for one custom field only: the one that ADR-0005 permits', async () => {
+    const site = fakeSite([], ALL);
+    await mount(projects, site).request('/');
+    const custom = (site.seen.asked.Project ?? []).flat().filter((f) => f.startsWith('custom_'));
+    expect(custom).toEqual(['custom_sanction_amount']);
+  });
+
+  it('does not return a field that is not permitted, on a site that has it', async () => {
+    // The old site has each of these. StudioOS does not read them.
+    const res = await mount(projects, fakeSite([], ALL)).request('/');
+    const body = (await res.json()) as Record<string, unknown>[];
+    for (const field of NOT_PERMITTED) expect(field in (body[0] ?? {})).toBe(false);
+  });
+});
+
+describe('POST and PUT /api/projects', () => {
+  const sent = {
+    project_name: 'R1 check',
+    customer: 'Acme',
+    sanctioned_amount: 80000,
+    // What an old copy of the form still sends. Each must be ignored.
+    sales_person: 'Prem',
+    commission_percent: 10,
+    brand: 'Acme',
+    ad_agency: 'X',
+    production_house: 'Y',
+    poc: 'Z',
+    shoot_date: '2026-10-20',
+  };
+  const json = (method: string) => ({
+    method,
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(sent),
+  });
+  const customWritten = (site: { seen: Seen }, doctype: string) =>
+    site.seen.written
+      .filter((w) => w.doctype === doctype)
+      .flatMap((w) => Object.keys(w.fields))
+      .filter((k) => k.startsWith('custom_'));
+
+  it('create writes the sanctioned amount and no other custom field', async () => {
+    const site = fakeSite([], { ...ALL, Customer: [{ name: 'Acme', customer_name: 'Acme' }] });
+    const res = await mountWithCompany(projects, site)('/', json('POST'));
+    expect(res.status).toBeLessThan(300);
+    expect(customWritten(site, 'Project')).toEqual(['custom_sanction_amount']);
+    const project = site.seen.written.find((w) => w.doctype === 'Project');
+    expect(project?.fields.custom_sanction_amount).toBe(80000);
+    // No Sales Person is looked up or created for a project any more.
+    expect(site.seen.asked['Sales Person']).toBeUndefined();
+    expect(site.seen.written.some((w) => w.doctype === 'Sales Person')).toBe(false);
+  });
+
+  it('edit writes the sanctioned amount and no other custom field', async () => {
+    const site = fakeSite([], { ...ALL, Customer: [{ name: 'Acme', customer_name: 'Acme' }] });
+    const res = await mountWithCompany(projects, site)('/PROJ-0001', json('PUT'));
+    expect(res.status).toBeLessThan(300);
+    expect(customWritten(site, 'Project')).toEqual(['custom_sanction_amount']);
   });
 });
 

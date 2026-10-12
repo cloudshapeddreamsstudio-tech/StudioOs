@@ -326,7 +326,7 @@ function ProjectsCard({ projects }: { projects: ClientProject[] | null }) {
           <tr>
             <th className="px-2 first:pl-5 py-3 text-left">Project</th>
             <th className="px-2 py-3 text-left">Status</th>
-            <th className="px-2 last:pr-5 py-3 text-left">Shoot / event date</th>
+            <th className="px-2 last:pr-5 py-3 text-left">Start date</th>
           </tr>
         }
       >
@@ -339,12 +339,11 @@ function ProjectsCard({ projects }: { projects: ClientProject[] | null }) {
               >
                 {p.project_name || p.name}
               </Link>
-              {p.custom_brand && <div className="text-xs text-gray-400">{p.custom_brand}</div>}
             </td>
             <td className="px-2 py-3">
               <StatusBadge status={p.status} />
             </td>
-            <td className="px-2 last:pr-5 py-3">{formatDate(p.custom_shoot_date)}</td>
+            <td className="px-2 last:pr-5 py-3">{formatDate(p.expected_start_date)}</td>
           </tr>
         ))}
       </TableShell>

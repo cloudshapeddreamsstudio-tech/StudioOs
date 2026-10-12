@@ -43,17 +43,12 @@ export const projectFormSchema = z.object({
   project_type: optionalText,
   /** Only offered when creating: ERPNext copies its tasks in on insert. */
   project_template: optionalText,
-  sales_person: optionalText,
-  commission_percent: optionalNumber.refine(
-    (v) => v === undefined || v <= 100,
-    'Commission is a percentage, so it cannot exceed 100',
-  ),
+  /**
+   * The one custom field the form has. ADR-0005 permits it
+   * (erpnext/schema/0001). The form had seven more inputs for custom fields
+   * that ADR-0005 does not permit in release 1.
+   */
   sanctioned_amount: optionalNumber,
-  brand: optionalText,
-  ad_agency: optionalText,
-  production_house: optionalText,
-  poc: optionalText,
-  shoot_date: optionalText,
 });
 
 export type ProjectFormValues = z.input<typeof projectFormSchema>;
