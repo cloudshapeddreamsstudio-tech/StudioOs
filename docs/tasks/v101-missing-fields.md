@@ -33,8 +33,9 @@ Two things in your report became rules:
 
 1. Part A is done by Sandesh, not by you. It needs a secret. Never ask him to
    paste a secret into the chat.
-2. Part C writes to the production ERPNext site. Do not run step 3 of
-   `erpnext/README.md` until Malhar's approval is in this file.
+2. Part C writes to the production ERPNext site. Malhar's approval is in this
+   file, dated 2026-10-09. Sandesh runs the write himself, in his own terminal.
+   You do not run it.
 3. Do not move data between the two sites. That is a different card, and it
    waits for answers from Shubham.
 4. Do not change the scope. A new idea goes to `docs/RELEASE-2.md`.
@@ -150,10 +151,11 @@ record of this fault.
 
 ## Part C — the one field on the new site
 
-**Needs Malhar's approval. Do not start without it.**
+**Needs Malhar's approval. Malhar approved it on 2026-10-09. Start it after Part
+B is done.**
 
-Approved by Malhar:
-Date:
+Approved by Malhar: **approved**
+Date: 2026-10-09
 
 1. Do steps 1 and 2 of `erpnext/README.md` on `csds-prod`. They only read.
    Step 1 must print `0`. Step 2 must print `"valid": true`.
