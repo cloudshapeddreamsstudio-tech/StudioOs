@@ -57,8 +57,9 @@ printed `1` after it. Step 2 with the `doctype` key left in the data printed
 `"valid": false` with `"unknown": [{"field": "doctype"}]` and nothing missing.
 That was a fault in this file, corrected above.
 
-`frappe-ctl describe` can answer from a cache and not show a field that was
-just added. To check a field, use step 1, or a list query that names the
+`frappe-ctl describe` lists a DocType's own fields only, never its Custom
+Fields (on 2026-10-14 the test site had 8 on Project and describe showed none).
+To check a field, use step 1, or a list query that names the
 field: a site that does not have it answers 417.
 
 ## Apply one reference file
