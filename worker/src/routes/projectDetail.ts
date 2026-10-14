@@ -13,6 +13,7 @@ import {
 } from '../lib/projectFinance';
 import { NotFoundError } from '../lib/errors';
 import { readCrewForProject } from './projectCrew';
+import { readVendorGroups } from '../lib/vendorGroups';
 import type { AppEnv } from '../types';
 
 /**
@@ -143,6 +144,9 @@ app.get('/:name', async (c) => {
 
   // Fire the rest in parallel — none depend on each other. Each is wrapped so
   // one empty or failed section doesn't sink the whole page.
+  // Read one time, for the crew roster and for the completion rules.
+  const vendorGroupsRead = readVendorGroups(frappe);
+
   const [tasks, salesInvoices, purchaseInvoices, payments, files, comments, communications, crewRoster] =
     await Promise.all([
       frappe
@@ -212,7 +216,9 @@ app.get('/:name', async (c) => {
           orderBy: 'communication_date desc',
         })
         .catch(() => []),
-      readCrewForProject(frappe, projectName).catch(() => []),
+      vendorGroupsRead
+        .then((groups) => readCrewForProject(frappe, projectName, groups))
+        .catch(() => []),
     ]);
 
   // --- Milestone task matching -------------------------------------------
@@ -281,6 +287,7 @@ app.get('/:name', async (c) => {
     crewRoster,
     totalSalesCount: salesInvoices.length,
     totalPurchaseCount: purchaseInvoices.length,
+    vendorGroups: await vendorGroupsRead,
   });
   const { actionableTasks, openTasks, vendorPurchases, crewEntries, vendorEntries } =
     completion._internal;
@@ -343,13 +350,15 @@ app.get('/:name', async (c) => {
   }
 
   /**
-   * Theatre Education projects deliberately don't use ERPNext invoices at all
-   * (they run on the lightweight transactions ledger), so this logic has no
-   * visibility into their real money state. Leave their status alone rather
-   * than guess.
+   * The status is derived for each project that is not Cancelled.
+   *
+   * There was a special case: a project in the Department `Theatre Education -
+   * CSDS` kept its status, because those projects ran outside ERPNext invoices.
+   * The new site has no such Department, and no theatre project is moved to it
+   * yet. Malhar, 2026-10-14: remove the special case until Shubham's sheet says
+   * that theatre projects move.
    */
-  const derivedStatusApplies =
-    project.status !== 'Cancelled' && project.department !== 'Theatre Education - CSDS';
+  const derivedStatusApplies = project.status !== 'Cancelled';
 
   let effectiveStatus = project.status;
   if (derivedStatusApplies) {

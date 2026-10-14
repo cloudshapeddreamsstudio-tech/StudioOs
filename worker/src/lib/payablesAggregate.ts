@@ -7,13 +7,7 @@
  * local ledgers.
  */
 
-/**
- * The studio's own name as a Supplier. Money "owed" to this party is really the
- * owner paying himself for his own crew work, not an external liability — so it
- * is reported separately rather than folded into "who I still owe" at face
- * value.
- */
-export const OWNER_SUPPLIER_NAME = 'Shubham Chauhan';
+import { isVendorGroup } from './vendorGroups';
 
 /**
  * A purchase invoice whose remarks mention a conflicting or already-paid note
@@ -24,9 +18,6 @@ export const OWNER_SUPPLIER_NAME = 'Shubham Chauhan';
  * 23 Jan (conflict)".)
  */
 export const CONFLICT_RE = /conflict|already paid|cash paid/i;
-
-/** Rental House is the established Vendor signal; anything else is Crew. */
-const VENDOR_SUPPLIER_GROUP = 'Rental House';
 
 export interface PayablePurchaseRow {
   name: string;
@@ -50,7 +41,19 @@ export interface PayablePurchaseRow {
  * from two custom fields of `Project`. ADR-0005 does not permit those fields in
  * release 1, so that part is not here. It returns with the fields.
  */
-export function buildPayables(purchaseInvoices: PayablePurchaseRow[]) {
+export interface PayablesContext {
+  /**
+   * The Supplier that is the owner of the studio. Money "owed" to this party is
+   * really the owner paying himself for his own crew work, not an external
+   * liability, so it is reported separately. It is configuration
+   * (`OWNER_SUPPLIER`, beside `COMPANY`), because each studio has its own.
+   */
+  ownerSupplier: string;
+  /** The vendor Supplier Groups of this site. See lib/vendorGroups.ts. */
+  vendorGroups: ReadonlySet<string>;
+}
+
+export function buildPayables(purchaseInvoices: PayablePurchaseRow[], context: PayablesContext) {
   // --- Group unpaid purchase invoices by supplier ---
   const bySupplier: Record<
     string,
@@ -69,7 +72,7 @@ export function buildPayables(purchaseInvoices: PayablePurchaseRow[]) {
     const group = (bySupplier[key] ??= {
       supplier: inv.supplier,
       supplierName: inv.supplier_name || inv.supplier,
-      isOwner: inv.supplier === OWNER_SUPPLIER_NAME,
+      isOwner: !!context.ownerSupplier && inv.supplier === context.ownerSupplier,
       totalOutstanding: 0,
       oldestDueDate: null,
       invoices: [],
@@ -89,7 +92,7 @@ export function buildPayables(purchaseInvoices: PayablePurchaseRow[]) {
       dueDate: inv.due_date || null,
       postingDate: inv.posting_date || null,
       status: inv.status,
-      partyType: inv.supplier_group === VENDOR_SUPPLIER_GROUP ? 'Vendor' : 'Crew',
+      partyType: isVendorGroup(context.vendorGroups, inv.supplier_group) ? 'Vendor' : 'Crew',
       conflict: CONFLICT_RE.test(inv.remarks || ''),
       remarks: inv.remarks || '',
     });

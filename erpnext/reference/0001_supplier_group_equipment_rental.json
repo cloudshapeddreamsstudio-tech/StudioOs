@@ -1,0 +1,6 @@
+{
+  "doctype": "Supplier Group",
+  "supplier_group_name": "Equipment Rental",
+  "parent_supplier_group": "All Supplier Groups",
+  "is_group": 1
+}

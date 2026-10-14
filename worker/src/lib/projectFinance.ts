@@ -1,3 +1,4 @@
+import { isVendorGroup } from './vendorGroups';
 /**
  * The project-detail money model and completion rules.
  *
@@ -45,11 +46,11 @@ export interface ExpenseRow {
 }
 
 /**
- * The best available crew/vendor split. There is no direct roster↔invoice link
- * yet, so the Rental House supplier group is the signal for "this was a vendor
- * rental rather than a person we booked".
+ * The crew/vendor split. There is no direct roster↔invoice link yet, so the
+ * Supplier Group is the signal for "this was a vendor rental rather than a
+ * person we booked". Which groups are vendor groups is read from the site:
+ * lib/vendorGroups.ts.
  */
-export const VENDOR_SUPPLIER_GROUP = 'Rental House';
 
 /** A submitted-but-unpaid invoice is real money owed. A Draft is not. */
 function isOwed(inv: { status?: string; outstanding_amount?: number | null }): boolean {
@@ -74,6 +75,8 @@ export interface CompletionInput {
    *  proves something happened on this project. */
   totalSalesCount: number;
   totalPurchaseCount: number;
+  /** The vendor Supplier Groups of this site. See lib/vendorGroups.ts. */
+  vendorGroups: ReadonlySet<string>;
 }
 
 /**
@@ -126,8 +129,8 @@ export function computeCompletion(input: CompletionInput) {
    */
   const noCrewAssigned = !crewRosterUnavailable && crewEntries.length === 0;
 
-  const vendorPurchases = livePurchases.filter(
-    (i) => i.supplier_group === VENDOR_SUPPLIER_GROUP,
+  const vendorPurchases = livePurchases.filter((i) =>
+    isVendorGroup(input.vendorGroups, i.supplier_group),
   );
   const hasVendorInvolvement = vendorEntries.length > 0 || vendorPurchases.length > 0;
   const unpaidVendorPurchases = vendorPurchases.filter(isOwed);
@@ -271,9 +274,9 @@ export function buildExpenseOverview(input: ExpenseOverviewInput) {
    * status — this is spend, not outstanding-owed. "Planned" comes from the
    * roster, which is deliberately not tied to real invoices.
    */
-  const crewPurchases = input.livePurchases.filter(
-    (i) => i.supplier_group !== VENDOR_SUPPLIER_GROUP,
-  );
+  // Each purchase that is not vendor spend is crew spend.
+  const vendorNames = new Set(input.vendorPurchases.map((i) => i.name));
+  const crewPurchases = input.livePurchases.filter((i) => !vendorNames.has(i.name));
   const crewActual = crewPurchases.reduce((s, i) => s + Number(i.grand_total || 0), 0);
   const vendorActual = input.vendorPurchases.reduce((s, i) => s + Number(i.grand_total || 0), 0);
   /**

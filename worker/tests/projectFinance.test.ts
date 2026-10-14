@@ -9,6 +9,7 @@ import {
   type PurchaseRow,
   type CrewRow,
 } from '../src/lib/projectFinance';
+import { vendorGroupsFrom } from '../src/lib/vendorGroups';
 
 /**
  * The project-detail money model. This decides whether a project is "done" —
@@ -43,6 +44,12 @@ const purchase = (over: Partial<PurchaseRow> = {}): PurchaseRow => ({
   ...over,
 });
 
+/** The vendor groups of a site laid out like the new one. */
+const VENDOR_GROUPS = vendorGroupsFrom([
+  { name: 'Equipment Rental', parent_supplier_group: 'All Supplier Groups' },
+  { name: 'Camera & Lighting', parent_supplier_group: 'Equipment Rental' },
+]);
+
 function completion(over: Partial<Parameters<typeof computeCompletion>[0]> = {}) {
   return computeCompletion({
     tasks: [],
@@ -51,6 +58,7 @@ function completion(over: Partial<Parameters<typeof computeCompletion>[0]> = {})
     crewRoster: [],
     totalSalesCount: 0,
     totalPurchaseCount: 0,
+    vendorGroups: VENDOR_GROUPS,
     ...over,
   });
 }
@@ -133,10 +141,10 @@ describe('computeCompletion — the "is it done?" rules', () => {
     expect(completion({ crewRoster: roster }).noCrewAssigned).toBe(false);
   });
 
-  it('detects vendor involvement from the roster or from Rental House invoices', () => {
+  it('detects vendor involvement from the roster or from vendor-group invoices', () => {
     expect(completion({ crewRoster: [{ role: 'Vendor', total: 1000 }] }).hasVendorInvolvement).toBe(true);
     expect(
-      completion({ livePurchases: [purchase({ supplier_group: 'Rental House' })] })
+      completion({ livePurchases: [purchase({ supplier_group: 'Camera & Lighting' })] })
         .hasVendorInvolvement,
     ).toBe(true);
     expect(completion({ livePurchases: [purchase()] }).hasVendorInvolvement).toBe(false);
@@ -206,8 +214,8 @@ describe('buildExpenseOverview', () => {
     expect(buildExpenseOverview(base).rows).toEqual([]);
   });
 
-  it('splits crew from vendor using the Rental House group', () => {
-    const vendorInv = purchase({ supplier_group: 'Rental House', grand_total: 8000 });
+  it('splits crew from vendor using the vendor groups', () => {
+    const vendorInv = purchase({ supplier_group: 'Camera & Lighting', grand_total: 8000 });
     const crewInv = purchase({ name: 'P2', grand_total: 3000 });
     const o = buildExpenseOverview({
       ...base,
@@ -285,6 +293,7 @@ describe('unavailable inputs are never treated as zero', () => {
     livePurchases: [] as PurchaseRow[],
     totalSalesCount: 0,
     totalPurchaseCount: 0,
+    vendorGroups: VENDOR_GROUPS,
   };
 
   const financeBase = {

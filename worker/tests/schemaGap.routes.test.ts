@@ -101,9 +101,11 @@ const NOT_PERMITTED = [
 
 function mountWithCompany(route: Hono<AppEnv>, site: FrappeClient) {
   const app = mount(route, site);
-  return (path: string, init?: RequestInit) =>
-    app.request(path, init, { COMPANY: 'Cloud Shaped Dreams Studio' } as AppEnv['Bindings']);
+  return (path: string, init?: RequestInit) => app.request(path, init);
 }
+
+/** The configuration that each environment has (worker/wrangler.jsonc). */
+const ENV = { COMPANY: 'Cloud Shaped Dreams Studio', OWNER_SUPPLIER: 'Shubham Chauhan' } as AppEnv['Bindings'];
 
 function mount(route: Hono<AppEnv>, site: FrappeClient) {
   const app = new Hono<AppEnv>();
@@ -113,7 +115,7 @@ function mount(route: Hono<AppEnv>, site: FrappeClient) {
   });
   app.onError(errorHandler);
   app.route('/', route);
-  return app;
+  return { request: (path: string, init?: RequestInit) => app.request(path, init, ENV) };
 }
 
 const PROJECT = {

@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { buildPayables, type PayablePurchaseRow } from '../lib/payablesAggregate';
+import { readVendorGroups } from '../lib/vendorGroups';
 import type { AppEnv } from '../types';
 
 /**
@@ -26,7 +27,8 @@ app.get('/', async (c) => {
    * production on 2026-10-04. ADR-0005 does not permit those fields in
    * release 1, so the query is gone.
    */
-  const purchaseInvoices = await frappe.getList<PayablePurchaseRow>('Purchase Invoice', {
+  const [purchaseInvoices, vendorGroups] = await Promise.all([
+    frappe.getList<PayablePurchaseRow>('Purchase Invoice', {
     fields: [
       'name', 'supplier', 'supplier_name', 'posting_date', 'due_date',
       'grand_total', 'outstanding_amount', 'status', 'supplier_group',
@@ -38,9 +40,13 @@ app.get('/', async (c) => {
     ],
     limit: 500,
     orderBy: 'due_date asc',
-  });
+    }),
+    readVendorGroups(frappe),
+  ]);
 
-  return c.json(buildPayables(purchaseInvoices));
+  return c.json(
+    buildPayables(purchaseInvoices, { ownerSupplier: c.env.OWNER_SUPPLIER, vendorGroups }),
+  );
 });
 
 export default app;

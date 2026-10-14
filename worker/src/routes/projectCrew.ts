@@ -1,3 +1,4 @@
+import { VENDOR_ROOT_GROUP, readVendorGroups, isVendorGroup } from '../lib/vendorGroups';
 import { Hono } from 'hono';
 import type { FrappeClient } from '../lib/frappe';
 import { resolveCompany } from '../lib/companyProfile';
@@ -26,7 +27,7 @@ import type { AppEnv } from '../types';
  * new kind of record.
  *
  * The Crew/Vendor split reuses the exact signal `projectFinance.ts` already
- * uses for real purchase invoices -- `VENDOR_SUPPLIER_GROUP` -- rather than
+ * uses for real purchase invoices -- lib/vendorGroups.ts -- rather than
  * inventing a second one. A Supplier in that group is a Vendor entry;
  * everyone else is Crew.
  *
@@ -60,7 +61,6 @@ import type { AppEnv } from '../types';
  */
 
 const CREW_SUPPLIER_GROUP = 'Freelance Crew';
-const VENDOR_SUPPLIER_GROUP = 'Rental House';
 /** This studio's own convention for service-designation Items -- see file header. */
 const DESIGNATION_ITEM_GROUP = 'Services';
 const DESIGNATION_ITEM_HSN_CODE = '998431';
@@ -91,7 +91,8 @@ async function resolveCrewSupplier(
   });
   if (existing.length && existing[0]) return existing[0];
 
-  const supplierGroup = role === 'Vendor' ? VENDOR_SUPPLIER_GROUP : CREW_SUPPLIER_GROUP;
+  // A new vendor goes in the top vendor group, from erpnext/reference/0001.
+  const supplierGroup = role === 'Vendor' ? VENDOR_ROOT_GROUP : CREW_SUPPLIER_GROUP;
   const created = await frappe.createDoc<SupplierRow>('Supplier', {
     supplier_name: name,
     supplier_group: supplierGroup,
@@ -186,7 +187,7 @@ function rateAndDaysFrom(po: PurchaseOrderRow): { rate: number; days: number } {
   return { rate, days };
 }
 
-function toRosterRow(po: PurchaseOrderRow): CrewRosterRow {
+function toRosterRow(po: PurchaseOrderRow, vendorGroups: ReadonlySet<string>): CrewRosterRow {
   const { rate, days } = rateAndDaysFrom(po);
   const { contact, notes } = decodeTerms(po.terms);
   const item = po.items?.[0];
@@ -194,7 +195,7 @@ function toRosterRow(po: PurchaseOrderRow): CrewRosterRow {
   return {
     id: po.name,
     project: '', // filled by the caller, which already knows it
-    role: po.supplier_group === VENDOR_SUPPLIER_GROUP ? 'Vendor' : 'Crew',
+    role: isVendorGroup(vendorGroups, po.supplier_group) ? 'Vendor' : 'Crew',
     name: po.supplier_name || po.supplier,
     designation,
     rate,
@@ -213,7 +214,9 @@ function toRosterRow(po: PurchaseOrderRow): CrewRosterRow {
 export async function readCrewForProject(
   frappe: FrappeClient,
   project: string,
+  vendorGroups?: ReadonlySet<string>,
 ): Promise<CrewRosterRow[]> {
+  const groups = vendorGroups ?? (await readVendorGroups(frappe));
   const orders = await frappe.getList<PurchaseOrderRow>('Purchase Order', {
     fields: [
       'name', 'supplier', 'supplier_name', 'supplier_group', 'docstatus',
@@ -230,7 +233,7 @@ export async function readCrewForProject(
     orders.map((o) => frappe.getDoc<PurchaseOrderRow>('Purchase Order', o.name)),
   );
 
-  return withItems.map((po) => ({ ...toRosterRow(po), project }));
+  return withItems.map((po) => ({ ...toRosterRow(po, groups), project }));
 }
 
 const app = new Hono<AppEnv>();
@@ -292,7 +295,7 @@ app.post('/', async (c) => {
     ],
   });
 
-  return c.json({ ...toRosterRow(created), project: body.project });
+  return c.json({ ...toRosterRow(created, await readVendorGroups(frappe)), project: body.project });
 });
 
 /**
@@ -316,7 +319,9 @@ app.put('/:id', async (c) => {
 
   if (body.name !== undefined || body.role !== undefined) {
     const name = body.name ?? existing.supplier_name ?? existing.supplier;
-    const role = body.role ?? (existing.supplier_group === VENDOR_SUPPLIER_GROUP ? 'Vendor' : 'Crew');
+    const role =
+      body.role ??
+      (isVendorGroup(await readVendorGroups(frappe), existing.supplier_group) ? 'Vendor' : 'Crew');
     const supplier = await resolveCrewSupplier(frappe, name, role);
     patch.supplier = supplier.name;
   }
@@ -355,7 +360,7 @@ app.put('/:id', async (c) => {
   }
 
   const updated = await frappe.updateDoc<PurchaseOrderRow>('Purchase Order', id, patch);
-  return c.json({ ...toRosterRow(updated), project: '' });
+  return c.json({ ...toRosterRow(updated, await readVendorGroups(frappe)), project: '' });
 });
 
 /** DELETE /api/project-crew/:id -- only drafts; nothing here submits one. */

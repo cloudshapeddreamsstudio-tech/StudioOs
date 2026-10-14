@@ -1,10 +1,22 @@
 import { describe, it, expect } from 'bun:test';
 import {
-  buildPayables,
-  OWNER_SUPPLIER_NAME,
+  buildPayables as build,
   CONFLICT_RE,
   type PayablePurchaseRow,
 } from '../src/lib/payablesAggregate';
+import { vendorGroupsFrom } from '../src/lib/vendorGroups';
+
+/** The owner's supplier name is configuration now (OWNER_SUPPLIER). */
+const OWNER_SUPPLIER_NAME = 'Shubham Chauhan';
+
+/** The vendor groups of a site laid out like the new one. */
+const VENDOR_GROUPS = vendorGroupsFrom([
+  { name: 'Equipment Rental', parent_supplier_group: 'All Supplier Groups' },
+  { name: 'Camera & Lighting', parent_supplier_group: 'Equipment Rental' },
+]);
+
+const buildPayables = (rows: PayablePurchaseRow[]) =>
+  build(rows, { ownerSupplier: OWNER_SUPPLIER_NAME, vendorGroups: VENDOR_GROUPS });
 
 /**
  * "Who do I still owe" — the page the owner opens before paying anyone.
@@ -68,10 +80,10 @@ describe('buildPayables — grouping', () => {
     expect(r.supplierGroups.map((g) => g.supplier)).toEqual(['Big', 'Small']);
   });
 
-  it('classifies Rental House as Vendor and everything else as Crew', () => {
+  it('classifies a group below Equipment Rental as Vendor and everything else as Crew', () => {
     const r = buildPayables(
       [
-        po({ name: 'PINV-1', supplier_group: 'Rental House' }),
+        po({ name: 'PINV-1', supplier_group: 'Camera & Lighting' }),
         po({ name: 'PINV-2', supplier: 'Someone', supplier_group: null }),
       ]);
     const parties = r.supplierGroups.flatMap((g) =>
