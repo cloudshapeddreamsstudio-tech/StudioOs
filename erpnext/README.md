@@ -39,16 +39,27 @@ frappe-ctl --site <profile> frappe count "Custom Field" \
   --filter "dt=Project" --filter "fieldname=custom_sanction_amount"
 
 # 2. Is the file correct for this site?  It must print "valid": true.
-frappe-ctl --site <profile> frappe validate "Custom Field" \
-  --data "$(cat erpnext/schema/0001_project_sanction_amount.json)" --output json
+#    Give it the file without its "doctype" key: validate reports that key as
+#    unknown and prints "valid": false for a correct file. `apply` needs the key.
+frappe-ctl --site <profile> frappe validate "Custom Field" --output json \
+  --data "$(bun -e "const d=require('./erpnext/schema/0001_project_sanction_amount.json'); delete d.doctype; console.log(JSON.stringify(d))")"
 
 # 3. Apply it. Only when step 1 printed 0.
 frappe-ctl --site <profile> frappe apply --file erpnext/schema/0001_project_sanction_amount.json
 ```
 
-Steps 1 and 2 only read. They were run against the production site on
-2026-10-09: step 1 printed `0`, and step 2 printed `"valid": true`. Step 3 was
-not run. The first person who runs step 3 corrects this file if it is wrong.
+Steps 1 and 2 only read. Step 3 is the one write.
+
+`0001_project_sanction_amount.json` was applied to the production site,
+`csds-prod`, on 2026-10-14: step 1 printed `0`, step 2 printed
+`"valid": true`, step 3 made `Project-custom_sanction_amount`, and step 1
+printed `1` after it. Step 2 with the `doctype` key left in the data printed
+`"valid": false` with `"unknown": [{"field": "doctype"}]` and nothing missing.
+That was a fault in this file, corrected above.
+
+`frappe-ctl describe` can answer from a cache and not show a field that was
+just added. To check a field, use step 1, or a list query that names the
+field: a site that does not have it answers 417.
 
 ## Apply one reference file
 
@@ -59,12 +70,20 @@ The same three steps, for the DocType and the name of the file. For
 # 1. Is the record there?  0 = no, 1 = yes.
 frappe-ctl --site <profile> next count "Supplier Group" --filter "name=Equipment Rental"
 
-# 2. Is the file correct for this site?
-frappe-ctl --site <profile> next validate "Supplier Group"   --data "$(cat erpnext/reference/0001_supplier_group_equipment_rental.json)" --output json
+# 2. Is the file correct for this site?  Without the "doctype" key, as above.
+frappe-ctl --site <profile> next validate "Supplier Group" --output json \
+  --data "$(bun -e "const d=require('./erpnext/reference/0001_supplier_group_equipment_rental.json'); delete d.doctype; console.log(JSON.stringify(d))")"
 
 # 3. Apply it. Only when step 1 printed 0.
 frappe-ctl --site <profile> next apply --file erpnext/reference/0001_supplier_group_equipment_rental.json
 ```
+
+Applied to the test site, `csds`, on 2026-10-14. The production site had it
+already.
+
+On the test site, the group `Rental House` was also moved below
+`Equipment Rental` on 2026-10-14, so that its three suppliers are vendors in the
+demo test. That changed test data only; it is not a file in this folder.
 
 `Equipment Rental` is the top vendor group. StudioOS reads the groups below it
 from the site (`worker/src/lib/vendorGroups.ts`), so a group that the studio
