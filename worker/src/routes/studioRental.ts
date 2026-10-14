@@ -3,7 +3,6 @@ import { eq, isNull, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db/client';
 import { rentalBookings, rentalSessions } from '../db/schema';
-import { computeInvoiceNumber } from '../lib/invoiceNumber';
 import {
   computeDuration,
   computeSessionAmount,
@@ -274,7 +273,6 @@ app.post('/bookings/:id/invoice', async (c) => {
 
   const { description, totalAmount } = buildRollupDescription(booking, unbilled);
   const postingDate = new Date().toISOString().slice(0, 10);
-  const invoiceNumber = await computeInvoiceNumber(frappe, postingDate);
 
   const invoice = await frappe.createDoc<{ name: string }>('Sales Invoice', {
     docstatus: 0,
@@ -287,7 +285,6 @@ app.post('/bookings/:id/invoice', async (c) => {
     debit_to: DEBIT_TO,
     cost_center: COST_CENTER,
     remarks: `Studio Space Rental - ${booking.tag}`,
-    custom_invoice_number: invoiceNumber,
     items: [
       {
         item_name: description,

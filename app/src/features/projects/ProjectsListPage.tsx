@@ -77,7 +77,7 @@ export function ProjectsListPage() {
                 <th className="px-2 py-3 text-left">Progress</th>
                 <th className="px-2 py-3 text-right">Billed</th>
                 <th className="px-2 py-3 text-right">Margin</th>
-                <th className="px-2 py-3 text-left">Shoot date</th>
+                <th className="px-2 py-3 text-left">Start date</th>
                 <th className="px-2 last:pr-5 py-3 text-left">Next step</th>
               </tr>
             </thead>
@@ -120,7 +120,7 @@ export function ProjectsListPage() {
                       {formatCurrency(p.total_billed_amount)}
                     </td>
                     <td className="px-2 py-3 text-right">{formatCurrency(p.gross_margin)}</td>
-                    <td className="px-2 py-3">{formatDate(p.custom_shoot_date)}</td>
+                    <td className="px-2 py-3">{formatDate(p.expected_start_date)}</td>
                     <td className="px-2 last:pr-5 py-3">
                       <span className="text-violet-500 font-medium">{p.smartAction?.label}</span>
                     </td>

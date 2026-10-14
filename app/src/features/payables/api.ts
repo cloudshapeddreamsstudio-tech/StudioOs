@@ -27,12 +27,7 @@ export interface SupplierGroup {
 
 export interface Payables {
   supplierGroups: SupplierGroup[];
-  commission: {
-    party: string;
-    totalOwed: number;
-    projects: { project: string; projectName: string; commissionOwed: number; commissionPercent: number; commissionBase: number }[];
-  }[];
-  totals: { owedToOthers: number; owedToOwner: number; commissionOwed: number; grandTotal: number };
+  totals: { owedToOthers: number; owedToOwner: number; grandTotal: number };
   poCount: number;
 }
 

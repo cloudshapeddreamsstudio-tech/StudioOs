@@ -25,7 +25,6 @@ export interface InvoiceItem {
 
 export interface InvoiceDoc {
   name?: string;
-  custom_invoice_number?: string;
   customer?: string;
   customer_name?: string;
   project?: string;
@@ -221,7 +220,7 @@ export function renderInvoiceHtml(
       </div>
       <div class="head-right">
         <div class="inv-title">INVOICE</div>
-        <div class="inv-no"># ${esc(invoice.custom_invoice_number || invoice.name || '')}</div>
+        <div class="inv-no"># ${esc(invoice.name || '')}</div>
         <div class="bal-label">Balance Due</div>
         <div class="bal-amt">${inr(balanceDue)}</div>
       </div>

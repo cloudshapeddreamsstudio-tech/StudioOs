@@ -38,6 +38,7 @@
     // must be the exact Company name on the ERPNext site that this environment
     // talks to, or project creation fails.
     "COMPANY": "Cloud Shaped Dreams Studio",
+        "OWNER_SUPPLIER": "Shubham Chauhan",
 
     // Where StudioOS itself answers.
     //
@@ -125,6 +126,7 @@
       "routes": [{ "pattern": "demoos.cloudshapeddreamsstudio.com", "custom_domain": true }],
       "vars": {
         "COMPANY": "Cloud Shaped Dreams Studio",
+        "OWNER_SUPPLIER": "Shubham Chauhan",
         "APP_ORIGIN": "https://demoos.cloudshapeddreamsstudio.com"
       },
       "d1_databases": [
@@ -149,6 +151,7 @@
       "routes": [{ "pattern": "studioos.cloudshapeddreamsstudio.com", "custom_domain": true }],
       "vars": {
         "COMPANY": "Cloud Shaped Dreams Studio",
+        "OWNER_SUPPLIER": "Shubham Chauhan",
         "APP_ORIGIN": "https://studioos.cloudshapeddreamsstudio.com"
       },
       "d1_databases": [

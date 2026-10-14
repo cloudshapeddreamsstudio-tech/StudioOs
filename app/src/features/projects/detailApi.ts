@@ -23,7 +23,6 @@ export interface DetailTask {
 
 export interface DetailSalesInvoice {
   name: string;
-  custom_invoice_number: string | null;
   posting_date: string | null;
   due_date: string | null;
   grand_total: number | null;
@@ -168,12 +167,10 @@ export interface ProjectDetail {
     plannedTotal: number | null;
     actualTotal: number | null;
     margin: {
-      commissionPlanned: number;
-      commissionActual: number;
       productionPlanned: number | null;
       productionActual: number | null;
-      productionCeilingPlanned: number;
-      productionCeilingActual: number;
+      /** `null` when the sanctioned amount is not available. */
+      productionCeiling: number | null;
       profitPlanned: number | null;
       profitActual: number | null;
       profitPlannedPercent: number | null;
@@ -183,16 +180,17 @@ export interface ProjectDetail {
     };
   };
   finance: {
-    sanctioned: number;
+    /**
+     * `null` when it is not available: the ERPNext site does not have the
+     * field, or no budget is typed in. Never show it as ₹0.
+     */
+    sanctioned: number | null;
     billed: number;
     purchaseCost: number;
     expenseTotal: number | null;
     remaining: number | null;
     grossMargin: number;
     marginPercent: number;
-    commissionPercent: number;
-    commissionBase: number;
-    commissionOwed: number;
     salesOutstanding: number;
     purchaseOutstanding: number;
   };

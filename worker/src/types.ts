@@ -16,6 +16,12 @@ export interface Env {
    * signed-in user's own studio, whose origin comes from the tenant registry.
    */
   COMPANY: string;
+  /**
+   * The Supplier that is the owner of the studio. Payables reports what is owed
+   * to this party apart from what is owed to others. It was a name in the code;
+   * each studio has its own, so it is configuration (Malhar, 2026-10-14).
+   */
+  OWNER_SUPPLIER: string;
 
   /** Sessions and users. Read and written only by kernel/auth. */
   DB: D1Database;

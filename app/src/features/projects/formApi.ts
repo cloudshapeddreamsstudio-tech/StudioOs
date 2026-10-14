@@ -35,14 +35,6 @@ export function useProjectTemplates() {
   });
 }
 
-export function useSalesPersons() {
-  return useQuery({
-    queryKey: ['sales-persons'],
-    queryFn: () => api.get<Named[]>('/sales-persons'),
-    staleTime: 5 * 60_000,
-  });
-}
-
 export function useCreateProject() {
   const qc = useQueryClient();
   return useMutation({

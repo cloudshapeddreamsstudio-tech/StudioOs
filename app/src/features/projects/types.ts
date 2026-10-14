@@ -1,9 +1,9 @@
 /**
  * The shape /api/projects returns.
  *
- * Fields prefixed `custom_` are ERPNext custom fields added to the Project
- * doctype on this site -- they are not stock ERPNext, so they will not exist
- * on a fresh instance.
+ * One field is custom: `custom_sanction_amount`. It is not stock ERPNext. A
+ * site gets it from erpnext/schema/0001, and a site that does not have it
+ * sends rows without that key. ADR-0005.
  */
 
 export type SmartActionKind =
@@ -28,14 +28,11 @@ export interface Project {
   project_type: string | null;
   project_template: string | null;
 
-  custom_sales_person: string | null;
-  custom_commission_percent: number | null;
-  custom_sanction_amount: number | null;
-  custom_shoot_date: string | null;
-  custom_brand: string | null;
-  custom_ad_agency: string | null;
-  custom_production_house: string | null;
-  custom_poc: string | null;
+  /**
+   * The one custom field. Absent from the row, not null, when the ERPNext site
+   * does not have it: read it as "not available", never as 0.
+   */
+  custom_sanction_amount?: number | null;
 
   expected_start_date: string | null;
   expected_end_date: string | null;

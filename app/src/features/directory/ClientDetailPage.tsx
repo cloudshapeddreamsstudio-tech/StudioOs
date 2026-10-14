@@ -26,7 +26,7 @@ import { formatCurrency, formatCurrencyOrDash, formatDate } from '@/lib/format';
  * What is *not* kept is the old page's silent zero. It caught every failure
  * loading invoices and substituted an empty list, so a client who owed
  * ₹2,29,000 showed ₹0 outstanding whenever the query failed for any reason —
- * including the CSDS-only `custom_invoice_number` field being absent. The route
+ * including a custom field of one site being absent on a different site. The route
  * now returns null for what it could not read, and this page shows a dash and
  * says so.
  */
@@ -279,9 +279,8 @@ function InvoicesCard({ invoices }: { invoices: ClientInvoice[] | null }) {
           <tr key={i.name}>
             <td className="px-2 first:pl-5 py-3">
               <div className="font-medium text-gray-800 dark:text-gray-100">
-                {i.custom_invoice_number || i.name}
+                {i.name}
               </div>
-              {i.custom_invoice_number && <div className="text-xs text-gray-400">{i.name}</div>}
             </td>
             <td className="px-2 py-3">{formatDate(i.posting_date)}</td>
             <td className="px-2 py-3 text-right">{formatCurrency(i.grand_total)}</td>
@@ -326,7 +325,7 @@ function ProjectsCard({ projects }: { projects: ClientProject[] | null }) {
           <tr>
             <th className="px-2 first:pl-5 py-3 text-left">Project</th>
             <th className="px-2 py-3 text-left">Status</th>
-            <th className="px-2 last:pr-5 py-3 text-left">Shoot / event date</th>
+            <th className="px-2 last:pr-5 py-3 text-left">Start date</th>
           </tr>
         }
       >
@@ -339,12 +338,11 @@ function ProjectsCard({ projects }: { projects: ClientProject[] | null }) {
               >
                 {p.project_name || p.name}
               </Link>
-              {p.custom_brand && <div className="text-xs text-gray-400">{p.custom_brand}</div>}
             </td>
             <td className="px-2 py-3">
               <StatusBadge status={p.status} />
             </td>
-            <td className="px-2 last:pr-5 py-3">{formatDate(p.custom_shoot_date)}</td>
+            <td className="px-2 last:pr-5 py-3">{formatDate(p.expected_start_date)}</td>
           </tr>
         ))}
       </TableShell>
@@ -374,7 +372,7 @@ function ActivityCard({
         .map((i) => ({
           key: `inv-${i.name}`,
           when: i.creation as string,
-          label: `Invoice ${i.custom_invoice_number || i.name} created — ${formatCurrency(i.grand_total)}`,
+          label: `Invoice ${i.name} created — ${formatCurrency(i.grand_total)}`,
         })),
       ...(projects ?? [])
         .filter((p) => p.creation)

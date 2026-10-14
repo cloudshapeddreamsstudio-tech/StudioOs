@@ -79,13 +79,16 @@ export function ProjectDetailPage() {
       <div className="text-sm text-gray-500 dark:text-gray-400 -mt-4 mb-6">
         {p.name}
         {p.customer ? ` · ${p.customer}` : ''}
-        {p.custom_shoot_date ? ` · shoot ${formatDate(String(p.custom_shoot_date))}` : ''}
+        {p.expected_start_date ? ` · starts ${formatDate(String(p.expected_start_date))}` : ''}
       </div>
 
       <CompletionBanner completion={data.completion} status={p.status} />
 
       <div className="grid grid-cols-12 gap-6 mb-6">
-        <StatTile label="Sanctioned" value={formatCurrency(f.sanctioned)} />
+        <StatTile
+          label="Sanctioned"
+          value={f.sanctioned === null ? 'Not available' : formatCurrency(f.sanctioned)}
+        />
         <StatTile label="Billed" value={formatCurrency(f.billed)} />
         <StatTile
           label="To collect"

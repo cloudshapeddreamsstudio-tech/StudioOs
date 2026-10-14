@@ -1,3 +1,4 @@
+import { isVendorGroup } from './vendorGroups';
 /**
  * The project-detail money model and completion rules.
  *
@@ -45,11 +46,11 @@ export interface ExpenseRow {
 }
 
 /**
- * The best available crew/vendor split. There is no direct roster↔invoice link
- * yet, so the Rental House supplier group is the signal for "this was a vendor
- * rental rather than a person we booked".
+ * The crew/vendor split. There is no direct roster↔invoice link yet, so the
+ * Supplier Group is the signal for "this was a vendor rental rather than a
+ * person we booked". Which groups are vendor groups is read from the site:
+ * lib/vendorGroups.ts.
  */
-export const VENDOR_SUPPLIER_GROUP = 'Rental House';
 
 /** A submitted-but-unpaid invoice is real money owed. A Draft is not. */
 function isOwed(inv: { status?: string; outstanding_amount?: number | null }): boolean {
@@ -74,6 +75,8 @@ export interface CompletionInput {
    *  proves something happened on this project. */
   totalSalesCount: number;
   totalPurchaseCount: number;
+  /** The vendor Supplier Groups of this site. See lib/vendorGroups.ts. */
+  vendorGroups: ReadonlySet<string>;
 }
 
 /**
@@ -126,8 +129,8 @@ export function computeCompletion(input: CompletionInput) {
    */
   const noCrewAssigned = !crewRosterUnavailable && crewEntries.length === 0;
 
-  const vendorPurchases = livePurchases.filter(
-    (i) => i.supplier_group === VENDOR_SUPPLIER_GROUP,
+  const vendorPurchases = livePurchases.filter((i) =>
+    isVendorGroup(input.vendorGroups, i.supplier_group),
   );
   const hasVendorInvolvement = vendorEntries.length > 0 || vendorPurchases.length > 0;
   const unpaidVendorPurchases = vendorPurchases.filter(isOwed);
@@ -186,34 +189,28 @@ export function desiredPercentComplete(
 }
 
 /**
- * Commission owed on a project.
+ * The sanctioned amount of a project, or `null` when it is not available.
  *
- * Charged on what is actually invoiced to the client, per studio policy,
- * falling back to the sanctioned amount when nothing is billed yet — so the
- * figure is meaningful the moment a project is created.
+ * `custom_sanction_amount` is a custom field (erpnext/schema/0001). Two cases
+ * give `null`, and both must read as "not available", never as a budget of 0:
  *
- * The old app had this formula written out twice, in `projectDetail.js` and
- * again in `payables.js`, with a comment in the latter saying it was "copied
- * here rather than reinvented". Two copies is one copy too many for a money
- * rule; both callers now share this.
+ *  - the site does not have the field, so the key is absent from the document;
+ *  - the field is there and nobody typed a budget. ERPNext stores an empty
+ *    Currency field as 0, and a real budget is never 0.
+ *
+ * `Number(x || 0)` made both of them ₹0, and every figure measured against the
+ * budget was then calculated from 0. ADR-0005 condition 5.
  */
-export function computeCommission(
-  billed: number,
-  sanctioned: number,
-  commissionPercent: number,
-): { commissionBase: number; commissionOwed: number } {
-  const commissionBase = billed > 0 ? billed : sanctioned;
-  return {
-    commissionBase,
-    commissionOwed: Math.round((commissionBase * commissionPercent) / 100),
-  };
+export function readSanctionedAmount(project: Record<string, unknown>): number | null {
+  const n = Number(project.custom_sanction_amount);
+  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 export interface FinanceInput {
-  sanctioned: number;
+  /** `null` when not available — see `readSanctionedAmount`. */
+  sanctioned: number | null;
   billed: number;
   purchaseCost: number;
-  commissionPercent: number;
   liveSales: SalesRow[];
   livePurchases: PurchaseRow[];
   /** `null` when project expenses are unavailable — see CompletionInput.crewRoster. */
@@ -223,13 +220,7 @@ export interface FinanceInput {
 }
 
 export function computeFinance(input: FinanceInput) {
-  const { sanctioned, billed, purchaseCost, commissionPercent } = input;
-
-  const { commissionBase, commissionOwed } = computeCommission(
-    billed,
-    sanctioned,
-    commissionPercent,
-  );
+  const { sanctioned, billed, purchaseCost } = input;
 
   // Only submitted invoices count as money owed — a Draft hasn't been sent.
   const salesOutstanding = sumOutstanding(input.liveSales.filter((i) => i.status !== 'Draft'));
@@ -252,21 +243,19 @@ export function computeFinance(input: FinanceInput) {
      * they are. A dash is honest; an overstated budget invites overspending.
      */
     remaining:
-      input.expenseTotal === null ? null : sanctioned - purchaseCost - input.expenseTotal,
+      input.expenseTotal === null || sanctioned === null
+        ? null
+        : sanctioned - purchaseCost - input.expenseTotal,
     grossMargin: input.grossMargin,
     marginPercent: input.marginPercent,
-    commissionPercent,
-    commissionBase,
-    commissionOwed,
     salesOutstanding,
     purchaseOutstanding,
   };
 }
 
 export interface ExpenseOverviewInput {
-  sanctioned: number;
-  commissionPercent: number;
-  commissionOwed: number;
+  /** `null` when not available. Each figure measured against it is then `null`. */
+  sanctioned: number | null;
   livePurchases: PurchaseRow[];
   vendorPurchases: PurchaseRow[];
   /** `null` when the roster is unavailable — see CompletionInput.crewRoster. */
@@ -278,16 +267,16 @@ export interface ExpenseOverviewInput {
 
 /** The owner's "where did the money go" table: planned versus actual. */
 export function buildExpenseOverview(input: ExpenseOverviewInput) {
-  const { sanctioned, commissionPercent, commissionOwed } = input;
+  const { sanctioned } = input;
 
   /**
    * "Actual" is grand_total of every live purchase invoice regardless of paid
    * status — this is spend, not outstanding-owed. "Planned" comes from the
    * roster, which is deliberately not tied to real invoices.
    */
-  const crewPurchases = input.livePurchases.filter(
-    (i) => i.supplier_group !== VENDOR_SUPPLIER_GROUP,
-  );
+  // Each purchase that is not vendor spend is crew spend.
+  const vendorNames = new Set(input.vendorPurchases.map((i) => i.name));
+  const crewPurchases = input.livePurchases.filter((i) => !vendorNames.has(i.name));
   const crewActual = crewPurchases.reduce((s, i) => s + Number(i.grand_total || 0), 0);
   const vendorActual = input.vendorPurchases.reduce((s, i) => s + Number(i.grand_total || 0), 0);
   /**
@@ -353,45 +342,50 @@ export function buildExpenseOverview(input: ExpenseOverviewInput) {
   const actualTotal = expensesUnavailable ? null : rows.reduce((s, r) => s + r.actual, 0);
 
   /**
-   * Margin model, per the owner's explicit split on SANCTIONED:
-   * commission% → sales person, 20% → profit (the minimum he wants to clear),
-   * the rest → all production (crew + vendor + expenses).
+   * Margin model, on SANCTIONED: 20% is profit, the minimum the owner wants to
+   * clear, and the rest is production (crew + vendor + expenses).
    *
-   * Commission is its own cost line feeding profit and is never folded into the
-   * expense rows above.
+   * The model had a third part, a commission for a sales person. It was read
+   * from two custom fields that ADR-0005 does not permit in release 1, so it is
+   * not here. It returns with those fields.
+   *
+   * Each figure below is measured against the sanctioned amount. When that is
+   * not available, each one is null. `0 - spend` would read as a loss of the
+   * whole spend, on a project whose budget is simply not known here.
    */
-  const commissionPlanned = Math.round((sanctioned * commissionPercent) / 100);
-  const commissionActual = commissionOwed; // reuse, don't re-derive
   const profitActual =
-    actualTotal === null ? null : sanctioned - commissionActual - actualTotal;
+    actualTotal === null || sanctioned === null ? null : sanctioned - actualTotal;
   // Planned profit is derived from planned production, so it inherits its
   // unknown-ness rather than quietly assuming the plan was zero.
   const profitPlanned =
-    plannedTotal === null ? null : sanctioned - commissionPlanned - plannedTotal;
-  const targetProfit = 0.2 * sanctioned;
+    plannedTotal === null || sanctioned === null ? null : sanctioned - plannedTotal;
+  const targetProfit = sanctioned === null ? null : 0.2 * sanctioned;
+  const hasBudget = sanctioned !== null && sanctioned > 0;
 
   return {
     rows,
     plannedTotal,
     actualTotal,
     margin: {
-      commissionPlanned,
-      commissionActual,
       productionPlanned: plannedTotal,
       productionActual: actualTotal,
       // The ceiling the owner wants visible so he can see headroom before quoting.
-      productionCeilingPlanned: sanctioned - commissionPlanned - targetProfit,
-      productionCeilingActual: sanctioned - commissionActual - targetProfit,
+      productionCeiling:
+        sanctioned === null || targetProfit === null ? null : sanctioned - targetProfit,
       profitPlanned,
       profitActual,
       profitPlannedPercent:
-        sanctioned > 0 && profitPlanned !== null ? (profitPlanned / sanctioned) * 100 : null,
+        hasBudget && profitPlanned !== null ? (profitPlanned / sanctioned) * 100 : null,
       profitActualPercent:
-        sanctioned > 0 && profitActual !== null ? (profitActual / sanctioned) * 100 : null,
+        hasBudget && profitActual !== null ? (profitActual / sanctioned) * 100 : null,
       meetsTargetPlanned:
-        sanctioned > 0 && profitPlanned !== null ? profitPlanned >= targetProfit : null,
+        hasBudget && profitPlanned !== null && targetProfit !== null
+          ? profitPlanned >= targetProfit
+          : null,
       meetsTargetActual:
-        sanctioned > 0 && profitActual !== null ? profitActual >= targetProfit : null,
+        hasBudget && profitActual !== null && targetProfit !== null
+          ? profitActual >= targetProfit
+          : null,
     },
   };
 }

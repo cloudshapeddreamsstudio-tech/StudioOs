@@ -11,7 +11,7 @@ reasons. Written in ASD-STE100 Simplified Technical English.
 | Folder | Holds | Example |
 |---|---|---|
 | `schema/` | The shape: one custom field in each file | `0001_project_sanction_amount.json` |
-| `reference/` | The fixed lists that the code names | a Supplier Group, an Item Group. Empty today |
+| `reference/` | A record that the code names, and that a person or StudioOS creates | `0001_supplier_group_equipment_rental.json` |
 
 Master data and transactions are not here. A customer, a project and an invoice
 belong to the studio. They are in ERPNext only.
@@ -49,6 +49,49 @@ frappe-ctl --site <profile> frappe apply --file erpnext/schema/0001_project_sanc
 Steps 1 and 2 only read. They were run against the production site on
 2026-10-09: step 1 printed `0`, and step 2 printed `"valid": true`. Step 3 was
 not run. The first person who runs step 3 corrects this file if it is wrong.
+
+## Apply one reference file
+
+The same three steps, for the DocType and the name of the file. For
+`reference/0001_supplier_group_equipment_rental.json`:
+
+```bash
+# 1. Is the record there?  0 = no, 1 = yes.
+frappe-ctl --site <profile> next count "Supplier Group" --filter "name=Equipment Rental"
+
+# 2. Is the file correct for this site?
+frappe-ctl --site <profile> next validate "Supplier Group"   --data "$(cat erpnext/reference/0001_supplier_group_equipment_rental.json)" --output json
+
+# 3. Apply it. Only when step 1 printed 0.
+frappe-ctl --site <profile> next apply --file erpnext/reference/0001_supplier_group_equipment_rental.json
+```
+
+`Equipment Rental` is the top vendor group. StudioOS reads the groups below it
+from the site (`worker/src/lib/vendorGroups.ts`), so a group that the studio
+adds below it is a vendor group with no change to this folder. A supplier in a
+group outside that tree is crew.
+
+## Expected on the site
+
+These records come with ERPNext or with an app that the studio installs.
+StudioOS names them and does not create them, so they have no file here.
+Malhar checked on 2026-10-14 that each one is on the new site.
+
+| Record | Kind | It comes from | StudioOS uses it to |
+|---|---|---|---|
+| `Services` | Item Group | ERPNext setup | make the Item for a crew role |
+| `Nos` | UOM | ERPNext setup | write an invoice line |
+| `Standard Selling` | Price List | ERPNext setup | write an invoice |
+| `998431` | GST HSN Code | the India Compliance app | make the Item for a crew role |
+
+Configuration, not records: `COMPANY` and `OWNER_SUPPLIER` in
+`worker/wrangler.jsonc`, for each environment. If no Supplier has the name in
+`OWNER_SUPPLIER`, Payables shows no "owed to owner" part, and nothing fails.
+
+Not expected, and not required: the Item Groups `In-House Equipment` and
+`Rental House Catalogue`, and the Department `Theatre Education - CSDS`. The
+code operates when they are absent. The equipment groups return with the rental
+feature in release 2.
 
 ## Check a site
 

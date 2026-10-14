@@ -6,12 +6,14 @@ import {
   computeFinance,
   buildExpenseOverview,
   desiredPercentComplete,
+  readSanctionedAmount,
   type TaskRow,
   type SalesRow,
   type PurchaseRow,
 } from '../lib/projectFinance';
 import { NotFoundError } from '../lib/errors';
 import { readCrewForProject } from './projectCrew';
+import { readVendorGroups } from '../lib/vendorGroups';
 import type { AppEnv } from '../types';
 
 /**
@@ -142,6 +144,9 @@ app.get('/:name', async (c) => {
 
   // Fire the rest in parallel — none depend on each other. Each is wrapped so
   // one empty or failed section doesn't sink the whole page.
+  // Read one time, for the crew roster and for the completion rules.
+  const vendorGroupsRead = readVendorGroups(frappe);
+
   const [tasks, salesInvoices, purchaseInvoices, payments, files, comments, communications, crewRoster] =
     await Promise.all([
       frappe
@@ -157,7 +162,8 @@ app.get('/:name', async (c) => {
         .catch(() => [] as TaskRow[]),
       frappe
         .getList<SalesRow>('Sales Invoice', {
-          fields: ['name', 'custom_invoice_number', 'posting_date', 'due_date', 'grand_total', 'outstanding_amount', 'status'],
+          // Stock fields only, so no site can refuse this query for a field.
+          fields: ['name', 'posting_date', 'due_date', 'grand_total', 'outstanding_amount', 'status'],
           filters: [['project', '=', projectName]],
           limit: 100,
           orderBy: 'posting_date desc',
@@ -210,11 +216,12 @@ app.get('/:name', async (c) => {
           orderBy: 'communication_date desc',
         })
         .catch(() => []),
-      readCrewForProject(frappe, projectName).catch(() => []),
+      vendorGroupsRead
+        .then((groups) => readCrewForProject(frappe, projectName, groups))
+        .catch(() => []),
     ]);
 
   // --- Milestone task matching -------------------------------------------
-  const primaryMilestoneTask = findByMarker(tasks, 'milestone-primary', 'shoot date');
   const invoiceMailedTask =
     findByMarker(tasks, 'milestone-invoice-mailed', 'invoice mailed') ??
     findByMarker(tasks, null, 'send invoice'); // pre-rename subject
@@ -248,17 +255,13 @@ app.get('/:name', async (c) => {
   }
 
   /**
-   * Auto-tick the primary milestone once its date has passed. Compared in UTC
-   * against the date-only string, avoiding the local-midnight drift the
-   * original's `today.setHours(0,0,0,0)` had.
+   * The primary milestone ("Shoot Date") is ticked by a person.
+   *
+   * It was ticked here, when the shoot date of the project had passed. That
+   * date was `custom_shoot_date`, a custom field that ADR-0005 does not permit
+   * in release 1. StudioOS does not read it, so it has no date to compare. The
+   * automatic tick returns with the field.
    */
-  const shootDate = project.custom_shoot_date as string | undefined;
-  if (primaryMilestoneTask && primaryMilestoneTask.status !== 'Completed' && shootDate) {
-    const todayUtc = new Date().toISOString().slice(0, 10);
-    if (String(shootDate).slice(0, 10) < todayUtc) {
-      await setTaskStatus(frappe, primaryMilestoneTask, 'Completed', `primary milestone auto-complete for ${projectName}`);
-    }
-  }
 
   // Only real (non-cancelled) invoices count toward money.
   const liveSales = salesInvoices.filter((i) => i.status !== 'Cancelled');
@@ -284,6 +287,7 @@ app.get('/:name', async (c) => {
     crewRoster,
     totalSalesCount: salesInvoices.length,
     totalPurchaseCount: purchaseInvoices.length,
+    vendorGroups: await vendorGroupsRead,
   });
   const { actionableTasks, openTasks, vendorPurchases, crewEntries, vendorEntries } =
     completion._internal;
@@ -346,13 +350,15 @@ app.get('/:name', async (c) => {
   }
 
   /**
-   * Theatre Education projects deliberately don't use ERPNext invoices at all
-   * (they run on the lightweight transactions ledger), so this logic has no
-   * visibility into their real money state. Leave their status alone rather
-   * than guess.
+   * The status is derived for each project that is not Cancelled.
+   *
+   * There was a special case: a project in the Department `Theatre Education -
+   * CSDS` kept its status, because those projects ran outside ERPNext invoices.
+   * The new site has no such Department, and no theatre project is moved to it
+   * yet. Malhar, 2026-10-14: remove the special case until Shubham's sheet says
+   * that theatre projects move.
    */
-  const derivedStatusApplies =
-    project.status !== 'Cancelled' && project.department !== 'Theatre Education - CSDS';
+  const derivedStatusApplies = project.status !== 'Cancelled';
 
   let effectiveStatus = project.status;
   if (derivedStatusApplies) {
@@ -403,10 +409,10 @@ app.get('/:name', async (c) => {
   const expensesByCategory = expenses === null ? null : groupExpenses(expenses);
 
   const finance = computeFinance({
-    sanctioned: Number(project.custom_sanction_amount || 0),
+    // null, not 0, when the budget is not available. ADR-0005 condition 5.
+    sanctioned: readSanctionedAmount(project),
     billed: Number(project.total_billed_amount || 0),
     purchaseCost: Number(project.total_purchase_cost || 0),
-    commissionPercent: Number(project.custom_commission_percent || 0),
     liveSales,
     livePurchases,
     expenseTotal,
@@ -416,8 +422,6 @@ app.get('/:name', async (c) => {
 
   const expenseOverview = buildExpenseOverview({
     sanctioned: finance.sanctioned,
-    commissionPercent: finance.commissionPercent,
-    commissionOwed: finance.commissionOwed,
     livePurchases,
     vendorPurchases,
     crewEntries,

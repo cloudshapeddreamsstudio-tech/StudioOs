@@ -66,10 +66,19 @@ export function QueryState({
       <tr>
         <td colSpan={colSpan} className="px-2 first:pl-5 last:pr-5 py-6 text-center text-red-500">
           Couldn&apos;t load: {error.message}
-          <br />
-          <span className="text-xs text-gray-400">
-            Is the API Worker running? Try <code>bun run dev</code> in <code>worker/</code>.
-          </span>
+          {/**
+           * For a developer on a laptop, and for nobody else. In production it
+           * sent a person to look for a fault that was not there.
+           */}
+          {import.meta.env.DEV && (
+            <>
+              <br />
+              <span className="text-xs text-gray-400">
+                Is the development server running? Try <code>bun run dev</code> from the
+                repository root.
+              </span>
+            </>
+          )}
         </td>
       </tr>
     );

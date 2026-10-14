@@ -118,7 +118,15 @@ export function MoneyTab({ data }: { data: ProjectDetail }) {
     <div className="space-y-6">
       <Card title="Position">
         <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <Figure label="Sanctioned" value={formatCurrency(f.sanctioned)} />
+          {/**
+           * Not available, not ₹0. With no budget on the project, or no budget
+           * field on the site, every figure measured against it is unknown too.
+           */}
+          <Figure
+            label="Sanctioned"
+            value={f.sanctioned === null ? 'Not available' : formatCurrency(f.sanctioned)}
+            tone={f.sanctioned === null ? 'muted' : undefined}
+          />
           <Figure label="Billed" value={formatCurrency(f.billed)} />
           <Figure label="Spent (crew/rental)" value={formatCurrency(f.purchaseCost)} />
           {/**
@@ -130,7 +138,13 @@ export function MoneyTab({ data }: { data: ProjectDetail }) {
             label="Budget remaining"
             value={formatCurrencyOrDash(f.remaining)}
             tone={f.remaining === null ? 'muted' : f.remaining < 0 ? 'bad' : 'good'}
-            note={f.remaining === null ? 'Needs expenses' : undefined}
+            note={
+              f.remaining === null
+                ? f.sanctioned === null
+                  ? 'Needs a sanctioned amount'
+                  : 'Needs expenses'
+                : undefined
+            }
           />
           <Figure
             label="To collect"
@@ -143,11 +157,6 @@ export function MoneyTab({ data }: { data: ProjectDetail }) {
             tone={f.purchaseOutstanding > 0 ? 'bad' : 'good'}
           />
           <Figure label="Gross margin" value={formatCurrency(f.grossMargin)} />
-          <Figure
-            label={`Commission (${f.commissionPercent}%)`}
-            value={formatCurrency(f.commissionOwed)}
-            hint={`on ${formatCurrency(f.commissionBase)}`}
-          />
         </div>
         <p className="px-5 pb-4 text-xs text-gray-400">
           &ldquo;To collect&rdquo; and &ldquo;to pay&rdquo; count only submitted invoices — a
@@ -179,7 +188,7 @@ export function MoneyTab({ data }: { data: ProjectDetail }) {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {i.custom_invoice_number || i.name}
+                    {i.name}
                   </a>
                 </td>
                 <td className="px-2 py-3">{formatDate(i.posting_date)}</td>
@@ -340,6 +349,8 @@ function NotInThisRelease({ what }: { what: string }) {
 export function ExpensesTab({ data }: { data: ProjectDetail }) {
   const o = data.expenseOverview;
   const m = o.margin;
+  /** The budget is not available, so nothing can be measured against it. */
+  const noBudget = data.finance.sanctioned === null;
 
   return (
     <div className="space-y-6">
@@ -406,7 +417,6 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
 
       <Card title="Margin against sanctioned">
         <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-          <Figure label="Commission" value={formatCurrency(m.commissionActual)} />
           {/**
            * `formatCurrency` renders null as ₹0, which is right for "nothing
            * spent" and wrong for "cannot see the spend". These two figures can
@@ -420,7 +430,8 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
           />
           <Figure
             label="Production ceiling"
-            value={formatCurrency(m.productionCeilingActual)}
+            value={formatCurrencyOrDash(m.productionCeiling)}
+            tone={m.productionCeiling === null ? 'muted' : undefined}
             hint="before profit drops under 20%"
           />
           <Figure
@@ -429,7 +440,13 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
             hint={
               m.profitActualPercent !== null ? formatPercent(m.profitActualPercent) : undefined
             }
-            note={m.profitActual === null ? 'Needs expenses' : undefined}
+            note={
+              m.profitActual === null
+                ? noBudget
+                  ? 'Needs a sanctioned amount'
+                  : 'Needs expenses'
+                : undefined
+            }
             tone={
               m.profitActual === null
                 ? 'muted'
@@ -446,7 +463,13 @@ export function ExpensesTab({ data }: { data: ProjectDetail }) {
             Profit is below the 20% of sanctioned the studio aims to clear.
           </div>
         )}
-        {m.profitActual === null && (
+        {noBudget && (
+          <div className="mx-5 mb-5 px-4 py-3 rounded-lg bg-gray-500/10 text-gray-500 text-xs">
+            No sanctioned amount is available for this project, so nothing here is measured
+            against one. The figures are left blank rather than calculated from zero.
+          </div>
+        )}
+        {m.profitActual === null && !noBudget && (
           <div className="mx-5 mb-5 px-4 py-3 rounded-lg bg-amber-500/10 text-amber-700 dark:text-amber-500 text-xs">
             Profit can&apos;t be worked out yet: logged expenses are actual spend, and this release
             can&apos;t see them. Showing a figure here would overstate the margin by whatever was

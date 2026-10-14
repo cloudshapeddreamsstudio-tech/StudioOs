@@ -11,7 +11,6 @@ import {
   useCustomers,
   useProjectTypes,
   useProjectTemplates,
-  useSalesPersons,
   describeSaveError,
 } from './formApi';
 
@@ -43,7 +42,6 @@ export function ProjectForm({ mode, defaultValues, subtitle, onSubmit, cancelTo 
   const customers = useCustomers();
   const projectTypes = useProjectTypes();
   const templates = useProjectTemplates();
-  const salesPersons = useSalesPersons();
 
   const {
     register,
@@ -128,26 +126,6 @@ export function ProjectForm({ mode, defaultValues, subtitle, onSubmit, cancelTo 
           <input type="number" step="1" min="0" {...register('sanctioned_amount')} className={inputClass} />
         </Field>
 
-        <Field label="Commission %" error={errors.commission_percent?.message}>
-          <input
-            type="number"
-            step="0.1"
-            min="0"
-            max="100"
-            {...register('commission_percent')}
-            className={inputClass}
-          />
-        </Field>
-
-        <Field label="Sales person (referred by)" error={errors.sales_person?.message}>
-          <input {...register('sales_person')} list="sales-person-options" className={inputClass} />
-          <datalist id="sales-person-options">
-            {(salesPersons.data ?? []).map((s) => (
-              <option key={s.name} value={s.name} />
-            ))}
-          </datalist>
-        </Field>
-
         <Field label="Project type" error={errors.project_type?.message}>
           <input {...register('project_type')} list="project-type-options" className={inputClass} />
           <datalist id="project-type-options">
@@ -174,10 +152,6 @@ export function ProjectForm({ mode, defaultValues, subtitle, onSubmit, cancelTo 
           </Field>
         )}
 
-        <Field label="Shoot / event date" error={errors.shoot_date?.message}>
-          <input type="date" {...register('shoot_date')} className={inputClass} />
-        </Field>
-
         <Field label="Expected start" error={errors.expected_start_date?.message}>
           <input type="date" {...register('expected_start_date')} className={inputClass} />
         </Field>
@@ -186,21 +160,6 @@ export function ProjectForm({ mode, defaultValues, subtitle, onSubmit, cancelTo 
           <input type="date" {...register('expected_end_date')} className={inputClass} />
         </Field>
 
-        <Field label="Brand" error={errors.brand?.message}>
-          <input {...register('brand')} className={inputClass} />
-        </Field>
-
-        <Field label="Ad agency" error={errors.ad_agency?.message}>
-          <input {...register('ad_agency')} className={inputClass} />
-        </Field>
-
-        <Field label="Production house" error={errors.production_house?.message}>
-          <input {...register('production_house')} className={inputClass} />
-        </Field>
-
-        <Field label="Point of contact" error={errors.poc?.message}>
-          <input {...register('poc')} className={inputClass} />
-        </Field>
       </div>
 
       <div className="mt-5 flex items-center gap-3">

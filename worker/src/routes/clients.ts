@@ -112,13 +112,12 @@ app.get('/:name', async (c) => {
   }>('Customer', clientName);
 
   const [invoiceResult, projectResult, address] = await Promise.all([
-    // `custom_invoice_number` is CSDS-only; asking tolerantly costs one extra
-    // round trip on sites that lack it and keeps the real invoice data.
+    // Stock fields only. Kept tolerant: it costs nothing when no field is
+    // absent, and `readOrNull` needs the same shape from both queries.
     readOrNull(
       getListTolerant<InvoiceRow>(frappe, 'Sales Invoice', {
         fields: [
           'name',
-          'custom_invoice_number',
           'posting_date',
           'due_date',
           'grand_total',
@@ -131,10 +130,9 @@ app.get('/:name', async (c) => {
         orderBy: 'posting_date desc',
       }),
     ),
-    // Same for `custom_shoot_date` and `custom_brand`.
     readOrNull(
       getListTolerant(frappe, 'Project', {
-        fields: ['name', 'project_name', 'status', 'custom_shoot_date', 'custom_brand', 'creation'],
+        fields: ['name', 'project_name', 'status', 'expected_start_date', 'creation'],
         filters: [['customer', '=', clientName]],
         limit: 500,
         orderBy: 'creation desc',

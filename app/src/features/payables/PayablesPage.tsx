@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePayables, type SupplierGroup } from './api';
-import { PageHeader, StatTile, Card } from '@/components/ui/PageHeader';
+import { PageHeader, StatTile } from '@/components/ui/PageHeader';
 import { formatCurrency, formatDate } from '@/lib/format';
 
 /**
@@ -42,11 +42,6 @@ export function PayablesPage() {
           sub="Own crew fees — not an external liability"
         />
         <StatTile
-          label="Commission owed"
-          value={isLoading ? '…' : formatCurrency(data?.totals.commissionOwed)}
-          sub="Owed by formula; payouts aren't tracked"
-        />
-        <StatTile
           label="Grand total"
           value={isLoading ? '…' : formatCurrency(data?.totals.grandTotal)}
         />
@@ -82,33 +77,6 @@ export function PayablesPage() {
             onToggle={() => setOpen(open === g.supplier ? null : g.supplier)}
           />
         ))}
-
-        {data && data.commission.length > 0 && (
-          <Card title="Commission owed">
-            <div className="p-5 space-y-3">
-              {data.commission.map((c) => (
-                <div key={c.party}>
-                  <div className="flex justify-between font-medium text-gray-800 dark:text-gray-100">
-                    <span>{c.party}</span>
-                    <span>{formatCurrency(c.totalOwed)}</span>
-                  </div>
-                  {c.projects.map((p) => (
-                    <div
-                      key={p.project}
-                      className="flex justify-between text-xs text-gray-500 dark:text-gray-400 pl-4 mt-1"
-                    >
-                      <span>
-                        {p.projectName} · {p.commissionPercent}% of{' '}
-                        {formatCurrency(p.commissionBase)}
-                      </span>
-                      <span>{formatCurrency(p.commissionOwed)}</span>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
       </div>
     </>
   );

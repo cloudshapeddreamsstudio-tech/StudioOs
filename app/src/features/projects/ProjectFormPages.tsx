@@ -69,13 +69,6 @@ function toFormValues(p: Record<string, unknown>): Partial<ProjectFormValues> {
     expected_start_date: text(p.expected_start_date),
     expected_end_date: text(p.expected_end_date),
     project_type: text(p.project_type),
-    sales_person: text(p.custom_sales_person),
-    commission_percent: num(p.custom_commission_percent),
     sanctioned_amount: num(p.custom_sanction_amount),
-    brand: text(p.custom_brand),
-    ad_agency: text(p.custom_ad_agency),
-    production_house: text(p.custom_production_house),
-    poc: text(p.custom_poc),
-    shoot_date: text(p.custom_shoot_date),
   };
 }
