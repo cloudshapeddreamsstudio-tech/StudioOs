@@ -29,8 +29,11 @@ is `demoos`. The configuration and the Cloudflare names say `staging`.
 
 ## One release, step by step
 
-1. **Open the release.** Create `release/vX.Y.Z` from `main`. Write its scope in
-   `docs/releases/vX.Y.Z.md`: the cards that are in it. Keep it small.
+1. **Open the release.** Malhar decides the version and the scope. Create
+   `release/vX.Y.Z` from `main`. Copy `docs/releases/_template.md` to
+   `docs/releases/vX.Y.Z.md` and complete it. Write one card in `docs/tasks/`
+   for each item. **This step comes before any other. No `feat/` or `fix/`
+   branch starts until the release file exists.** See `docs/releases/README.md`.
 2. **Do each card on its own branch.** Create `feat/<name>` or `fix/<name>` from
    `main`. One person or one agent works on one branch.
 3. **Merge a finished branch into the release branch.** `bun run check` must
@@ -43,6 +46,11 @@ is `demoos`. The configuration and the Cloudflare names say `staging`.
 
 The rules:
 
+- **No work starts without a release file.** If `docs/releases/vX.Y.Z.md` does
+  not exist for the work, stop and ask. This rule was broken one time, for
+  `v1.0.1`, and its scope file was written after the release.
+- **A tag needs a complete release file.** Before the tag, the record table of
+  `docs/releases/vX.Y.Z.md` is filled up to "Malhar approved".
 - **Production deploys only from a tag on `main`.** Not from a branch.
 - **The commit that goes to production was on demo first.** If you change the
   release branch after the test, deploy it to demo and test again.
@@ -149,6 +157,8 @@ these shared files.
 
 - Find your branch name before you change a file. If you are on `main` or on a
   release branch, stop and create a `feat/` or `fix/` branch from `main`.
+- Find the release file of your work, `docs/releases/vX.Y.Z.md`. If there is
+  none, stop and ask. Do not start work for a release that has no file.
 - Do not merge, tag or deploy production. A person does that.
 - Do not deploy demo from a `feat/` or `fix/` branch. Demo runs a release
   branch.

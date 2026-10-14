@@ -15,9 +15,10 @@ before. Both need the same map, so there is one map.
 Read this file. Then read, in this order, only what your task needs:
 
 1. `docs/tasks/<the card you were given>.md` — if you were given one. It names
-   what to read next.
-2. `docs/SEAM.md` section 10 — the three questions. Answer them for your change.
-3. `docs/RELEASE-1.md` — the current scope, if no card was given.
+   its release and what to read next.
+2. `docs/releases/vX.Y.Z.md` — the scope of that release. **If the card names no
+   release, or the release has no file, stop and ask.**
+3. `docs/SEAM.md` section 10 — the three questions. Answer them for your change.
 4. `docs/WORKFLOW.md` — before you create a branch, or write a migration.
 
 Then work. Do not read the whole `docs/` folder. `docs/PLAN-v2.md` is 1200 lines
@@ -150,7 +151,8 @@ feature on one side, use the same word on the other side.
 | `docs/seam-map.html` | **Authoritative** | The same document as diagrams. Open it when the words are dense. |
 | `docs/adr/` | **Authoritative** | One decision for each record, with its evidence and its cost. |
 | `docs/RELEASE-1.md` | **Authoritative** | What release 1 contains, what it does not, and its gates. Start here. |
-| `docs/RELEASE-2.md` | **Authoritative** | What comes after release 1, in order. Not started. |
+| `docs/RELEASE-2.md` | **Authoritative** | What comes after release 1, in order. |
+| `docs/releases/` | **Authoritative** | One file for each release: its version, scope and record. Written before the work starts. |
 | `docs/HANDOFF.md` | **Reference** | How H1, H1b and H2 were done, and the H3 front end work that comes after release 1. |
 | `docs/tasks/` | **Authoritative** | One card for one job, written to be given to an agent. See `docs/tasks/README.md`. |
 | `docs/FINDINGS.md` | **Authoritative** | Facts proved against a real ERPNext. The decisions stand on these. |
@@ -422,12 +424,25 @@ work. If you build something that no person asked for, stop and ask.
 
 ## The work ahead
 
-**Release 1 is the only work now.** `docs/RELEASE-1.md` says what is in it. Its
-branch is `release/v1.0.0`. `docs/WORKFLOW.md` says how branches, releases and
-migrations operate: read it before you create a branch.
+**Each piece of work belongs to a release, and each release has a file in
+`docs/releases/` before the work starts.** `docs/releases/README.md` has the
+rule and the list.
 
-| Work | State |
-|---|---|
+| Release | Theme | State |
+|---|---|---|
+| `v1.0.0` | Release 1 | In production, 2026-10-04 |
+| `v1.0.1` | StudioOS operates when a field is absent | In production, 2026-10-14 |
+| **`v1.0.2`** | **The design system: tokens and shared components** | **Open.** Card: `docs/tasks/v102-design-foundations.md` |
+| `v1.1.0` | The invoice controls | Next. No file yet |
+
+The move of the studio's data to the new ERPNext site is not a StudioOS release.
+It changes ERPNext data, not this code. It is in a separate folder,
+`studioos-migration`, outside this repository.
+
+**A list of features is written from the screen, not from the Worker.** Before
+you write that a person "can" do something, find the control in `app/src/`.
+
+---|---|
 | H1, H1b, H2, H2b | Done 2026-10-01 and 2026-10-02 |
 | [r1-staging](./docs/tasks/r1-staging.md) | Done 2026-10-03. Staging is live, and Sandesh tested it and signed. |
 | [r1-production](./docs/tasks/r1-production.md) | **Next.** Approved by Malhar, 2026-10-04. |

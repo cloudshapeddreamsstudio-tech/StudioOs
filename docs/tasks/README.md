@@ -33,6 +33,12 @@ If it cannot answer, you cannot either, and the change is not ready.
 Then run the verification in the card yourself. Do not accept a report that the
 agent passed its own test. Run it.
 
+## A card belongs to a release
+
+Each card names its release in its header: `**Release:** vX.Y.Z`. The release
+has a file, `docs/releases/vX.Y.Z.md`, and that file lists the card. A card
+with no release does not start.
+
 ## How a card ends
 
 A card is finished when its "Done when" section is true, and not before. If you
@@ -47,4 +53,5 @@ failure. It happened on the first card in this folder.
 | [h2b-sign-out-everywhere.md](./h2b-sign-out-everywhere.md) | Finish the prize of H2: end every session of one person | Done |
 | [r1-staging.md](./r1-staging.md) | Deploy staging, test each feature yourself, sign off | Done |
 | [r1-production.md](./r1-production.md) | Deploy production | **Open — approved 2026-10-04** |
-| [v101-missing-fields.md](./v101-missing-fields.md) | v1.0.1: StudioOS operates on a site that does not have a field | **Open — next** |
+| [v101-missing-fields.md](./v101-missing-fields.md) | v1.0.1: StudioOS operates on a site that does not have a field | Done 2026-10-14 |
+| [v102-design-foundations.md](./v102-design-foundations.md) | v1.0.2: the design system, tokens and shared components | **Open — next** |

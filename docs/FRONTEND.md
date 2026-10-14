@@ -319,7 +319,7 @@ the screens move, then the lint is switched on. In this sequence:
 production.** Release 1 ships the screens as they are today. The missing
 controls (invoices, tasks, documents, notes, sign out on all devices) are in
 release 2, and they are built after step 3, on the tokens, one time.
-`docs/RELEASE-2.md` on the `release-1` branch has the order.
+`docs/RELEASE-2.md` has the order. Steps 1 to 3 are release `v1.0.2`.
 
 One risk to watch: `@shadcn/lint` is at version 0.2.0. It is new and can change.
 If it blocks the work, the rules of section 6 stay and the tool is replaced.

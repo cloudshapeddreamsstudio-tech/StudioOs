@@ -1,6 +1,7 @@
 # Release 2
 
-**State:** a list, in order. Not started. Release 2 starts after release 1 is in
+**State:** a list, in order. Each item becomes a release with its own file in
+`docs/releases/`. The first one is `v1.0.2`. Release 2 starts after release 1 is in
 production and Shubham uses it.
 
 **The rule:** release 2 adds what a person cannot do in release 1. The order
@@ -13,7 +14,7 @@ Written in ASD-STE100 Simplified Technical English. See `docs/adr/README.md`.
 
 ## The order
 
-### 1. The design system, steps 1 to 3
+### 1. The design system, steps 1 to 3 — `v1.0.2`
 
 `docs/FRONTEND.md`, on the branch `docs/frontend-constitution`. Write the
 tokens. Move the shared components onto them. Decided (D8, 2026-10-03): this
@@ -22,7 +23,7 @@ starts after release 1 is in production, and not before.
 It comes first in release 2 for one reason. Items 2 to 6 below are new screens
 and new buttons. Build them one time, on the tokens, and not two times.
 
-### 2. Invoices: the controls
+### 2. Invoices: the controls — `v1.1.0`
 
 The Worker has each endpoint. The app has only the list and the print page.
 
